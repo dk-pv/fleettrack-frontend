@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Bell,
-  ChevronDown,
-  CircleCheck,
-  LogOut,
-} from "lucide-react";
+import { Bell, ChevronDown, CircleCheck, LogOut } from "lucide-react";
 
 import ThemeToggle from "./theme-toggle";
 
@@ -16,9 +11,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function Navbar() {
+interface NavbarProps {
+  expanded: boolean;
+}
+
+export default function Navbar({ expanded }: NavbarProps) {
   return (
-    <header className="fixed left-[88px] right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-8">
+    <header
+      className={`fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-8 transition-all duration-300 ${
+        expanded ? "left-[250px]" : "left-[88px]"
+      }`}
+    >
       {/* Search */}
       <div className="w-full max-w-xl">
         <input
@@ -58,26 +61,18 @@ export default function Navbar() {
               </div>
 
               <div className="hidden text-left md:block">
-                <h4 className="text-sm font-semibold">
-                  John Doe
-                </h4>
+                <h4 className="text-sm font-semibold">John Doe</h4>
 
-                <p className="text-xs text-muted-foreground">
-                  Admin
-                </p>
+                <p className="text-xs text-muted-foreground">Admin</p>
               </div>
 
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent
-            align="end"
-            className="w-44"
-          >
+          <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
-
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>

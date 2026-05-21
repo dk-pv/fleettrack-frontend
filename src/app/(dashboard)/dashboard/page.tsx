@@ -20,7 +20,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-3">
         {statsData.map((item) => (
           <StatsCard
             key={item.title}
@@ -36,13 +36,13 @@ export default function DashboardPage() {
       <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-3">
         <FleetStatusChart />
 
-        <div className="xl:col-span-2">
+        <div className="min-w-0 xl:col-span-2">
           <WeeklyActivityChart />
         </div>
       </div>
 
       {/* Vehicles */}
-      <div className="grid grid-cols-1 xl:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 xl:grid-cols-2">
         <ActiveVehicles />
       </div>
     </div>

@@ -3,7 +3,6 @@
 import {
   Area,
   AreaChart,
-  ResponsiveContainer,
   XAxis,
 } from "recharts";
 
@@ -16,23 +15,22 @@ export default function WeeklyActivityChart() {
         Weekly Activity
       </h3>
 
-      <div className="h-[260px] min-w-0">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
+      <div className="overflow-hidden">
+        <AreaChart
+          width={700}
+          height={260}
+          data={weeklyActivity}
         >
-          <AreaChart data={weeklyActivity}>
-            <XAxis dataKey="day" />
+          <XAxis dataKey="day" />
 
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="#14b8a6"
-              fill="#14b8a6"
-              fillOpacity={0.35}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#14b8a6"
+            fill="#14b8a6"
+            fillOpacity={0.35}
+          />
+        </AreaChart>
       </div>
     </div>
   );
