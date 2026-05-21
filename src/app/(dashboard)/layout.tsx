@@ -10,11 +10,13 @@ export default function DashboardLayout({
     <main className="min-h-screen bg-[#f5f7fb] text-foreground transition-colors duration-300 dark:bg-[#0b1120]">
       <Sidebar />
 
-      <Navbar />
+      <div className="ml-[88px] transition-all duration-300">
+        <Navbar />
 
-      <section className="ml-[250px] pt-16">
-        {children}
-      </section>
+        <section className="pt-16">
+          {children}
+        </section>
+      </div>
     </main>
   );
 }

@@ -18,7 +18,7 @@ import {
 
 export default function Navbar() {
   return (
-    <header className="fixed left-[260px] right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-8">
+    <header className="fixed left-[88px] right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-8">
       {/* Search */}
       <div className="w-full max-w-xl">
         <input
