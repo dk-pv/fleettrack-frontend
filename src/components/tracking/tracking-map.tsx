@@ -15,12 +15,6 @@ export default function TrackingMap() {
 
       {/* Vintage World Map */}
       <img
-        src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/World_map_blank_without_borders.svg/2560px-World_map_blank_without_borders.svg.png"
-        alt="Map"
-        className="h-full w-full object-cover opacity-0 absolute"
-        onError={() => {}}
-      />
-      <img
         src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop"
         alt="World Map"
         className="h-full w-full object-cover"
