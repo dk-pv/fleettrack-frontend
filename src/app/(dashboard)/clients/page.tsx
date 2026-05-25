@@ -1,4 +1,4 @@
-import { Plus, Search, Download } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import ClientStats from "@/components/clients/client-stats";
 import ClientTable from "@/components/clients/client-table";
@@ -19,21 +19,12 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Export */}
-          <button className="flex h-11 items-center gap-2 rounded-lg border border-border bg-background px-5 text-sm font-medium transition-colors hover:bg-muted">
-            <Download className="h-4 w-4" />
-            Export
+        <AddClientModal>
+          <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
+            <Plus className="h-4 w-4" />
+            Add User
           </button>
-
-          {/* Add User */}
-          <AddClientModal>
-            <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
-              <Plus className="h-4 w-4" />
-              Add User
-            </button>
-          </AddClientModal>
-        </div>
+        </AddClientModal>
       </div>
 
       {/* Stats */}

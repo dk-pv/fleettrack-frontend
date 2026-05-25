@@ -23,6 +23,7 @@ export const vehicleStats = [
 export const vehicles = [
   {
     id: 1,
+    name: "Tata Ace Gold",
     number: "DL-01-AB-1234",
     driver: "Rajesh Kumar",
     gps: "GPS-001",
@@ -31,6 +32,7 @@ export const vehicles = [
   },
   {
     id: 2,
+    name: "Mahindra Bolero",
     number: "MH-02-CD-5678",
     driver: "Suresh Babu",
     gps: "GPS-002",
@@ -39,6 +41,7 @@ export const vehicles = [
   },
   {
     id: 3,
+    name: "Ashok Leyland Dost",
     number: "KA-03-EF-9012",
     driver: "Arun Singh",
     gps: "GPS-003",
@@ -47,6 +50,7 @@ export const vehicles = [
   },
   {
     id: 4,
+    name: "Eicher Pro 1110",
     number: "TN-04-GH-3456",
     driver: "Vijay Kumar",
     gps: "GPS-004",
@@ -55,6 +59,7 @@ export const vehicles = [
   },
   {
     id: 5,
+    name: "BharatBenz 1217R",
     number: "KL-05-IJ-7890",
     driver: "Karthik Raj",
     gps: "GPS-005",
@@ -63,6 +68,7 @@ export const vehicles = [
   },
   {
     id: 6,
+    name: "Force Traveller",
     number: "WB-06-KL-2345",
     driver: "Prakash M",
     gps: "GPS-006",
@@ -71,6 +77,7 @@ export const vehicles = [
   },
   {
     id: 7,
+    name: "Tata Winger",
     number: "GJ-07-MN-6789",
     driver: "Ganesh P",
     gps: "GPS-007",
@@ -79,6 +86,7 @@ export const vehicles = [
   },
   {
     id: 8,
+    name: "Maruti Suzuki Super Carry",
     number: "RJ-08-OP-0123",
     driver: "Ramesh T",
     gps: "GPS-008",
@@ -87,6 +95,7 @@ export const vehicles = [
   },
   {
     id: 9,
+    name: "Ashok Leyland Partner",
     number: "AP-09-QR-4567",
     driver: "Venkat Reddy",
     gps: "GPS-009",
@@ -95,6 +104,7 @@ export const vehicles = [
   },
   {
     id: 10,
+    name: "Tata Intra V10",
     number: "UP-10-ST-8901",
     driver: "Amit Sharma",
     gps: "GPS-010",
