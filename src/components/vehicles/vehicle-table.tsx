@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  ChevronDown,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 
 import { vehicles } from "@/data/vehicles-data";
 
@@ -20,18 +16,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function VehicleTable() {
-  const [statusFilter, setStatusFilter] =
-    useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const filteredVehicles = useMemo(() => {
     if (statusFilter === "All") {
       return vehicles;
     }
 
-    return vehicles.filter(
-      (vehicle) =>
-        vehicle.status === statusFilter,
-    );
+    return vehicles.filter((vehicle) => vehicle.status === statusFilter);
   }, [statusFilter]);
 
   return (
@@ -39,8 +31,7 @@ export default function VehicleTable() {
       {/* Table Header */}
       <div className="border-b border-border px-5 py-4">
         <h3 className="text-lg font-semibold">
-          All Vehicles (
-          {filteredVehicles.length})
+          All Vehicles ({filteredVehicles.length})
         </h3>
       </div>
 
@@ -51,7 +42,7 @@ export default function VehicleTable() {
             <tr className="border-b border-border text-left">
               {/* Vehicle */}
               <th className="px-5 py-4 text-sm font-semibold">
-                Vehicle Number
+                Vehicle Number & Name
               </th>
 
               {/* Driver */}
@@ -60,9 +51,7 @@ export default function VehicleTable() {
               </th>
 
               {/* GPS */}
-              <th className="px-5 py-4 text-sm font-semibold">
-                GPS Device ID
-              </th>
+              <th className="px-5 py-4 text-sm font-semibold">GPS Device ID</th>
 
               {/* Status Filter */}
               <th className="px-5 py-4 text-sm font-semibold">
@@ -70,46 +59,25 @@ export default function VehicleTable() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1 transition-colors hover:text-primary">
                       Status
-
                       <ChevronDown className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        setStatusFilter("All")
-                      }
-                    >
+                    <DropdownMenuItem onClick={() => setStatusFilter("All")}>
                       All
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
-                      onClick={() =>
-                        setStatusFilter(
-                          "Moving",
-                        )
-                      }
-                    >
+                    <DropdownMenuItem onClick={() => setStatusFilter("Moving")}>
                       Moving
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
-                      onClick={() =>
-                        setStatusFilter(
-                          "Idle",
-                        )
-                      }
-                    >
+                    <DropdownMenuItem onClick={() => setStatusFilter("Idle")}>
                       Idle
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
-                      onClick={() =>
-                        setStatusFilter(
-                          "Offline",
-                        )
-                      }
+                      onClick={() => setStatusFilter("Offline")}
                     >
                       Offline
                     </DropdownMenuItem>
@@ -118,9 +86,7 @@ export default function VehicleTable() {
               </th>
 
               {/* Last Update */}
-              <th className="px-5 py-4 text-sm font-semibold">
-                Last Update
-              </th>
+              <th className="px-5 py-4 text-sm font-semibold">Last Update</th>
 
               {/* Actions */}
               <th className="px-5 py-4 text-right text-sm font-semibold">
@@ -130,56 +96,56 @@ export default function VehicleTable() {
           </thead>
 
           <tbody>
-            {filteredVehicles.map(
-              (vehicle) => (
-                <tr
-                  key={vehicle.id}
-                  className="border-b border-border last:border-none"
-                >
-                  {/* Vehicle */}
-                  <td className="px-5 py-5 text-sm font-medium">
-                    {vehicle.number}
-                  </td>
+            {filteredVehicles.map((vehicle) => (
+              <tr
+                key={vehicle.id}
+                className="border-b border-border last:border-none"
+              >
+                {/* Vehicle */}
+                <td className="px-5 py-5">
+                  <div>
+                    <h4 className="text-sm font-semibold">{vehicle.number}</h4>
 
-                  {/* Driver */}
-                  <td className="px-5 py-5 text-sm text-muted-foreground">
-                    {vehicle.driver}
-                  </td>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {vehicle.name}
+                    </p>
+                  </div>
+                </td>
 
-                  {/* GPS */}
-                  <td className="px-5 py-5 text-sm text-muted-foreground">
-                    {vehicle.gps}
-                  </td>
+                {/* Driver */}
+                <td className="px-5 py-5 text-sm text-muted-foreground">
+                  {vehicle.driver}
+                </td>
 
-                  {/* Status */}
-                  <td className="px-5 py-5">
-                    <VehicleStatusBadge
-                      status={
-                        vehicle.status
-                      }
-                    />
-                  </td>
+                {/* GPS */}
+                <td className="px-5 py-5 text-sm text-muted-foreground">
+                  {vehicle.gps}
+                </td>
 
-                  {/* Updated */}
-                  <td className="px-5 py-5 text-sm text-muted-foreground">
-                    {vehicle.updated}
-                  </td>
+                {/* Status */}
+                <td className="px-5 py-5">
+                  <VehicleStatusBadge status={vehicle.status} />
+                </td>
 
-                  {/* Actions */}
-                  <td className="px-5 py-5">
-                    <div className="flex justify-end gap-4">
-                      <button>
-                        <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
-                      </button>
+                {/* Updated */}
+                <td className="px-5 py-5 text-sm text-muted-foreground">
+                  {vehicle.updated}
+                </td>
 
-                      <button>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ),
-            )}
+                {/* Actions */}
+                <td className="px-5 py-5">
+                  <div className="flex justify-end gap-4">
+                    <button>
+                      <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
+                    </button>
+
+                    <button>
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -2,6 +2,7 @@ import { Search, Download, Plus } from "lucide-react";
 
 import VehicleStats from "@/components/vehicles/vehicle-stats";
 import VehicleTable from "@/components/vehicles/vehicle-table";
+import AddVehicleModal from "@/components/vehicles/add-vehicle-modal";
 
 export default function VehiclesPage() {
   return (
@@ -41,10 +42,12 @@ export default function VehiclesPage() {
             </button>
 
             {/* Add Vehicle */}
-            <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
-              <Plus className="h-4 w-4" />
-              Add Vehicle
-            </button>
+            <AddVehicleModal>
+              <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
+                <Plus className="h-4 w-4" />
+                Add Vehicle
+              </button>
+            </AddVehicleModal>
           </div>
         </div>
       </div>
