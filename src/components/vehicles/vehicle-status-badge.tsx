@@ -1,3 +1,5 @@
+"use client";
+
 interface VehicleStatusBadgeProps {
   status: string;
 }
@@ -6,16 +8,27 @@ export default function VehicleStatusBadge({
   status,
 }: VehicleStatusBadgeProps) {
   return (
-    <div
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+    <select
+      defaultValue={status}
+      className={`h-9 rounded-full border px-3 text-xs font-medium outline-none transition-colors ${
         status === "Moving"
-          ? "bg-green-500/10 text-green-600"
+          ? "border-green-200 bg-green-500/10 text-green-600"
           : status === "Idle"
-            ? "bg-yellow-500/10 text-yellow-600"
-            : "bg-red-500/10 text-red-500"
+            ? "border-yellow-200 bg-yellow-500/10 text-yellow-600"
+            : "border-red-200 bg-red-500/10 text-red-500"
       }`}
     >
-      {status}
-    </div>
+      <option value="Moving">
+        Moving
+      </option>
+
+      <option value="Idle">
+        Idle
+      </option>
+
+      <option value="Offline">
+        Offline
+      </option>
+    </select>
   );
 }

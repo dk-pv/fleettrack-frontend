@@ -1,4 +1,4 @@
-import { Filter, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 import VehicleStats from "@/components/vehicles/vehicle-stats";
 import VehicleTable from "@/components/vehicles/vehicle-table";
@@ -8,9 +8,7 @@ export default function VehiclesPage() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">
-          Vehicles
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight">Vehicles</h1>
 
         <p className="mt-2 text-muted-foreground">
           Manage your fleet vehicles and assignments
@@ -20,6 +18,7 @@ export default function VehiclesPage() {
       {/* Stats */}
       <VehicleStats />
 
+      {/* Search */}
       {/* Search */}
       <div className="rounded-xl border border-border bg-background p-5">
         <div className="flex items-center gap-4">
@@ -32,15 +31,9 @@ export default function VehiclesPage() {
               className="h-11 w-full rounded-lg border border-border bg-muted pl-10 pr-4 text-sm outline-none"
             />
           </div>
-
-          <button className="flex h-11 items-center gap-2 rounded-lg border border-border px-5 text-sm font-medium">
-            <Filter className="h-4 w-4" />
-
-            Filter
-          </button>
         </div>
       </div>
-
+      
       {/* Table */}
       <VehicleTable />
     </div>
