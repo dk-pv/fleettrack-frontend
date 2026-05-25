@@ -2,17 +2,50 @@
 
 import Link from "next/link";
 
-import {
-  Eye,
-  EyeOff,
-  Truck,
-} from "lucide-react";
+import { Eye, EyeOff, Truck } from "lucide-react";
 
 import { useState } from "react";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      const response = await fetch("http://localhost:5000/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log(data);
+
+      if (data.success) {
+        localStorage.setItem("token", data.token);
+
+        window.location.href = "/dashboard";
+      } else {
+        alert("Login failed");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -25,13 +58,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <h1 className="text-4xl font-bold">
-              FleetTrack
-            </h1>
+            <h1 className="text-4xl font-bold">FleetTrack</h1>
 
-            <p className="mt-1 text-slate-400">
-              GPS Fleet Monitoring Platform
-            </p>
+            <p className="mt-1 text-slate-400">GPS Fleet Monitoring Platform</p>
           </div>
         </div>
 
@@ -44,18 +73,15 @@ export default function LoginPage() {
           </h2>
 
           <p className="mt-6 text-lg leading-8 text-slate-400">
-            Monitor vehicles, manage drivers,
-            track live locations and optimize
-            fleet operations from one unified
-            dashboard.
+            Monitor vehicles, manage drivers, track live locations and optimize
+            fleet operations from one unified dashboard.
           </p>
         </div>
 
         {/* Footer */}
         <div>
           <p className="text-sm text-slate-500">
-            © 2026 FleetTrack. All rights
-            reserved.
+            © 2026 FleetTrack. All rights reserved.
           </p>
         </div>
       </div>
@@ -65,18 +91,15 @@ export default function LoginPage() {
         <div className="w-full max-w-md rounded-3xl border border-border bg-background p-8 shadow-sm">
           {/* Header */}
           <div>
-            <h2 className="text-4xl font-bold tracking-tight">
-              Welcome Back
-            </h2>
+            <h2 className="text-4xl font-bold tracking-tight">Welcome Back</h2>
 
             <p className="mt-3 text-muted-foreground">
-              Login to continue to FleetTrack
-              dashboard
+              Login to continue to FleetTrack dashboard
             </p>
           </div>
 
           {/* Form */}
-          <form className="mt-10 space-y-6">
+          <form onSubmit={handleLogin} className="mt-10 space-y-6">
             {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-medium">
@@ -86,34 +109,28 @@ export default function LoginPage() {
               <input
                 type="email"
                 placeholder="Enter email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="h-12 w-full rounded-xl border border-border bg-muted px-4 text-sm outline-none transition-colors focus:border-primary"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="mb-2 block text-sm font-medium">
-                Password
-              </label>
+              <label className="mb-2 block text-sm font-medium">Password</label>
 
               <div className="relative">
                 <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="h-12 w-full rounded-xl border border-border bg-muted px-4 pr-12 text-sm outline-none transition-colors focus:border-primary"
                 />
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowPassword(
-                      !showPassword,
-                    )
-                  }
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                 >
                   {showPassword ? (
@@ -129,7 +146,6 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input type="checkbox" />
-
                 Remember me
               </label>
 
@@ -142,8 +158,12 @@ export default function LoginPage() {
             </div>
 
             {/* Button */}
-            <button className="h-12 w-full rounded-xl bg-[#2563eb] text-sm font-semibold text-white transition-opacity hover:opacity-90">
-              Login
+            <button
+              type="submit"
+              disabled={loading}
+              className="h-12 w-full rounded-xl bg-[#2563eb] text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 
