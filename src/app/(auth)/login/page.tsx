@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-
 import { Eye, EyeOff, Truck } from "lucide-react";
-
+import { useAuthStore } from "@/store/auth-store";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -11,7 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const { setAuth } = useAuthStore();
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -28,13 +27,14 @@ export default function LoginPage() {
           password,
         }),
       });
-
+      console.log(response.status);
+  
       const data = await response.json();
 
-      console.log(data);
+      console.log("LOGIN RESPONSE:", data);
 
       if (data.success) {
-        localStorage.setItem("token", data.token);
+        setAuth(data.user, data.token);
 
         window.location.href = "/dashboard";
       } else {
