@@ -3,19 +3,36 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
 } from "@/components/ui/dialog";
 
 import ClientForm from "./client-form";
 
-interface AddClientModalProps {
-  children: React.ReactNode;
+interface User {
+  id: string;
+
+  name: string;
+
+  email: string;
+
+  role: string;
 }
 
-export default function AddClientModal({ children }: AddClientModalProps) {
+interface AddClientModalProps {
+  children: React.ReactNode;
+
+  editUser?: User | null;
+}
+
+export default function AddClientModal({
+  children,
+  editUser,
+}: AddClientModalProps) {
+  const isEdit = !!editUser;
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -24,14 +41,22 @@ export default function AddClientModal({ children }: AddClientModalProps) {
 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Add New Client</DialogTitle>
+          <DialogTitle className="text-2xl">
+            {isEdit ? "Edit Client" : "Add New Client"}
+          </DialogTitle>
+
           <DialogDescription>
-            Add a new client and assign access role.
+            {isEdit
+              ? "Update client information."
+              : "Add a new client and assign access role."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4">
-          <ClientForm />
+          <ClientForm
+            editUser={editUser}
+            buttonText={isEdit ? "Update Client" : "Add Client"}
+          />
         </div>
       </DialogContent>
     </Dialog>

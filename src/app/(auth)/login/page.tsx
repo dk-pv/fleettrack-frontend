@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Truck } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,13 +12,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { setAuth } = useAuthStore();
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:5000/api/v1/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
