@@ -1,7 +1,8 @@
 "use client";
 
 import { Bell, ChevronDown, CircleCheck, LogOut } from "lucide-react";
-
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
 import ThemeToggle from "./theme-toggle";
 
 import {
@@ -16,6 +17,15 @@ interface NavbarProps {
 }
 
 export default function Navbar({ expanded }: NavbarProps) {
+  const router = useRouter();
+
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+
+    router.push("/login");
+  };
   return (
     <header
       className={`fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-8 transition-all duration-300 ${
@@ -57,13 +67,15 @@ export default function Navbar({ expanded }: NavbarProps) {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-3 outline-none">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
-                JD
+                {user?.name?.charAt(0).toUpperCase()}
               </div>
 
               <div className="hidden text-left md:block">
-                <h4 className="text-sm font-semibold">John Doe</h4>
+                <h4 className="text-sm font-semibold">{user?.name}</h4>
 
-                <p className="text-xs text-muted-foreground">Admin</p>
+                <p className="text-xs text-muted-foreground">
+                  {user?.role?.replace("_", " ").toLowerCase()}
+                </p>
               </div>
 
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -71,7 +83,7 @@ export default function Navbar({ expanded }: NavbarProps) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem  onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </DropdownMenuItem>

@@ -2,34 +2,58 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
+import { useAuthStore } from "@/store/auth-store";
 import { LayoutDashboard, Map, Truck, Users, Settings } from "lucide-react";
 
 export const sidebarMenu = [
   {
     title: "Dashboard",
+
     icon: LayoutDashboard,
+
     href: "/dashboard",
+
+    roles: ["ADMIN", "FLEET_MANAGER", "VIEWER"],
   },
+
   {
     title: "Live Tracking",
+
     icon: Map,
+
     href: "/tracking",
+
+    roles: ["ADMIN", "FLEET_MANAGER"],
   },
+
   {
     title: "Vehicles",
+
     icon: Truck,
+
     href: "/vehicles",
+
+    roles: ["ADMIN", "FLEET_MANAGER"],
   },
+
   {
     title: "Clients",
+
     icon: Users,
+
     href: "/clients",
+
+    roles: ["ADMIN"],
   },
+
   {
     title: "Settings",
+
     icon: Settings,
+
     href: "/settings",
+
+    roles: ["ADMIN"],
   },
 ];
 
@@ -40,7 +64,7 @@ interface SidebarProps {
 
 export default function Sidebar({ expanded, setExpanded }: SidebarProps) {
   const pathname = usePathname();
-
+  const { user } = useAuthStore();
   return (
     <aside
       onMouseEnter={() => setExpanded(true)}
@@ -71,34 +95,36 @@ export default function Sidebar({ expanded, setExpanded }: SidebarProps) {
       {/* Menu */}
       <nav className="flex-1 px-4 py-6">
         <ul className="space-y-2">
-          {sidebarMenu.map((item) => {
-            const Icon = item.icon;
+          {sidebarMenu
+            .filter((item) => item.roles.includes(user?.role || "VIEWER"))
+            .map((item) => {
+              const Icon = item.icon;
 
-            const active = pathname === item.href;
+              const active = pathname === item.href;
 
-            return (
-              <li key={item.title}>
-                <Link
-                  href={item.href}
-                  className={`flex h-[50px] items-center gap-4 rounded-xl px-4 transition-all duration-300 ${
-                    active
-                      ? "bg-[#2563eb] text-white"
-                      : "text-slate-300 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <Icon className="h-5 w-5 min-w-5" />
-
-                  <span
-                    className={`whitespace-nowrap text-sm font-medium transition-all duration-200 ${
-                      expanded ? "opacity-100" : "opacity-0"
+              return (
+                <li key={item.title}>
+                  <Link
+                    href={item.href}
+                    className={`flex h-[50px] items-center gap-4 rounded-xl px-4 transition-all duration-300 ${
+                      active
+                        ? "bg-[#2563eb] text-white"
+                        : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    {item.title}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
+                    <Icon className="h-5 w-5 min-w-5" />
+
+                    <span
+                      className={`whitespace-nowrap text-sm font-medium transition-all duration-200 ${
+                        expanded ? "opacity-100" : "opacity-0"
+                      }`}
+                    >
+                      {item.title}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
         </ul>
       </nav>
 

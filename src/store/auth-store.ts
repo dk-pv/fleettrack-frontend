@@ -1,9 +1,6 @@
 import { create } from "zustand";
 
-type UserRole =
-  | "ADMIN"
-  | "FLEET_MANAGER"
-  | "VIEWER";
+type UserRole = "ADMIN" | "FLEET_MANAGER" | "VIEWER";
 
 interface User {
   id: string;
@@ -17,47 +14,44 @@ interface AuthStore {
 
   token: string | null;
 
-  setAuth: (
-    user: User,
-    token: string,
-  ) => void;
+  setAuth: (user: User, token: string) => void;
 
   logout: () => void;
 }
 
-export const useAuthStore =
-  create<AuthStore>((set) => ({
-    user: null,
+export const useAuthStore = create<AuthStore>((set) => ({
+  user: null,
 
-    token: null,
+  token: null,
 
-    setAuth: (user, token) => {
-      localStorage.setItem(
-        "token",
-        token,
-      );
+  setAuth: (user, token) => {
+    localStorage.setItem("token", token);
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(user),
-      );
+    localStorage.setItem("user", JSON.stringify(user));
 
-      set({
-        user,
-        token,
-      });
-    },
+    set({
+      user,
+      token,
+    });
+  },
 
-    logout: () => {
-      localStorage.removeItem(
-        "token",
-      );
+  logout: () => {
+    localStorage.removeItem("token");
 
-      localStorage.removeItem("user");
+    localStorage.removeItem("user");
 
-      set({
-        user: null,
-        token: null,
-      });
-    },
-  }));
+    // Old auth cleanup
+    localStorage.removeItem("adminToken");
+
+    localStorage.removeItem("adminRole");
+
+    localStorage.removeItem("isLoggedIn");
+
+    localStorage.removeItem("userEmail");
+
+    set({
+      user: null,
+      token: null,
+    });
+  },
+}));
