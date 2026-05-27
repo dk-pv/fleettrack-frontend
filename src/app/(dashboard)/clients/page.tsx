@@ -1,10 +1,15 @@
+"use client";
+
 import { Plus, Search } from "lucide-react";
 
 import ClientStats from "@/components/clients/client-stats";
 import ClientTable from "@/components/clients/client-table";
 import AddClientModal from "@/components/clients/add-client-modal";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function ClientsPage() {
+  const { user } = useAuthStore();
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -19,12 +24,14 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <AddClientModal>
-          <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
-            <Plus className="h-4 w-4" />
-            Add User
-          </button>
-        </AddClientModal>
+        {user?.role === "ADMIN" && (
+          <AddClientModal>
+            <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
+              <Plus className="h-4 w-4" />
+              Add User
+            </button>
+          </AddClientModal>
+        )}
       </div>
 
       {/* Stats */}

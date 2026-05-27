@@ -13,9 +13,13 @@ export default function ClientStats() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/clients`,
-      );
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_URL}/clients`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
 
@@ -31,18 +35,13 @@ export default function ClientStats() {
 
   const totalUsers = users.length;
 
-  const admins = users.filter(
-    (user) => user.role === "ADMIN",
-  ).length;
+  const admins = users.filter((user) => user.role === "ADMIN").length;
 
   const fleetManagers = users.filter(
-    (user) =>
-      user.role === "FLEET_MANAGER",
+    (user) => user.role === "FLEET_MANAGER",
   ).length;
 
-  const viewers = users.filter(
-    (user) => user.role === "VIEWER",
-  ).length;
+  const viewers = users.filter((user) => user.role === "VIEWER").length;
 
   const stats = [
     {
@@ -70,13 +69,9 @@ export default function ClientStats() {
           key={item.title}
           className="rounded-xl border border-border bg-background p-5"
         >
-          <p className="text-sm text-muted-foreground">
-            {item.title}
-          </p>
+          <p className="text-sm text-muted-foreground">{item.title}</p>
 
-          <h3 className="mt-6 text-4xl font-bold">
-            {item.value}
-          </h3>
+          <h3 className="mt-6 text-4xl font-bold">{item.value}</h3>
         </div>
       ))}
     </div>
