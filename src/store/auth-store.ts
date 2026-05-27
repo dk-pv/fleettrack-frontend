@@ -1,11 +1,17 @@
 import { create } from "zustand";
 
-type UserRole = "ADMIN" | "FLEET_MANAGER" | "VIEWER";
+type UserRole =
+  | "ADMIN"
+  | "FLEET_MANAGER"
+  | "VIEWER";
 
 interface User {
   id: string;
+
   name: string;
+
   email: string;
+
   role: UserRole;
 }
 
@@ -14,44 +20,80 @@ interface AuthStore {
 
   token: string | null;
 
-  setAuth: (user: User, token: string) => void;
+  hydrated: boolean;
+
+  setAuth: (
+    user: User,
+    token: string,
+  ) => void;
 
   logout: () => void;
+
+  hydrate: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
+export const useAuthStore =
+  create<AuthStore>((set) => ({
+    user: null,
 
-  token: null,
+    token: null,
 
-  setAuth: (user, token) => {
-    localStorage.setItem("token", token);
+    hydrated: false,
 
-    localStorage.setItem("user", JSON.stringify(user));
+    setAuth: (user, token) => {
+      localStorage.setItem(
+        "token",
+        token,
+      );
 
-    set({
-      user,
-      token,
-    });
-  },
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user),
+      );
 
-  logout: () => {
-    localStorage.removeItem("token");
+      set({
+        user,
+        token,
+        hydrated: true,
+      });
+    },
 
-    localStorage.removeItem("user");
+    hydrate: () => {
+      const token =
+        localStorage.getItem("token");
 
-    // Old auth cleanup
-    localStorage.removeItem("adminToken");
+      const user =
+        localStorage.getItem("user");
 
-    localStorage.removeItem("adminRole");
+      if (token && user) {
+        set({
+          token,
+          user: JSON.parse(user),
+          hydrated: true,
+        });
+      } else {
+        set({
+          hydrated: true,
+        });
+      }
+    },
 
-    localStorage.removeItem("isLoggedIn");
+    logout: () => {
+      localStorage.removeItem(
+        "token",
+      );
 
-    localStorage.removeItem("userEmail");
+      localStorage.removeItem(
+        "user",
+      );
 
-    set({
-      user: null,
-      token: null,
-    });
-  },
-}));
+      set({
+        user: null,
+        token: null,
+        hydrated: true,
+      });
+
+      window.location.href =
+        "/login";
+    },
+  }));

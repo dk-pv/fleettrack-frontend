@@ -37,7 +37,7 @@ export default function LoginPage() {
 
       if (data.success) {
         setAuth(data.user, data.token);
-
+        document.cookie = `token=${data.token}; path=/`;
         window.location.href = "/dashboard";
       } else {
         alert("Login failed");

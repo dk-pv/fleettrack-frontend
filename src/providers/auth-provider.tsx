@@ -9,22 +9,10 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { setAuth } =
-    useAuthStore();
+  const { hydrate } = useAuthStore();
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("token");
-
-    const user =
-      localStorage.getItem("user");
-
-    if (token && user) {
-      setAuth(
-        JSON.parse(user),
-        token,
-      );
-    }
+    hydrate();
   }, []);
 
   return <>{children}</>;
