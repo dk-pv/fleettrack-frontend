@@ -8,7 +8,7 @@ import {
   Activity,
   ArrowLeft,
   Radio,
-  Route,
+  Route as RouteIcon,
   Wifi,
   FileDown,
 } from "lucide-react";
@@ -209,8 +209,7 @@ export default function VehicleDetailPage() {
         {/* Total Distance */}
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center gap-3">
-            <Route className="h-5 w-5 text-blue-600" />
-
+            <RouteIcon className="h-5 w-5 text-blue-600" />
             <h3 className="text-sm font-medium text-muted-foreground">
               Total Distance
             </h3>
@@ -264,8 +263,16 @@ export default function VehicleDetailPage() {
                 vehicleName={vehicle.vehicleName}
               />
             ) : (
-              <div className="flex h-[420px] items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-                Live location not available
+              <div className="flex h-[420px] flex-col items-center justify-center rounded-xl border border-dashed border-border text-center">
+                <MapPin className="h-8 w-8 text-muted-foreground" />
+
+                <p className="mt-3 text-sm font-medium">
+                  Live location unavailable
+                </p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Waiting for GPS updates
+                </p>
               </div>
             )}
           </div>
@@ -321,7 +328,7 @@ export default function VehicleDetailPage() {
             <button
               onClick={downloadReport}
               disabled={downloading}
-              className="flex items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+              className="flex h-11 items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
             >
               <FileDown className="h-4 w-4" />
 
