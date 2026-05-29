@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { apiFetch } from "@/lib/fetcher";
-
+import { socket } from "@/lib/socket";
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
@@ -46,6 +45,28 @@ export default function TrackingPage() {
     fetchVehicles();
   }, []);
 
+  useEffect(() => {
+    socket.on("vehicleLocationUpdate", (updatedVehicle) => {
+      setVehicles((prev) =>
+        prev.map((vehicle) =>
+          vehicle.id === updatedVehicle.id ? updatedVehicle : vehicle,
+        ),
+      );
+
+      setSelected((prev) => {
+        if (prev && prev.id === updatedVehicle.id) {
+          return updatedVehicle;
+        }
+
+        return prev;
+      });
+    });
+
+    return () => {
+      socket.off("vehicleLocationUpdate");
+    };
+  }, []);
+
   const handleCenterMap = () => {
     setCenterTrigger((prev) => prev + 1);
   };
@@ -74,15 +95,9 @@ export default function TrackingPage() {
         onSelect={setSelected}
       />
 
-      <TrackingMap
-        vehicle={selected}
-        centerTrigger={centerTrigger}
-      />
+      <TrackingMap vehicle={selected} centerTrigger={centerTrigger} />
 
-      <VehicleDetails
-        vehicle={selected}
-        onCenterMap={handleCenterMap}
-      />
+      <VehicleDetails vehicle={selected} onCenterMap={handleCenterMap} />
     </div>
   );
 }

@@ -22,7 +22,6 @@ interface Vehicle {
 }
 
 export default function SingleTrackingPage() {
-
   const params = useParams();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,16 +56,14 @@ export default function SingleTrackingPage() {
         if (!prev) {
           return prev;
         }
-
+        if (data.id !== prev.id) {
+          return prev;
+        }
         return {
           ...prev,
-
           latitude: data.latitude,
-
           longitude: data.longitude,
-
           speed: data.speed,
-
           updatedAt: data.updatedAt,
         };
       });
