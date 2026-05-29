@@ -1,30 +1,3 @@
-// "use client";
-
-// import { useState } from "react";
-
-// import { vehicles } from "@/data/tracking-data";
-// import type { Vehicle } from "@/data/tracking-data";
-
-// import TrackingMap from "@/components/tracking/tracking-map";
-// import VehicleDetails from "@/components/tracking/vehicle-details";
-// import VehicleList from "@/components/tracking/vehicle-list";
-
-// export default function TrackingPage() {
-//   const [selected, setSelected] = useState<Vehicle>(vehicles[0]);
-
-//   return (
-//     <div className="grid h-[calc(100vh-64px)] grid-cols-[280px_1fr_300px] overflow-hidden">
-//       <VehicleList selected={selected} onSelect={setSelected} />
-//       <TrackingMap />
-//       <VehicleDetails vehicle={selected} />
-//     </div>
-//   );
-// }
-
-
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,43 +10,28 @@ import VehicleList from "@/components/tracking/vehicle-list";
 
 interface Vehicle {
   id: string;
-
   vehicleName: string;
-
   vehicleNumber: string;
-
   gpsDeviceId: string;
-
   driverName: string;
-
   clientName: string;
-
   status: string;
-
   latitude: number;
-
   longitude: number;
-
   speed: number;
-
   updatedAt: string;
 }
 
 export default function TrackingPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-
   const [selected, setSelected] = useState<Vehicle | null>(null);
-
   const [loading, setLoading] = useState(true);
-
+  const [centerTrigger, setCenterTrigger] = useState(0);
   const fetchVehicles = async () => {
     try {
       const response = await apiFetch("/vehicles");
-
       const data = await response.json();
-
       setVehicles(data.vehicles);
-
       if (data.vehicles.length > 0) {
         setSelected(data.vehicles[0]);
       }
@@ -87,6 +45,10 @@ export default function TrackingPage() {
   useEffect(() => {
     fetchVehicles();
   }, []);
+
+  const handleCenterMap = () => {
+    setCenterTrigger((prev) => prev + 1);
+  };
 
   if (loading) {
     return (
@@ -112,9 +74,15 @@ export default function TrackingPage() {
         onSelect={setSelected}
       />
 
-      <TrackingMap vehicle={selected} />
+      <TrackingMap
+        vehicle={selected}
+        centerTrigger={centerTrigger}
+      />
 
-      <VehicleDetails vehicle={selected} />
+      <VehicleDetails
+        vehicle={selected}
+        onCenterMap={handleCenterMap}
+      />
     </div>
   );
 }

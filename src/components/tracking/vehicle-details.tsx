@@ -1,34 +1,31 @@
+"use client";
+
+import Link from "next/link";
 import { LocateFixed, Route } from "lucide-react";
 
 interface Vehicle {
   id: string;
-
   vehicleName: string;
-
   vehicleNumber: string;
-
   gpsDeviceId: string;
-
   driverName: string;
-
   clientName: string;
-
   status: string;
-
   latitude: number;
-
   longitude: number;
-
   speed: number;
-
   updatedAt: string;
 }
 
 interface VehicleDetailsProps {
   vehicle: Vehicle;
+  onCenterMap: () => void;
 }
 
-export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
+export default function VehicleDetails({
+  vehicle,
+  onCenterMap,
+}: VehicleDetailsProps) {
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col border-l border-border bg-background">
       {/* Header */}
@@ -51,7 +48,6 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             </h3>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
           {/* Driver */}
@@ -63,7 +59,6 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="mt-1 text-base font-semibold">{vehicle.driverName}</p>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
           {/* Status + Speed */}
@@ -107,7 +102,6 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
           {/* Client */}
@@ -119,10 +113,9 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="mt-1 text-sm font-medium">{vehicle.clientName}</p>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
-          {/* GPS Device ID */}
+          {/* GPS */}
           <div className="px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               GPS Device ID
@@ -131,10 +124,9 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="mt-1 text-sm font-medium">{vehicle.gpsDeviceId}</p>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
-          {/* Last Updated */}
+          {/* Updated */}
           <div className="px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Last Updated
@@ -145,7 +137,6 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             </p>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
           {/* Coordinates */}
@@ -160,14 +151,20 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Buttons */}
         <div className="mt-4 space-y-2.5">
-          <button className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium transition-colors hover:bg-muted">
+          <Link
+            href={`/vehicles/${vehicle.id}/trips`}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium transition-colors hover:bg-muted"
+          >
             <Route className="h-4 w-4" />
             View Route History
-          </button>
+          </Link>
 
-          <button className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium transition-colors hover:bg-muted">
+          <button
+            onClick={onCenterMap}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium transition-colors hover:bg-muted"
+          >
             <LocateFixed className="h-4 w-4" />
             Center on Map
           </button>

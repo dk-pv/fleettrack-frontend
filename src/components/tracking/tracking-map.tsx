@@ -5,6 +5,7 @@ import { Minus, Plus, LocateFixed } from "lucide-react";
 import { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -32,14 +33,19 @@ interface Vehicle {
 
 interface TrackingMapProps {
   vehicle: Vehicle;
+  centerTrigger: number;
 }
 
 function RecenterMap({
   latitude,
   longitude,
+  centerTrigger,
 }: {
   latitude: number;
+
   longitude: number;
+
+  centerTrigger: number;
 }) {
   const map = useMap();
 
@@ -47,14 +53,16 @@ function RecenterMap({
     map.setView([latitude, longitude], 13, {
       animate: true,
     });
-  }, [latitude, longitude, map]);
+  }, [latitude, longitude, centerTrigger, map]);
 
   return null;
 }
 
-export default function TrackingMap({ vehicle }: TrackingMapProps) {
+export default function TrackingMap({
+  vehicle,
+  centerTrigger,
+}: TrackingMapProps) {
   return (
-    
     <div className="relative h-[calc(100vh-64px)] overflow-hidden">
       {/* Live Tracking Badge */}
       <div className="absolute right-4 top-4 z-[1000] flex items-center gap-2 rounded-xl bg-white px-4 py-2 shadow-md dark:bg-[#1f2937]">
@@ -100,6 +108,7 @@ export default function TrackingMap({ vehicle }: TrackingMapProps) {
         <RecenterMap
           latitude={vehicle.latitude}
           longitude={vehicle.longitude}
+          centerTrigger={centerTrigger}
         />
 
         <Marker position={[vehicle.latitude, vehicle.longitude]}>

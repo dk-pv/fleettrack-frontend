@@ -9,34 +9,27 @@ import { socket } from "@/lib/socket";
 
 interface Vehicle {
   id: string;
-
   vehicleName: string;
-
   vehicleNumber: string;
-
   gpsDeviceId: string;
-
   driverName: string;
-
   clientName: string;
-
   status: string;
-
   latitude: number;
-
   longitude: number;
-
   speed: number;
-
   updatedAt: string;
 }
 
 export default function SingleTrackingPage() {
+
   const params = useParams();
-
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-
   const [loading, setLoading] = useState(true);
+  const [centerTrigger, setCenterTrigger] = useState(0);
+  const handleCenterMap = () => {
+    setCenterTrigger((prev) => prev + 1);
+  };
 
   const fetchVehicle = async () => {
     try {
@@ -102,9 +95,9 @@ export default function SingleTrackingPage() {
 
   return (
     <div className="grid h-[calc(100vh-64px)] grid-cols-[1fr_320px] overflow-hidden">
-      <TrackingMap />
+      <TrackingMap vehicle={vehicle} centerTrigger={centerTrigger} />
 
-      <VehicleDetails vehicle={vehicle} />
+      <VehicleDetails vehicle={vehicle} onCenterMap={handleCenterMap} />
     </div>
   );
 }
