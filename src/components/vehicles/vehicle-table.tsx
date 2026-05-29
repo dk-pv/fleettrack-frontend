@@ -142,11 +142,9 @@ export default function VehicleTable() {
 
               <th className="px-5 py-4 text-sm font-semibold">Created</th>
 
-              {user?.role !== "VIEWER" && (
-                <th className="px-5 py-4 text-right text-sm font-semibold">
-                  Actions
-                </th>
-              )}
+              <th className="px-5 py-4 text-right text-sm font-semibold">
+                Actions
+              </th>
             </tr>
           </thead>
 
@@ -188,29 +186,27 @@ export default function VehicleTable() {
                   {new Date(vehicle.createdAt).toLocaleDateString()}
                 </td>
 
-                {user?.role !== "VIEWER" && (
-                  <td className="px-5 py-5">
-                    <div className="flex justify-end gap-4">
-                      <AddVehicleModal editVehicle={vehicle}>
-                        <button>
-                          <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
-                        </button>
-                      </AddVehicleModal>
-
-                      {user?.role === "ADMIN" && (
-                        <button onClick={() => deleteVehicle(vehicle.id)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => router.push(`/vehicles/${vehicle.id}`)}
-                        className="text-sm font-medium text-blue-600 hover:underline"
-                      >
-                        View
+                <td className="px-5 py-5">
+                  <div className="flex justify-end gap-4">
+                    <AddVehicleModal editVehicle={vehicle}>
+                      <button>
+                        <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
                       </button>
-                    </div>
-                  </td>
-                )}
+                    </AddVehicleModal>
+
+                    {user?.role === "ADMIN" && (
+                      <button onClick={() => deleteVehicle(vehicle.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => router.push(`/vehicles/${vehicle.id}`)}
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      View
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

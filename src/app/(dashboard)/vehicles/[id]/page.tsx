@@ -1,12 +1,16 @@
 "use client";
 
 import { Car, MapPin, User, Cpu, Activity, ArrowLeft } from "lucide-react";
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
+import dynamic from "next/dynamic";
+
+const VehicleMap = dynamic(() => import("@/components/vehicles/vehicle-map"), {
+  ssr: false,
+});
 
 interface Vehicle {
   id: string;
@@ -30,6 +34,8 @@ interface Vehicle {
   speed: number;
 
   createdAt: string;
+
+  updatedAt: string;
 }
 
 export default function VehicleDetailPage() {
@@ -54,8 +60,10 @@ export default function VehicleDetailPage() {
   };
 
   useEffect(() => {
-    fetchVehicle();
-  }, []);
+    if (params.id) {
+      fetchVehicle();
+    }
+  }, [params.id]);
 
   if (loading) {
     return <div className="p-6">Loading vehicle...</div>;
@@ -85,6 +93,10 @@ export default function VehicleDetailPage() {
 
           <p className="mt-2 text-muted-foreground">
             Vehicle Number: {vehicle.vehicleNumber}
+          </p>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Last Updated: {new Date(vehicle.updatedAt).toLocaleString()}
           </p>
         </div>
 
@@ -130,30 +142,38 @@ export default function VehicleDetailPage() {
       {/* Location + Stats */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* Location */}
+
         <div className="rounded-xl border border-border bg-background p-6">
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 text-red-500" />
 
-            <h3 className="text-lg font-semibold">Current Location</h3>
+            <h3 className="text-lg font-semibold">Live Vehicle Location</h3>
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-6">
+            <VehicleMap
+              latitude={vehicle.latitude}
+              longitude={vehicle.longitude}
+              vehicleName={vehicle.vehicleName}
+            />
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Latitude</p>
 
-              <h4 className="mt-1 text-xl font-semibold">{vehicle.latitude}</h4>
+              <h4 className="mt-1 text-sm font-semibold">{vehicle.latitude}</h4>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Longitude</p>
 
-              <h4 className="mt-1 text-xl font-semibold">
+              <h4 className="mt-1 text-sm font-semibold">
                 {vehicle.longitude}
               </h4>
             </div>
           </div>
         </div>
-
         {/* Speed */}
         <div className="rounded-xl border border-border bg-background p-6">
           <div className="flex items-center gap-3">
@@ -172,13 +192,19 @@ export default function VehicleDetailPage() {
           </div>
 
           <div className="mt-8 flex gap-3">
-            <button className="rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black">
+            <Link
+              href={`/tracking/${vehicle.id}`}
+              className="rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
+            >
               Track Live
-            </button>
+            </Link>
 
-            <button className="rounded-lg border border-border px-5 py-3 text-sm font-medium">
+            <Link
+              href={`/vehicles/${vehicle.id}/trips`}
+              className="rounded-lg border border-border px-5 py-3 text-sm font-medium"
+            >
               Trip History
-            </button>
+            </Link>
           </div>
         </div>
       </div>
