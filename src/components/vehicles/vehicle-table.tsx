@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
 import { ChevronDown, Pencil, Trash2 } from "lucide-react";
-
-import { vehicles } from "@/data/vehicles-data";
-
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/fetcher";
+import { useAuthStore } from "@/store/auth-store";
 import VehicleStatusBadge from "./vehicle-status-badge";
+import AddVehicleModal from "./add-vehicle-modal";
 
 import {
   DropdownMenu,
@@ -15,20 +14,82 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface Vehicle {
+  id: string;
+
+  vehicleName: string;
+  vehicleNumber: string;
+  gpsDeviceId: string;
+  driverName: string;
+  clientName: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function VehicleTable() {
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const { user } = useAuthStore();
+
+  const fetchVehicles = async () => {
+    try {
+      const response = await apiFetch("/vehicles");
+
+      const data = await response.json();
+
+      setVehicles(data.vehicles || []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
 
   const filteredVehicles = useMemo(() => {
-    if (statusFilter === "All") {
+    if (statusFilter === "ALL") {
       return vehicles;
     }
 
     return vehicles.filter((vehicle) => vehicle.status === statusFilter);
-  }, [statusFilter]);
+  }, [vehicles, statusFilter]);
+
+  const deleteVehicle = async (id: string) => {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete this vehicle?",
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/vehicles/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Vehicle deleted");
+
+        fetchVehicles();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+
+      alert("Server error");
+    }
+  };
 
   return (
     <div className="rounded-xl border border-border bg-background">
-      {/* Table Header */}
+      {/* Header */}
       <div className="border-b border-border px-5 py-4">
         <h3 className="text-lg font-semibold">
           All Vehicles ({filteredVehicles.length})
@@ -40,44 +101,38 @@ export default function VehicleTable() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border text-left">
-              {/* Vehicle */}
-              <th className="px-5 py-4 text-sm font-semibold">
-                Vehicle Number & Name
-              </th>
+              <th className="px-5 py-4 text-sm font-semibold">Vehicle</th>
 
-              {/* Driver */}
-              <th className="px-5 py-4 text-sm font-semibold">
-                Assigned Driver
-              </th>
+              <th className="px-5 py-4 text-sm font-semibold">Driver</th>
 
-              {/* GPS */}
-              <th className="px-5 py-4 text-sm font-semibold">GPS Device ID</th>
+              <th className="px-5 py-4 text-sm font-semibold">GPS Device</th>
 
-              {/* Status Filter */}
+              <th className="px-5 py-4 text-sm font-semibold">Client</th>
+
               <th className="px-5 py-4 text-sm font-semibold">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1 transition-colors hover:text-primary">
+                    <button className="flex items-center gap-1 hover:text-primary">
                       Status
                       <ChevronDown className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
 
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => setStatusFilter("All")}>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setStatusFilter("ALL")}>
                       All
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => setStatusFilter("Moving")}>
+                    <DropdownMenuItem onClick={() => setStatusFilter("MOVING")}>
                       Moving
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => setStatusFilter("Idle")}>
+                    <DropdownMenuItem onClick={() => setStatusFilter("IDLE")}>
                       Idle
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
-                      onClick={() => setStatusFilter("Offline")}
+                      onClick={() => setStatusFilter("OFFLINE")}
                     >
                       Offline
                     </DropdownMenuItem>
@@ -85,13 +140,13 @@ export default function VehicleTable() {
                 </DropdownMenu>
               </th>
 
-              {/* Last Update */}
-              <th className="px-5 py-4 text-sm font-semibold">Last Update</th>
+              <th className="px-5 py-4 text-sm font-semibold">Created</th>
 
-              {/* Actions */}
-              <th className="px-5 py-4 text-right text-sm font-semibold">
-                Actions
-              </th>
+              {user?.role !== "VIEWER" && (
+                <th className="px-5 py-4 text-right text-sm font-semibold">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
 
@@ -101,49 +156,56 @@ export default function VehicleTable() {
                 key={vehicle.id}
                 className="border-b border-border last:border-none"
               >
-                {/* Vehicle */}
                 <td className="px-5 py-5">
                   <div>
-                    <h4 className="text-sm font-semibold">{vehicle.number}</h4>
+                    <h4 className="text-sm font-semibold">
+                      {vehicle.vehicleNumber}
+                    </h4>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {vehicle.name}
+                      {vehicle.vehicleName}
                     </p>
                   </div>
                 </td>
 
-                {/* Driver */}
                 <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {vehicle.driver}
+                  {vehicle.driverName}
                 </td>
 
-                {/* GPS */}
                 <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {vehicle.gps}
+                  {vehicle.gpsDeviceId}
                 </td>
 
-                {/* Status */}
+                <td className="px-5 py-5 text-sm text-muted-foreground">
+                  {vehicle.clientName}
+                </td>
+
                 <td className="px-5 py-5">
                   <VehicleStatusBadge status={vehicle.status} />
                 </td>
 
-                {/* Updated */}
                 <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {vehicle.updated}
+                  {new Date(vehicle.createdAt).toLocaleDateString()}
                 </td>
 
-                {/* Actions */}
-                <td className="px-5 py-5">
-                  <div className="flex justify-end gap-4">
-                    <button>
-                      <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
-                    </button>
+                {user?.role !== "VIEWER" && (
+                  <td className="px-5 py-5">
+                    <div className="flex justify-end gap-4">
+                      <AddVehicleModal editVehicle={vehicle}>
+                        <button>
+                          <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
+                        </button>
+                      </AddVehicleModal>
 
-                    <button>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </button>
-                  </div>
-                </td>
+                      {user?.role === "ADMIN" && (
+                        <button onClick={() => deleteVehicle(vehicle.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </button>
+                      )}
+                      <button>view</button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
