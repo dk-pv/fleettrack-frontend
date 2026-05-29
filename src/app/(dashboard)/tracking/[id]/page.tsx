@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { useParams } from "next/navigation";
-
 import { apiFetch } from "@/lib/fetcher";
-
 import TrackingMap from "@/components/tracking/tracking-map";
-
 import VehicleDetails from "@/components/tracking/vehicle-details";
+import { socket } from "@/lib/socket";
 
 interface Vehicle {
   id: string;
@@ -60,6 +57,32 @@ export default function SingleTrackingPage() {
       fetchVehicle();
     }
   }, [params.id]);
+
+  useEffect(() => {
+    socket.on("vehicleLocationUpdate", (data) => {
+      setVehicle((prev) => {
+        if (!prev) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+
+          latitude: data.latitude,
+
+          longitude: data.longitude,
+
+          speed: data.speed,
+
+          updatedAt: data.updatedAt,
+        };
+      });
+    });
+
+    return () => {
+      socket.off("vehicleLocationUpdate");
+    };
+  }, []);
 
   if (loading) {
     return (

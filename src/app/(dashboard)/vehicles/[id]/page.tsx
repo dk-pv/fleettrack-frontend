@@ -1,13 +1,23 @@
 "use client";
 
-import { Car, MapPin, User, Cpu, Activity, ArrowLeft } from "lucide-react";
+import {
+  Car,
+  MapPin,
+  User,
+  Cpu,
+  Activity,
+  ArrowLeft,
+  Radio,
+  Route,
+  Wifi,
+  FileDown,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
 import dynamic from "next/dynamic";
-import { FileDown } from "lucide-react";
 const VehicleMap = dynamic(() => import("@/components/vehicles/vehicle-map"), {
   ssr: false,
 });
@@ -53,6 +63,9 @@ export default function VehicleDetailPage() {
 
       const response = await apiFetch(`/vehicles/${vehicle.id}/report`);
 
+      if (!response.ok) {
+        throw new Error("Failed to generate report");
+      }
       const blob = await response.blob();
 
       const url = window.URL.createObjectURL(blob);
@@ -61,8 +74,9 @@ export default function VehicleDetailPage() {
 
       link.href = url;
 
-      link.download = `${vehicle.vehicleNumber}-report.pdf`;
-
+      link.download = `${vehicle.vehicleNumber}-${
+        new Date().toISOString().split("T")[0]
+      }-report.pdf`;
       document.body.appendChild(link);
 
       link.click();
@@ -173,6 +187,64 @@ export default function VehicleDetailPage() {
         </div>
       </div>
 
+      {/* Live Stats Bar */}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {/* Active Vehicles */}
+        <div className="rounded-xl border border-border bg-background p-5">
+          <div className="flex items-center gap-3">
+            <Radio className="h-5 w-5 text-green-600" />
+
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Active Now
+            </h3>
+          </div>
+
+          <h2 className="mt-4 text-3xl font-bold">12</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vehicles currently active
+          </p>
+        </div>
+
+        {/* Total Distance */}
+        <div className="rounded-xl border border-border bg-background p-5">
+          <div className="flex items-center gap-3">
+            <Route className="h-5 w-5 text-blue-600" />
+
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Total Distance
+            </h3>
+          </div>
+
+          <h2 className="mt-4 text-3xl font-bold">245 km</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Distance travelled today
+          </p>
+        </div>
+
+        {/* Live Updates */}
+        <div className="rounded-xl border border-border bg-background p-5">
+          <div className="flex items-center gap-3">
+            <Wifi className="h-5 w-5 text-yellow-600" />
+
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Live Updates
+            </h3>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-green-500" />
+
+            <h2 className="text-2xl font-bold">Connected</h2>
+          </div>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            GPS updates active
+          </p>
+        </div>
+      </div>
+
       {/* Location + Stats */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         {/* Location */}
@@ -185,11 +257,17 @@ export default function VehicleDetailPage() {
           </div>
 
           <div className="mt-6">
-            <VehicleMap
-              latitude={vehicle.latitude}
-              longitude={vehicle.longitude}
-              vehicleName={vehicle.vehicleName}
-            />
+            {vehicle.latitude !== 0 && vehicle.longitude !== 0 ? (
+              <VehicleMap
+                latitude={vehicle.latitude}
+                longitude={vehicle.longitude}
+                vehicleName={vehicle.vehicleName}
+              />
+            ) : (
+              <div className="flex h-[420px] items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+                Live location not available
+              </div>
+            )}
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-4">
@@ -228,14 +306,14 @@ export default function VehicleDetailPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={`/tracking/${vehicle.id}`}
-              className="rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
+              className="flex h-11 items-center justify-center rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
             >
               Track Live
             </Link>
 
             <Link
               href={`/vehicles/${vehicle.id}/trips`}
-              className="rounded-lg border border-border px-5 py-3 text-sm font-medium"
+              className="flex h-11 items-center justify-center rounded-lg border border-border px-5 py-3 text-sm font-medium"
             >
               Trip History
             </Link>
