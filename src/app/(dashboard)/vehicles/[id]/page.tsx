@@ -140,7 +140,7 @@ export default function VehicleDetailPage() {
       </div>
 
       {/* Location + Stats */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         {/* Location */}
 
         <div className="rounded-xl border border-border bg-background p-6">
@@ -205,6 +205,45 @@ export default function VehicleDetailPage() {
             >
               Trip History
             </Link>
+          </div>
+        </div>
+
+        {/* Trip Summary */}
+        <div className="rounded-xl border border-border bg-background p-6">
+          <div className="flex items-center gap-3">
+            <Activity className="h-5 w-5 text-blue-600" />
+
+            <h3 className="text-lg font-semibold">Current Trip Summary</h3>
+          </div>
+
+          <div className="mt-6 space-y-5">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Distance Travelled
+              </p>
+
+              <h4 className="mt-1 text-2xl font-bold">245 km</h4>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">Running Time</p>
+
+              <h4 className="mt-1 text-2xl font-bold">5h 22m</h4>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">Idle Time</p>
+
+              <h4 className="mt-1 text-2xl font-bold">1h 10m</h4>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">Trip Started</p>
+
+              <h4 className="mt-1 text-lg font-semibold">
+                29 May 2026 • 08:30 AM
+              </h4>
+            </div>
           </div>
         </div>
       </div>

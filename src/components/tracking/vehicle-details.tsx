@@ -1,5 +1,28 @@
 import { LocateFixed, Route } from "lucide-react";
-import type { Vehicle } from "@/data/tracking-data";
+
+interface Vehicle {
+  id: string;
+
+  vehicleName: string;
+
+  vehicleNumber: string;
+
+  gpsDeviceId: string;
+
+  driverName: string;
+
+  clientName: string;
+
+  status: string;
+
+  latitude: number;
+
+  longitude: number;
+
+  speed: number;
+
+  updatedAt: string;
+}
 
 interface VehicleDetailsProps {
   vehicle: Vehicle;
@@ -22,8 +45,9 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Vehicle Number
             </p>
+
             <h3 className="mt-1 text-2xl font-bold tracking-tight">
-              {vehicle.number}
+              {vehicle.vehicleNumber}
             </h3>
           </div>
 
@@ -35,7 +59,8 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Driver
             </p>
-            <p className="mt-1 text-base font-semibold">{vehicle.driver}</p>
+
+            <p className="mt-1 text-base font-semibold">{vehicle.driverName}</p>
           </div>
 
           {/* Divider */}
@@ -47,21 +72,27 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Status
               </p>
+
               <div className="mt-2">
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    vehicle.status === "Moving"
+                    vehicle.status === "MOVING"
                       ? "bg-green-500/10 text-green-500"
-                      : "bg-red-500/10 text-red-500"
+                      : vehicle.status === "IDLE"
+                        ? "bg-yellow-500/10 text-yellow-500"
+                        : "bg-red-500/10 text-red-500"
                   }`}
                 >
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
-                      vehicle.status === "Moving"
+                      vehicle.status === "MOVING"
                         ? "bg-green-500"
-                        : "bg-red-500"
+                        : vehicle.status === "IDLE"
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
                     }`}
                   />
+
                   {vehicle.status}
                 </span>
               </div>
@@ -71,19 +102,21 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Speed
               </p>
-              <p className="mt-1 text-2xl font-bold">{vehicle.speed}</p>
+
+              <p className="mt-1 text-2xl font-bold">{vehicle.speed} km/h</p>
             </div>
           </div>
 
           {/* Divider */}
           <div className="h-px bg-border" />
 
-          {/* Trip Status */}
+          {/* Client */}
           <div className="px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Trip Status
+              Client
             </p>
-            <p className="mt-1 text-sm font-medium">{vehicle.tripStatus}</p>
+
+            <p className="mt-1 text-sm font-medium">{vehicle.clientName}</p>
           </div>
 
           {/* Divider */}
@@ -94,7 +127,8 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               GPS Device ID
             </p>
-            <p className="mt-1 text-sm font-medium">{vehicle.deviceId}</p>
+
+            <p className="mt-1 text-sm font-medium">{vehicle.gpsDeviceId}</p>
           </div>
 
           {/* Divider */}
@@ -105,19 +139,23 @@ export default function VehicleDetails({ vehicle }: VehicleDetailsProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Last Updated
             </p>
-            <p className="mt-1 text-sm font-medium">{vehicle.updatedAt}</p>
+
+            <p className="mt-1 text-sm font-medium">
+              {new Date(vehicle.updatedAt).toLocaleString()}
+            </p>
           </div>
 
           {/* Divider */}
           <div className="h-px bg-border" />
 
-          {/* Location Coordinates */}
+          {/* Coordinates */}
           <div className="px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Location Coordinates
             </p>
+
             <p className="mt-1 font-mono text-sm font-medium">
-              {vehicle.coordinates}
+              {vehicle.latitude}, {vehicle.longitude}
             </p>
           </div>
         </div>
