@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
 import dynamic from "next/dynamic";
-
+import { FileDown } from "lucide-react";
 const VehicleMap = dynamic(() => import("@/components/vehicles/vehicle-map"), {
   ssr: false,
 });
@@ -42,8 +42,42 @@ export default function VehicleDetailPage() {
   const params = useParams();
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-
+  const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const downloadReport = async () => {
+    if (!vehicle) return;
+
+    try {
+      setDownloading(true);
+
+      const response = await apiFetch(`/vehicles/${vehicle.id}/report`);
+
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      link.download = `${vehicle.vehicleNumber}-report.pdf`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log(error);
+
+      alert("Failed to download report");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const fetchVehicle = async () => {
     try {
@@ -191,7 +225,7 @@ export default function VehicleDetailPage() {
             </h2>
           </div>
 
-          <div className="mt-8 flex gap-3">
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={`/tracking/${vehicle.id}`}
               className="rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
@@ -205,6 +239,16 @@ export default function VehicleDetailPage() {
             >
               Trip History
             </Link>
+
+            <button
+              onClick={downloadReport}
+              disabled={downloading}
+              className="flex items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              <FileDown className="h-4 w-4" />
+
+              {downloading ? "Generating..." : "Generate PDF"}
+            </button>
           </div>
         </div>
 

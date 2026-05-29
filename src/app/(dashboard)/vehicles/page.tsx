@@ -35,11 +35,6 @@ export default function VehiclesPage() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <button className="flex h-11 items-center gap-2 rounded-lg border border-border bg-background px-5 text-sm font-medium transition-colors hover:bg-muted">
-              <Download className="h-4 w-4" />
-              Export
-            </button>
-
             {user?.role !== "VIEWER" && (
               <AddVehicleModal>
                 <button className="flex h-11 items-center gap-2 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black">
