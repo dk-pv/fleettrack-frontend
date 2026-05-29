@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/fetcher";
 import { useAuthStore } from "@/store/auth-store";
 import VehicleStatusBadge from "./vehicle-status-badge";
 import AddVehicleModal from "./add-vehicle-modal";
+import { useRouter } from "next/navigation";
 
 import {
   DropdownMenu,
@@ -28,10 +29,9 @@ interface Vehicle {
 
 export default function VehicleTable() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-
   const [statusFilter, setStatusFilter] = useState("ALL");
-
   const { user } = useAuthStore();
+  const router = useRouter();
 
   const fetchVehicles = async () => {
     try {
@@ -202,7 +202,12 @@ export default function VehicleTable() {
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </button>
                       )}
-                      <button>view</button>
+                      <button
+                        onClick={() => router.push(`/vehicles/${vehicle.id}`)}
+                        className="text-sm font-medium text-blue-600 hover:underline"
+                      >
+                        View
+                      </button>
                     </div>
                   </td>
                 )}
