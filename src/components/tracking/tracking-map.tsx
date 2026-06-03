@@ -36,6 +36,8 @@ interface TrackingMapProps {
   centerTrigger: number;
 }
 
+const DEFAULT_LOCATION: [number, number] = [11.2588, 75.7804];
+
 function RecenterMap({
   latitude,
   longitude,
@@ -70,7 +72,6 @@ export default function TrackingMap({
 
         <span className="text-sm font-medium">Live Tracking</span>
       </div>
-
       {/* Bottom Stats */}
       <div className="absolute bottom-5 left-5 z-[1000] rounded-2xl bg-white px-5 py-4 shadow-lg dark:bg-[#1f2937]">
         <div className="flex gap-7">
@@ -91,10 +92,14 @@ export default function TrackingMap({
           </div>
         </div>
       </div>
-
       {/* Map */}
+      
       <MapContainer
-        center={[vehicle.latitude, vehicle.longitude]}
+        center={
+          vehicle.latitude && vehicle.longitude
+            ? [vehicle.latitude, vehicle.longitude]
+            : DEFAULT_LOCATION
+        }
         zoom={13}
         scrollWheelZoom={true}
         className="h-full w-full"
@@ -106,12 +111,14 @@ export default function TrackingMap({
         />
 
         <RecenterMap
-          latitude={vehicle.latitude}
-          longitude={vehicle.longitude}
+          latitude={vehicle.latitude || 11.2588}
+          longitude={vehicle.longitude || 75.7804}
           centerTrigger={centerTrigger}
         />
 
-        <Marker position={[vehicle.latitude, vehicle.longitude]}>
+        <Marker
+          position={[vehicle.latitude || 11.2588, vehicle.longitude || 75.7804]}
+        >
           <Popup>
             <div className="space-y-1">
               <h3 className="font-semibold">{vehicle.vehicleNumber}</h3>
@@ -123,7 +130,6 @@ export default function TrackingMap({
           </Popup>
         </Marker>
       </MapContainer>
-
       {/* Map Controls UI */}
       <div className="absolute bottom-5 right-5 z-[1000] flex flex-col gap-2.5">
         <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md transition-colors hover:bg-muted dark:bg-[#1f2937] dark:hover:bg-[#374151]">
