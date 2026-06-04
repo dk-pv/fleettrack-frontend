@@ -211,14 +211,13 @@ export default function TrackingMap({
   const [vehicleTrails, setVehicleTrails] = useState<
     Record<string, [number, number][]>
   >({});
-
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const markerRefs = useRef<Record<string, L.Marker>>({});
   const validVehicles = useMemo(
     () =>
       vehicles.filter(
         (vehicle) => vehicle.latitude !== null && vehicle.longitude !== null,
       ),
-
     [vehicles],
   );
 
@@ -227,7 +226,6 @@ export default function TrackingMap({
       const updated = {
         ...prev,
       };
-
       vehicles.forEach((vehicle) => {
         const point: [number, number] = [vehicle.latitude, vehicle.longitude];
 
@@ -250,6 +248,45 @@ export default function TrackingMap({
       return updated;
     });
   }, [vehicles]);
+
+  useEffect(() => {
+    const fetchVehicleHistory = async () => {
+      try {
+        if (!selectedVehicle) return;
+
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/vehicles/${selectedVehicle.id}/history`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const data = await response.json();
+
+        if (!data.success) return;
+
+        const positions = data.history.map(
+          (item: any) => [item.latitude, item.longitude] as [number, number],
+        );
+
+        setVehicleTrails((prev) => ({
+          ...prev,
+
+          [selectedVehicle.id]: positions,
+        }));
+
+        setHistoryLoaded(true);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchVehicleHistory();
+  }, [selectedVehicle]);
 
   useEffect(() => {
     validVehicles.forEach((vehicle) => {
@@ -311,30 +348,30 @@ export default function TrackingMap({
           />
         )}
 
-        {/* ROUTE LINES */}
-
         {validVehicles.map((vehicle) => {
           const trail = vehicleTrails[vehicle.id];
 
           if (!trail || trail.length < 2) return null;
+
+          if (selectedVehicle && selectedVehicle.id !== vehicle.id) {
+            return null;
+          }
 
           return (
             <Polyline
               key={`trail-${vehicle.id}`}
               positions={trail}
               pathOptions={{
-                color:
-                  selectedVehicle?.id === vehicle.id ? "#2563eb" : "#22c55e",
+                color: "#2563eb",
 
-                weight: selectedVehicle?.id === vehicle.id ? 5 : 3,
+                weight: 5,
 
-                opacity: selectedVehicle?.id === vehicle.id ? 1 : 0.7,
+                opacity: 0.9,
               }}
             />
           );
         })}
 
-        {/* VEHICLE MARKERS */}
 
         {validVehicles.map((vehicle) => (
           <Marker
