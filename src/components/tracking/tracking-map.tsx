@@ -18,10 +18,13 @@ L.Icon.Default.mergeOptions({
 });
 
 const vehicleIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
-  iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -38],
+  iconUrl:"/cargo-truck.png",
+
+  iconSize: [48, 48],
+
+  iconAnchor: [24, 48],
+
+  popupAnchor: [0, -45],
 });
 
 interface Vehicle {
