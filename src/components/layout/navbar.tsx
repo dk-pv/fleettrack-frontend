@@ -1,6 +1,8 @@
+
+
 "use client";
 
-import { Bell, ChevronDown, CircleCheck, LogOut } from "lucide-react";
+import { Bell, ChevronDown, CircleCheck, LogOut, Menu } from "lucide-react";
 
 import { useAuthStore } from "@/store/auth-store";
 
@@ -15,9 +17,10 @@ import {
 
 interface NavbarProps {
   expanded: boolean;
+  setSidebarOpen: (value: boolean) => void;
 }
 
-export default function Navbar({ expanded }: NavbarProps) {
+export default function Navbar({ expanded, setSidebarOpen }: NavbarProps) {
   const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
@@ -25,22 +28,18 @@ export default function Navbar({ expanded }: NavbarProps) {
   };
 
   const getInitials = () => {
-    if (!user?.name) {
-      return "U";
-    }
+    if (!user?.name) return "U";
 
     return user.name
       .split(" ")
-      .map((word) => word.charAt(0))
+      .map((word) => word[0])
       .join("")
       .slice(0, 2)
       .toUpperCase();
   };
 
   const formatRole = (role?: string) => {
-    if (!role) {
-      return "User";
-    }
+    if (!role) return "User";
 
     return role
       .replaceAll("_", " ")
@@ -50,53 +49,71 @@ export default function Navbar({ expanded }: NavbarProps) {
 
   return (
     <header
-      className={`fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-8 transition-all duration-300 ${
-        expanded ? "left-[250px]" : "left-[88px]"
-      }`}
+      className={`
+        fixed top-0 right-0 z-30
+        flex h-16 items-center justify-between
+        border-b border-border
+        bg-background/95 backdrop-blur
+        px-4 sm:px-6 lg:px-8
+        transition-all duration-300
+        left-0
+${expanded ? "lg:left-[250px]" : "lg:left-[88px]"}
+      `}
     >
-      {/* Search */}
-      <div className="w-full max-w-xl">
-        <input
-          type="text"
-          placeholder="Search vehicles, drivers, trips..."
-          className="h-11 w-full rounded-xl border border-border bg-muted px-4 text-sm outline-none transition-colors duration-300 placeholder:text-muted-foreground focus:border-primary"
-        />
+      {/* Left */}
+      <div className="flex items-center gap-3">
+        {/* Mobile Menu */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        {/* Search */}
+        <div className="hidden md:block w-[260px] lg:w-[400px]">
+          <input
+            type="text"
+            placeholder="Search vehicles..."
+            className="
+              h-11 w-full rounded-xl border border-border
+              bg-muted px-4 text-sm outline-none
+              placeholder:text-muted-foreground
+              focus:border-primary
+            "
+          />
+        </div>
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-5">
+      {/* Right */}
+      <div className="flex items-center gap-2 sm:gap-4">
         {/* System Status */}
-        <div className="flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400">
+        <div className="hidden xl:flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400">
           <CircleCheck className="h-4 w-4" />
-
           <span>All Systems Online</span>
         </div>
 
-        {/* Theme Toggle */}
+        {/* Theme */}
         <ThemeToggle />
 
-        {/* Notification */}
-        <button className="relative">
-          <Bell className="h-5 w-5 text-foreground" />
+        {/* Notifications */}
+        <button className="relative flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted">
+          <Bell className="h-5 w-5" />
 
-          <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-            3
-          </span>
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
         </button>
 
-        {/* Profile Dropdown */}
+        {/* Profile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-3 outline-none">
-              {/* Avatar */}
+            <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-muted">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
                 {getInitials()}
               </div>
 
-              {/* User Info */}
-              <div className="hidden text-left md:block">
+              <div className="hidden lg:block text-left">
                 <h4 className="text-sm font-semibold">
-                  {user?.name || "Unknown User"}
+                  {user?.name || "Unknown"}
                 </h4>
 
                 <p className="text-xs text-muted-foreground">
@@ -104,7 +121,7 @@ export default function Navbar({ expanded }: NavbarProps) {
                 </p>
               </div>
 
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
 
