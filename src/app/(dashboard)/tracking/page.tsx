@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
+
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
@@ -84,9 +85,7 @@ export default function TrackingPage() {
   return (
     <div
       className={`grid h-[calc(100vh-64px)] overflow-hidden transition-all duration-300 ${
-        selected
-          ? "grid-cols-[300px_1fr_320px]"
-          : "grid-cols-[300px_1fr]"
+        selected ? "grid-cols-[300px_1fr_320px]" : "grid-cols-[300px_1fr]"
       }`}
     >
       <VehicleList

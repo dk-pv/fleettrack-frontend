@@ -1,11 +1,7 @@
-
-
 "use client";
 
 import { Bell, ChevronDown, CircleCheck, LogOut, Menu } from "lucide-react";
-
 import { useAuthStore } from "@/store/auth-store";
-
 import ThemeToggle from "./theme-toggle";
 
 import {
