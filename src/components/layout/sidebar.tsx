@@ -61,7 +61,7 @@ export default function Sidebar({
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -78,7 +78,7 @@ export default function Sidebar({
           }
         }}
         className={`
-          fixed left-0 top-0 z-50 flex h-screen flex-col
+        fixed left-0 top-0 z-[100] flex h-screen flex-col
           border-r border-white/10
           bg-[linear-gradient(180deg,#111827_0%,#0f172a_55%,#020817_100%)]
           text-white
@@ -86,7 +86,7 @@ export default function Sidebar({
 
           ${expanded ? "lg:w-[250px]" : "lg:w-[88px]"}
 
-          w-[260px]
+          w-[280px] max-w-[85vw]
 
           ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"

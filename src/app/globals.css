@@ -140,3 +140,16 @@ body {
     background-color 0.3s ease,
     color 0.3s ease;
 }
+
+/* LEAFLET FIX */
+
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control {
+  z-index: 1 !important;
+}

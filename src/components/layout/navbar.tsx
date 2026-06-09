@@ -46,7 +46,7 @@ export default function Navbar({ expanded, setSidebarOpen }: NavbarProps) {
   return (
     <header
       className={`
-        fixed top-0 right-0 z-30
+        fixed top-0 right-0 z-20
         flex h-16 items-center justify-between
         border-b border-border
         bg-background/95 backdrop-blur

@@ -41,7 +41,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] text-foreground transition-colors duration-300 dark:bg-[#0b1120]">
+    <main className="relative  min-h-screen overflow-hidden bg-[#f5f7fb] text-foreground transition-colors duration-300 dark:bg-[#0b1120]">
       {/* Sidebar */}
       <Sidebar
         expanded={expanded}
