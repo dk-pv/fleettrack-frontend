@@ -1,9 +1,7 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
-
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
@@ -25,9 +23,7 @@ interface Vehicle {
 export default function TrackingPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selected, setSelected] = useState<Vehicle | null>(null);
-
   const [loading, setLoading] = useState(true);
-
   const [centerTrigger, setCenterTrigger] = useState(0);
 
   const fetchVehicles = async () => {
@@ -35,7 +31,6 @@ export default function TrackingPage() {
       const response = await apiFetch("/vehicles");
 
       const data = await response.json();
-
       setVehicles(data.vehicles || []);
     } catch (error) {
       console.log(error);
@@ -83,30 +78,103 @@ export default function TrackingPage() {
   }
 
   return (
-    <div
-      className={`grid h-[calc(100vh-64px)] overflow-hidden transition-all duration-300 ${
-        selected ? "grid-cols-[300px_1fr_320px]" : "grid-cols-[300px_1fr]"
-      }`}
-    >
-      <VehicleList
-        vehicles={vehicles}
-        selected={selected}
-        onSelect={setSelected}
-      />
+    <div className="h-[calc(100vh-64px)] overflow-hidden">
+      {/* MOBILE */}
 
-      <TrackingMap
-        vehicles={vehicles}
-        selectedVehicle={selected}
-        centerTrigger={centerTrigger}
-      />
+      <div className="flex h-full flex-col lg:hidden">
+        {/* Dropdown */}
 
-      {selected && (
-        <VehicleDetails
-          vehicle={selected}
-          onCenterMap={handleCenterMap}
-          onClose={() => setSelected(null)}
-        />
-      )}
+        <div className="border-b border-border bg-background p-3">
+          <select
+            value={selected?.id || ""}
+            onChange={(e) => {
+              const vehicle =
+                vehicles.find((item) => item.id === e.target.value) || null;
+
+              setSelected(vehicle);
+            }}
+            className="
+              h-11
+              w-full
+              rounded-xl
+              border
+              border-border
+              bg-background
+              px-4
+              text-sm
+              font-medium
+              outline-none
+            "
+          >
+            <option value="">All Vehicles</option>
+
+            {vehicles.map((vehicle) => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.vehicleNumber}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Map */}
+
+       <div className=" min-h-[300px] flex-1 overflow-hidden " >
+          <TrackingMap
+            vehicles={vehicles}
+            selectedVehicle={selected}
+            centerTrigger={centerTrigger}
+          />
+        </div>
+
+        {/* Details */}
+
+        {selected && (
+          <div className="min-h-0 flex-1 overflow-y-auto border-t border-border bg-background">
+            <VehicleDetails
+              vehicle={selected}
+              onCenterMap={handleCenterMap}
+              onClose={() => setSelected(null)}
+              mobile
+            />
+          </div>
+        )}
+      </div>
+
+      {/* TABLET + DESKTOP */}
+
+      <div className="hidden h-full lg:flex">
+        {/* Vehicle List */}
+
+        <div className="w-[250px] flex-shrink-0 border-r border-border">
+          <VehicleList
+            vehicles={vehicles}
+            selected={selected}
+            onSelect={setSelected}
+          />
+        </div>
+
+        {/* Map */}
+
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <TrackingMap
+            vehicles={vehicles}
+            selectedVehicle={selected}
+            centerTrigger={centerTrigger}
+          />
+        </div>
+
+        {/* Details */}
+
+        {selected && (
+          <div className="w-[300px] flex-shrink-0 border-l border-border">
+            <VehicleDetails
+              vehicle={selected}
+              onCenterMap={handleCenterMap}
+              onClose={() => setSelected(null)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

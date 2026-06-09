@@ -99,7 +99,7 @@ function MapControls({
 }) {
   const map = useMap();
   return (
-    <div className="absolute bottom-5 right-5 z-[1000] flex flex-col gap-2.5">
+    <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-2 md:bottom-5 md:right-5">
       <button
         onClick={() => map.zoomIn()}
         className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md hover:bg-muted dark:bg-[#1f2937]"
@@ -134,7 +134,7 @@ function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
   ).length;
 
   return (
-    <div className="absolute bottom-5 left-5 z-[1000] rounded-2xl bg-white px-5 py-4 shadow-lg dark:bg-[#1f2937]">
+    <div className="absolute bottom-3 left-3 z-[1000] rounded-2xl bg-white px-4 py-3 shadow-lg dark:bg-[#1f2937] md:bottom-5 md:left-5">
       <div className="flex gap-7">
         <div>
           <p className="text-2xl font-bold text-green-500">{movingVehicles}</p>
@@ -183,7 +183,9 @@ function VehiclePopup({ vehicle }: { vehicle: Vehicle }) {
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Speed</span>
 
-          <span className="font-medium">{vehicle.speed} km/h</span>
+          <span className="font-medium">
+            {Number(vehicle.speed).toFixed(1)} km/h
+          </span>
         </div>
 
         <div className="flex items-center justify-between">
@@ -311,8 +313,7 @@ export default function TrackingMap({
   }, [validVehicles]);
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] overflow-hidden">
-      {/* LIVE BADGE */}
+<div className="relative h-full min-h-[350px] w-full overflow-hidden">      {/* LIVE BADGE */}
 
       <div className="absolute right-4 top-4 z-[1000] flex items-center gap-2 rounded-xl bg-white px-4 py-2 shadow-md dark:bg-[#1f2937]">
         <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
@@ -329,6 +330,7 @@ export default function TrackingMap({
         zoom={8}
         scrollWheelZoom={true}
         className="h-full w-full"
+        style={{ height: "100%", width: "100%" }}
         zoomControl={false}
         preferCanvas={true}
       >

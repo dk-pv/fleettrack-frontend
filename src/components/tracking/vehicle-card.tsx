@@ -72,7 +72,7 @@ export default function VehicleCard({
         <div className="flex items-center gap-1">
           <Gauge className="h-3.5 w-3.5" />
 
-          {vehicle.speed} km/h
+          {Number(vehicle.speed).toFixed(1)} km/h
         </div>
 
         <div className="flex items-center gap-1">
