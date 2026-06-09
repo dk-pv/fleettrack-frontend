@@ -1,8 +1,12 @@
 import { Truck } from "lucide-react";
 
-import { activeVehicles } from "@/data/dashboard-data";
+interface ActiveVehiclesProps {
+  vehicles: any[];
+}
 
-export default function ActiveVehicles() {
+export default function ActiveVehicles({
+  vehicles,
+}: ActiveVehiclesProps) {
   return (
     <div className="rounded-2xl border border-border bg-background p-5">
       <h3 className="mb-6 text-lg font-semibold">
@@ -10,11 +14,13 @@ export default function ActiveVehicles() {
       </h3>
 
       <div className="space-y-4">
-        {activeVehicles.map((vehicle) => (
+        {vehicles?.map((vehicle) => (
           <div
             key={vehicle.id}
             className="flex items-center justify-between rounded-xl bg-muted p-4"
           >
+            {/* LEFT */}
+
             <div className="flex items-center gap-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10">
                 <Truck className="h-5 w-5 text-blue-500" />
@@ -22,14 +28,20 @@ export default function ActiveVehicles() {
 
               <div>
                 <h4 className="font-medium">
-                  {vehicle.id}
+                  {
+                    vehicle.vehicleNumber
+                  }
                 </h4>
 
                 <p className="text-sm text-muted-foreground">
-                  {vehicle.driver}
+                  {
+                    vehicle.driverName
+                  }
                 </p>
               </div>
             </div>
+
+            {/* RIGHT */}
 
             <div className="text-right">
               <div className="inline-flex rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-600">
@@ -37,7 +49,7 @@ export default function ActiveVehicles() {
               </div>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                {vehicle.speed}
+                {vehicle.speed} km/h
               </p>
             </div>
           </div>
