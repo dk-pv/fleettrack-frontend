@@ -122,7 +122,7 @@ export default function VehicleDetailPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Back */}
       <Link
         href="/vehicles"
@@ -133,9 +133,10 @@ export default function VehicleDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+            {" "}
             {vehicle.vehicleName}
           </h1>
 
@@ -148,11 +149,13 @@ export default function VehicleDetailPage() {
           </p>
         </div>
 
-        <VehicleStatusBadge status={vehicle.status} />
+        <div className="w-fit">
+          <VehicleStatusBadge status={vehicle.status} />
+        </div>
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {/* Driver */}
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center gap-3">
@@ -161,7 +164,9 @@ export default function VehicleDetailPage() {
             <h3 className="font-semibold">Driver</h3>
           </div>
 
-          <p className="mt-4 text-2xl font-bold">{vehicle.driverName}</p>
+          <p className="mt-4 break-all text-xl font-bold md:text-2xl">
+            {vehicle.driverName}
+          </p>
         </div>
 
         {/* GPS */}
@@ -172,7 +177,9 @@ export default function VehicleDetailPage() {
             <h3 className="font-semibold">GPS Device</h3>
           </div>
 
-          <p className="mt-4 text-2xl font-bold">{vehicle.gpsDeviceId}</p>
+          <p className="mt-4 break-all text-2xl font-bold">
+            {vehicle.gpsDeviceId}
+          </p>
         </div>
 
         {/* Client */}
@@ -183,12 +190,14 @@ export default function VehicleDetailPage() {
             <h3 className="font-semibold">Client</h3>
           </div>
 
-          <p className="mt-4 text-2xl font-bold">{vehicle.clientName}</p>
+          <p className="mt-4 break-all text-2xl font-bold">
+            {vehicle.clientName}
+          </p>
         </div>
       </div>
 
       {/* Live Stats Bar */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {/* Active Vehicles */}
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center gap-3">
@@ -245,10 +254,10 @@ export default function VehicleDetailPage() {
       </div>
 
       {/* Location + Stats */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {/* Location */}
 
-        <div className="rounded-xl border border-border bg-background p-6">
+        <div className="rounded-xl border border-border bg-background p-4 md:p-6">
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 text-red-500" />
 
@@ -257,13 +266,15 @@ export default function VehicleDetailPage() {
 
           <div className="mt-6">
             {vehicle.latitude !== 0 && vehicle.longitude !== 0 ? (
-              <VehicleMap
-                latitude={vehicle.latitude}
-                longitude={vehicle.longitude}
-                vehicleName={vehicle.vehicleName}
-              />
+              <div className="h-[320px] md:h-[420px]">
+                <VehicleMap
+                  latitude={vehicle.latitude}
+                  longitude={vehicle.longitude}
+                  vehicleName={vehicle.vehicleName}
+                />
+              </div>
             ) : (
-              <div className="flex h-[420px] flex-col items-center justify-center rounded-xl border border-dashed border-border text-center">
+              <div className="flex h-[320px] flex-col md:h-[420px]l items-center justify-center rounded-xl border border-dashed border-border text-center">
                 <MapPin className="h-8 w-8 text-muted-foreground" />
 
                 <p className="mt-3 text-sm font-medium">
@@ -294,7 +305,7 @@ export default function VehicleDetailPage() {
           </div>
         </div>
         {/* Speed */}
-        <div className="rounded-xl border border-border bg-background p-6">
+        <div className="rounded-xl border border-border bg-background p-4 md:p-6">
           <div className="flex items-center gap-3">
             <Activity className="h-5 w-5 text-green-600" />
 
@@ -304,23 +315,23 @@ export default function VehicleDetailPage() {
           <div className="mt-6">
             <p className="text-sm text-muted-foreground">Current Speed</p>
 
-            <h2 className="mt-2 text-5xl font-bold">
+            <h2 className="mt-2 text-4xl font-bold md:text-5xl">
               {vehicle.speed}
               <span className="ml-2 text-xl">km/h</span>
             </h2>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href={`/tracking/${vehicle.id}`}
-              className="flex h-11 items-center justify-center rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
+              className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
             >
               Track Live
             </Link>
 
             <Link
               href={`/vehicles/${vehicle.id}/trips`}
-              className="flex h-11 items-center justify-center rounded-lg border border-border px-5 py-3 text-sm font-medium"
+              className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg border border-border px-5 py-3 text-sm font-medium"
             >
               Trip History
             </Link>
@@ -328,7 +339,7 @@ export default function VehicleDetailPage() {
             <button
               onClick={downloadReport}
               disabled={downloading}
-              className="flex h-11 items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+              className="flex h-11 w-full items-center gap-2 justify-center sm:w-auto rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
             >
               <FileDown className="h-4 w-4" />
 
@@ -338,7 +349,7 @@ export default function VehicleDetailPage() {
         </div>
 
         {/* Trip Summary */}
-        <div className="rounded-xl border border-border bg-background p-6">
+        <div className="rounded-xl border border-border bg-background p-4 md:p-6">
           <div className="flex items-center gap-3">
             <Activity className="h-5 w-5 text-blue-600" />
 

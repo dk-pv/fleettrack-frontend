@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
-import TrackingMap from "@/components/tracking/tracking-map"
+import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import { socket } from "@/lib/socket";
 
@@ -96,18 +96,22 @@ export default function SingleTrackingPage() {
   }
 
   return (
-    <div className="grid h-[calc(100vh-64px)] grid-cols-[1fr_320px] overflow-hidden">
-      <TrackingMap
-        vehicles={[vehicle]}
-        selectedVehicle={vehicle}
-        centerTrigger={centerTrigger}
-      />
+    <div className="grid h-[calc(100vh-64px)] grid-cols-1 overflow-hidden lg:grid-cols-[1fr_340px]">
+      <div className="h-[55vh] lg:h-full">
+        <TrackingMap
+          vehicles={[vehicle]}
+          selectedVehicle={vehicle}
+          centerTrigger={centerTrigger}
+        />
+      </div>
 
-      <VehicleDetails
-        vehicle={vehicle}
-        onCenterMap={handleCenterMap}
-        onClose={() => {}}
-      />
+      <div className="overflow-y-auto border-t lg:border-l lg:border-t-0">
+        <VehicleDetails
+          vehicle={vehicle}
+          onCenterMap={handleCenterMap}
+          onClose={() => {}}
+        />
+      </div>
     </div>
   );
 }
