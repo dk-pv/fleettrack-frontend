@@ -2,17 +2,18 @@ import { Bell } from "lucide-react";
 
 export default function NotificationSettings() {
   return (
-    <div className="rounded-2xl border border-border bg-background p-6">
+    <div className="rounded-2xl border border-border bg-background p-4 md:p-6">
       <div className="flex items-center gap-3">
         <Bell className="h-5 w-5 text-muted-foreground" />
 
-        <h2 className="text-2xl font-semibold">
+        <h2 className="text-xl font-semibold md:text-2xl">
           Notification Settings
         </h2>
       </div>
 
-      <p className="mt-4 text-muted-foreground">
-        Configure system notifications and alerts
+      <p className="mt-4 text-sm text-muted-foreground md:text-base">
+        Configure system notifications
+        and alerts
       </p>
 
       <div className="mt-8 space-y-6">
@@ -24,7 +25,7 @@ export default function NotificationSettings() {
         ].map((item) => (
           <div
             key={item}
-            className="flex items-center justify-between border-b border-border pb-5"
+            className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <h4 className="font-medium">
@@ -32,7 +33,8 @@ export default function NotificationSettings() {
               </h4>
 
               <p className="text-sm text-muted-foreground">
-                Enable {item.toLowerCase()}
+                Enable{" "}
+                {item.toLowerCase()}
               </p>
             </div>
 

@@ -13,30 +13,35 @@ export default function SettingsPage() {
     useState("General");
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
+
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
           Settings
         </h1>
 
-        <p className="mt-2 text-muted-foreground">
-          Manage platform settings and preferences
+        <p className="mt-2 text-sm text-muted-foreground md:text-base">
+          Manage platform settings and
+          preferences
         </p>
       </div>
 
       {/* Tabs */}
+
       <SettingsTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
 
       {/* Content */}
+
       {activeTab === "General" && (
         <GeneralSettings />
       )}
 
-      {activeTab === "Notifications" && (
+      {activeTab ===
+        "Notifications" && (
         <NotificationSettings />
       )}
 
@@ -44,7 +49,8 @@ export default function SettingsPage() {
         <SecuritySettings />
       )}
 
-      {activeTab === "Integration" && (
+      {activeTab ===
+        "Integration" && (
         <IntegrationSettings />
       )}
     </div>
