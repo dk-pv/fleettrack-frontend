@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
+import { toast } from "sonner";
 
 interface Vehicle {
   id: string;
@@ -57,21 +58,13 @@ export default function VehicleForm({
 
           body: JSON.stringify({
             vehicleName,
-
             vehicleNumber,
-
             gpsDeviceId,
-
             driverName,
-
             clientName,
-
             status,
-
             latitude: 0,
-
             longitude: 0,
-
             speed: 0,
           }),
         },
@@ -80,16 +73,16 @@ export default function VehicleForm({
       const data = await response.json();
 
       if (data.success) {
-        alert(isEdit ? "Vehicle updated" : "Vehicle added");
+        toast.success(isEdit ? "Vehicle updated" : "Vehicle added");
 
         window.location.reload();
       } else {
-        alert(data.message || "Something went wrong");
+        toast.error(data.message || "Something went wrong");
       }
     } catch (error) {
       console.log(error);
 
-      alert("Server error");
+      toast.error("Server error");
     } finally {
       setLoading(false);
     }

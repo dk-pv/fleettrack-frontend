@@ -5,6 +5,7 @@ import { Eye, EyeOff, Truck } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { setAuth } = useAuthStore();
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -30,17 +31,22 @@ export default function LoginPage() {
         }),
       });
       console.log(response.status);
-  
-      const data = await response.json();
 
+      const data = await response.json();
       console.log("LOGIN RESPONSE:", data);
 
       if (data.success) {
+        toast.success("Login successful");
+
         setAuth(data.user, data.token);
+
         document.cookie = `token=${data.token}; path=/`;
-        window.location.href = "/dashboard";
+
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
       } else {
-        alert("Login failed");
+        toast.error("Login failed");
       }
     } catch (error) {
       console.error(error);

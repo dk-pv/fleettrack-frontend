@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { toast } from "sonner";
+
 interface User {
   id: string;
 
@@ -23,15 +25,10 @@ export default function ClientForm({
   editUser,
 }: ClientFormProps) {
   const [name, setName] = useState(editUser?.name || "");
-
   const [email, setEmail] = useState(editUser?.email || "");
-
   const [password, setPassword] = useState("");
-
   const [role, setRole] = useState(editUser?.role || "ADMIN");
-
   const [loading, setLoading] = useState(false);
-
   const isEdit = !!editUser;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,16 +62,16 @@ export default function ClientForm({
       const data = await response.json();
 
       if (data.success) {
-        alert(isEdit ? "User updated" : "User added");
+        toast.success(isEdit ? "User updated" : "User added");
 
         window.location.reload();
       } else {
-        alert(data.message || "Something went wrong");
+        toast.error(data.message || "Something went wrong");
       }
     } catch (error) {
       console.log(error);
 
-      alert("Server error");
+      toast.error("Server error");
     } finally {
       setLoading(false);
     }
