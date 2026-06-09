@@ -9,16 +9,19 @@ import {
 interface FleetStatusChartProps {
   activeVehicles: number;
   offlineVehicles: number;
+  idleVehicles: number;
 }
 
 const COLORS = [
   "#10b981",
   "#ef4444",
+  "#eab308",
 ];
 
 export default function FleetStatusChart({
   activeVehicles,
   offlineVehicles,
+  idleVehicles,
 }: FleetStatusChartProps) {
   const data = [
     {
@@ -29,6 +32,11 @@ export default function FleetStatusChart({
     {
       name: "Offline",
       value: offlineVehicles,
+    },
+
+    {
+      name: "Idle",
+      value: idleVehicles,
     },
   ];
 
@@ -78,6 +86,13 @@ export default function FleetStatusChart({
 
             Offline (
             {offlineVehicles})
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-sm bg-yellow-500" />
+
+            Idle (
+            {idleVehicles})
           </div>
         </div>
       </div>

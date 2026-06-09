@@ -44,7 +44,15 @@ export default function ActiveVehicles({
             {/* RIGHT */}
 
             <div className="text-right">
-              <div className="inline-flex rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-600">
+              <div
+                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                  vehicle.status === "MOVING"
+                    ? "bg-green-500/10 text-green-600"
+                    : vehicle.status === "IDLE"
+                      ? "bg-yellow-500/10 text-yellow-600"
+                      : "bg-red-500/10 text-red-500"
+                }`}
+              >
                 {vehicle.status}
               </div>
 

@@ -58,6 +58,7 @@ export default function DashboardPage() {
         <FleetStatusChart
           activeVehicles={stats?.activeVehicles || 0}
           offlineVehicles={stats?.offlineVehicles || 0}
+          idleVehicles={stats?.idleVehicles || 0}
         />
 
         <div className="min-w-0 xl:col-span-2">
