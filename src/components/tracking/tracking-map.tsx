@@ -1,37 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.marker.slideto";
 
 import {
   MapContainer,
-  Marker,
   Polyline,
-  Popup,
   TileLayer,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
-import { LocateFixed, Minus, Plus } from "lucide-react";
+import { LocateFixed, Minus, Navigation2, Plus } from "lucide-react";
+import {
+  buildFadedTrailSegments,
+  calculateBearing,
+  enrichWithHeadings,
+  filterGPSNoise,
+  haversineDistance,
+  isValidCoordinate,
+  sortAndDedupeTrail,
+  type TrailPoint,
+} from "@/lib/gps-utils";
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+/* -------------------------------------------------- */
+/* TYPES                                              */
+/* -------------------------------------------------- */
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const vehicleIcon = new L.Icon({
-  iconUrl: "/cargo-truck.png",
-  iconSize: [44, 44],
-  iconAnchor: [22, 44],
-  popupAnchor: [0, -40],
-});
-
-interface Vehicle {
+export interface Vehicle {
   id: string;
   vehicleName: string;
   vehicleNumber: string;
@@ -43,282 +40,548 @@ interface Vehicle {
   longitude: number;
   speed: number;
   updatedAt: string;
+  timestamp?: number;
+  ignition?: boolean;
+  batteryVoltage?: number;
 }
 
 interface TrackingMapProps {
   vehicles: Vehicle[];
   selectedVehicle: Vehicle | null;
   centerTrigger: number;
+  followMode?: boolean;
 }
 
-const DEFAULT_LOCATION: [number, number] = [11.2588, 75.7804];
+/* -------------------------------------------------- */
+/* CONSTANTS                                          */
+/* -------------------------------------------------- */
 
-function RecenterMap({
-  latitude,
-  longitude,
-  centerTrigger,
-}: {
-  latitude: number;
-  longitude: number;
-  centerTrigger: number;
-}) {
+const DEFAULT_LOCATION: [number, number] = [11.2588, 75.7804];
+const MAX_TRAIL_POINTS = 300;
+const TRAIL_COLOR = "#3b82f6";
+const MOVING_COLOR = "#10b981";
+
+/* -------------------------------------------------- */
+/* ROTATING VEHICLE ICON                              */
+/* -------------------------------------------------- */
+
+function createVehicleIcon(heading: number, status: string): L.DivIcon {
+  const isMoving = status === "MOVING";
+  const color = isMoving
+    ? "#10b981"
+    : status === "IDLE"
+      ? "#f59e0b"
+      : "#ef4444";
+  const pulse = isMoving
+    ? `<span style="
+        position:absolute;top:-6px;left:-6px;width:52px;height:52px;
+        border-radius:50%;border:2px solid ${color};
+        animation:pulse-ring 1.5s ease-out infinite;pointer-events:none;
+      "></span>`
+    : "";
+
+  return L.divIcon({
+    html: `
+      <div style="
+        position:relative;
+        width:40px;height:40px;
+        display:flex;align-items:center;justify-content:center;
+        transform:rotate(${heading}deg);
+        transition:transform 0.6s ease;
+      ">
+        ${pulse}
+        <div style="
+          width:36px;height:36px;border-radius:50%;
+          background:white;
+          box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 2px ${color};
+          display:flex;align-items:center;justify-content:center;
+          overflow:hidden;
+        ">
+          <img src="/cargo-truck.png" style="width:22px;height:22px;object-fit:contain;" />
+        </div>
+      </div>
+    `,
+    className: "",
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -24],
+  });
+}
+
+/* -------------------------------------------------- */
+/* VEHICLE MARKER (with smooth slide + rotation)      */
+/* -------------------------------------------------- */
+
+interface VehicleMarkerProps {
+  vehicle: Vehicle;
+  heading: number;
+  isSelected: boolean;
+  onClick: () => void;
+}
+
+function VehicleMarker({
+  vehicle,
+  heading,
+  isSelected,
+  onClick,
+}: VehicleMarkerProps) {
+  const markerRef = useRef<L.Marker | null>(null);
+  const prevPos = useRef<[number, number]>([
+    vehicle.latitude,
+    vehicle.longitude,
+  ]);
   const map = useMap();
 
+  // Create the icon
+  const icon = useMemo(
+    () => createVehicleIcon(heading, vehicle.status),
+    [heading, vehicle.status],
+  );
+
+  // Initialize marker once
   useEffect(() => {
-    map.setView([latitude, longitude], 15, {
-      animate: true,
+    if (!map) return;
+
+    const marker = L.marker([vehicle.latitude, vehicle.longitude], {
+      icon,
+      zIndexOffset: isSelected ? 1000 : 0,
     });
-  }, [latitude, longitude, centerTrigger, map]);
+
+    marker.on("click", onClick);
+    marker.addTo(map);
+    markerRef.current = marker;
+
+    prevPos.current = [vehicle.latitude, vehicle.longitude];
+
+    return () => {
+      marker.removeFrom(map);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, vehicle.id]);
+
+  // Update icon when heading/status changes
+  useEffect(() => {
+    if (!markerRef.current) return;
+    markerRef.current.setIcon(icon);
+    markerRef.current.setZIndexOffset(isSelected ? 1000 : 0);
+  }, [icon, isSelected]);
+
+  // Smooth slide to new position
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) return;
+
+    const [prevLat, prevLng] = prevPos.current;
+    const newLat = vehicle.latitude;
+    const newLng = vehicle.longitude;
+
+    if (!isValidCoordinate(newLat, newLng)) return;
+
+    const dist = haversineDistance(prevLat, prevLng, newLat, newLng);
+    // Only animate if actually moved (avoids jitter on same position)
+    if (dist > 1) {
+      (marker as any).slideTo([newLat, newLng], {
+        duration: 1500,
+        keepAtCenter: false,
+      });
+      prevPos.current = [newLat, newLng];
+    }
+  }, [vehicle.latitude, vehicle.longitude]);
 
   return null;
 }
+
+/* -------------------------------------------------- */
+/* MAP CONTROLLER (recenter / follow)                 */
+/* -------------------------------------------------- */
+
+function MapController({
+  selectedVehicle,
+  centerTrigger,
+  followMode,
+}: {
+  selectedVehicle: Vehicle | null;
+  centerTrigger: number;
+  followMode: boolean;
+}) {
+  const map = useMap();
+  const lastCenterTrigger = useRef(centerTrigger);
+
+  // Pan to center on button press
+  useEffect(() => {
+    if (!selectedVehicle) return;
+    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude))
+      return;
+
+    map.setView([selectedVehicle.latitude, selectedVehicle.longitude], 16, {
+      animate: true,
+    });
+    lastCenterTrigger.current = centerTrigger;
+  }, [centerTrigger, map, selectedVehicle]);
+
+  // Follow mode: smooth pan when selected vehicle moves
+  useEffect(() => {
+    if (!followMode || !selectedVehicle) return;
+    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude))
+      return;
+
+    map.panTo([selectedVehicle.latitude, selectedVehicle.longitude], {
+      animate: true,
+      duration: 0.8,
+    });
+  }, [
+    followMode,
+    selectedVehicle,
+    selectedVehicle?.latitude,
+    selectedVehicle?.longitude,
+    map,
+  ]);
+
+  return null;
+}
+
+/* -------------------------------------------------- */
+/* FIT ALL VEHICLES                                   */
+/* -------------------------------------------------- */
 
 function FitAllVehicles({ vehicles }: { vehicles: Vehicle[] }) {
   const map = useMap();
+  const fitted = useRef(false);
+
   useEffect(() => {
-    if (vehicles.length === 0) return;
+    if (fitted.current || vehicles.length === 0) return;
 
-    const bounds = L.latLngBounds(
-      vehicles.map((vehicle) => [vehicle.latitude, vehicle.longitude]),
+    const valid = vehicles.filter((v) =>
+      isValidCoordinate(v.latitude, v.longitude),
     );
+    if (valid.length === 0) return;
 
-    map.fitBounds(bounds, {
-      padding: [100, 100],
-      animate: true,
-    });
+    if (valid.length === 1) {
+      map.setView([valid[0].latitude, valid[0].longitude], 15, {
+        animate: true,
+      });
+    } else {
+      const bounds = L.latLngBounds(
+        valid.map((v) => [v.latitude, v.longitude]),
+      );
+      map.fitBounds(bounds, { padding: [80, 80], animate: true });
+    }
+
+    fitted.current = true;
   }, [vehicles, map]);
+
   return null;
 }
 
+/* -------------------------------------------------- */
+/* MAP CONTROLS                                       */
+/* -------------------------------------------------- */
+
 function MapControls({
-  latitude,
-  longitude,
+  onLocate,
+  followMode,
+  onToggleFollow,
 }: {
-  latitude: number;
-  longitude: number;
+  onLocate: () => void;
+  followMode: boolean;
+  onToggleFollow: () => void;
 }) {
   const map = useMap();
   return (
-    <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-2 md:bottom-5 md:right-5">
+    <div className="absolute bottom-4 right-4 z-[400] flex flex-col gap-2">
       <button
         onClick={() => map.zoomIn()}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md hover:bg-muted dark:bg-[#1f2937]"
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
+        title="Zoom in"
       >
         <Plus className="h-4 w-4" />
       </button>
 
       <button
         onClick={() => map.zoomOut()}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md hover:bg-muted dark:bg-[#1f2937]"
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
+        title="Zoom out"
       >
         <Minus className="h-4 w-4" />
       </button>
 
       <button
-        onClick={() => {
-          map.setView([latitude, longitude], 15, {
-            animate: true,
-          });
-        }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md hover:bg-muted dark:bg-[#1f2937]"
+        onClick={onLocate}
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
+        title="Center on vehicle"
       >
         <LocateFixed className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={onToggleFollow}
+        className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-all ${
+          followMode
+            ? "bg-blue-500 text-white hover:bg-blue-600"
+            : "bg-white hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548]"
+        }`}
+        title={
+          followMode ? "Following vehicle (click to stop)" : "Follow vehicle"
+        }
+      >
+        <Navigation2 className={`h-4 w-4 ${followMode ? "fill-white" : ""}`} />
       </button>
     </div>
   );
 }
 
+/* -------------------------------------------------- */
+/* LIVE STATUS CARD                                   */
+/* -------------------------------------------------- */
+
 function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
-  const movingVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "MOVING",
-  ).length;
+  const moving = vehicles.filter((v) => v.status === "MOVING").length;
+  const idle = vehicles.filter((v) => v.status === "IDLE").length;
+  const offline = vehicles.filter((v) => v.status === "OFFLINE").length;
 
   return (
-    <div className="absolute bottom-3 left-3 z-10 rounded-2xl bg-white px-4 py-3 shadow-lg dark:bg-[#1f2937] md:bottom-5 md:left-5">
-      <div className="flex gap-7">
-        <div>
-          <p className="text-2xl font-bold text-green-500">{movingVehicles}</p>
-
-          <p className="mt-0.5 text-xs text-muted-foreground">Active</p>
+    <div className="absolute bottom-4 left-4 z-[400] rounded-2xl bg-white/95 backdrop-blur-sm px-5 py-3 shadow-xl dark:bg-[#1a2236]/95 border border-white/20">
+      <div className="flex gap-5">
+        <div className="text-center">
+          <p className="text-xl font-bold text-emerald-500">{moving}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+            Moving
+          </p>
         </div>
 
         <div className="w-px bg-border" />
 
-        <div>
-          <p className="text-2xl font-bold text-blue-500">{vehicles.length}</p>
+        <div className="text-center">
+          <p className="text-xl font-bold text-amber-500">{idle}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+            Idle
+          </p>
+        </div>
 
-          <p className="mt-0.5 text-xs text-muted-foreground">Vehicles</p>
+        <div className="w-px bg-border" />
+
+        <div className="text-center">
+          <p className="text-xl font-bold text-blue-500">{vehicles.length}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+            Total
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function VehiclePopup({ vehicle }: { vehicle: Vehicle }) {
+/* -------------------------------------------------- */
+/* TRAIL RENDERER                                     */
+/* -------------------------------------------------- */
+
+function TrailRenderer({ points }: { points: TrailPoint[] }) {
+  const segments = useMemo(() => buildFadedTrailSegments(points), [points]);
+
+  if (segments.length === 0) return null;
+
   return (
-    <div className="min-w-[220px] space-y-3">
-      <div className="border-b pb-2">
-        <h3 className="text-base font-semibold">{vehicle.vehicleNumber}</h3>
-
-        <p className="text-xs text-muted-foreground">{vehicle.driverName}</p>
-      </div>
-
-      <div className="space-y-2 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Status</span>
-
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              vehicle.status === "MOVING"
-                ? "bg-green-100 text-green-700"
-                : vehicle.status === "IDLE"
-                  ? "bg-yellow-100 text-yellow-700"
-                  : "bg-red-100 text-red-700"
-            }`}
-          >
-            {vehicle.status}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Speed</span>
-
-          <span className="font-medium">
-            {Number(vehicle.speed).toFixed(1)} km/h
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Driver</span>
-
-          <span className="font-medium">{vehicle.driverName}</span>
-        </div>
-      </div>
-    </div>
+    <>
+      {segments.map((seg, idx) => (
+        <Polyline
+          key={idx}
+          positions={seg.positions}
+          pathOptions={{
+            color: TRAIL_COLOR,
+            weight: seg.weight,
+            opacity: seg.opacity,
+            lineCap: "round",
+            lineJoin: "round",
+          }}
+        />
+      ))}
+      {/* Direction arrow at the tip */}
+      {points.length >= 2 && (
+        <Polyline
+          positions={[
+            [points[points.length - 2].lat, points[points.length - 2].lng],
+            [points[points.length - 1].lat, points[points.length - 1].lng],
+          ]}
+          pathOptions={{
+            color: MOVING_COLOR,
+            weight: 5,
+            opacity: 1,
+            lineCap: "round",
+          }}
+        />
+      )}
+    </>
   );
 }
 
-/* ----------------------------- */
-/* MAIN */
-/* ----------------------------- */
+/* -------------------------------------------------- */
+/* MAIN COMPONENT                                     */
+/* -------------------------------------------------- */
+
+// Inject pulse-ring keyframes into document head once
+if (typeof window !== "undefined") {
+  const styleId = "ft-pulse-ring-style";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      @keyframes pulse-ring {
+        0% { transform: scale(1); opacity: 0.8; }
+        80% { transform: scale(1.8); opacity: 0; }
+        100% { transform: scale(1.8); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
 
 export default function TrackingMap({
   vehicles,
   selectedVehicle,
   centerTrigger,
+  followMode: externalFollowMode = false,
 }: TrackingMapProps) {
+  // Trail state: vehicleId → sorted, filtered TrailPoint[]
   const [vehicleTrails, setVehicleTrails] = useState<
-    Record<string, [number, number][]>
+    Record<string, TrailPoint[]>
   >({});
-  const markerRefs = useRef<Record<string, L.Marker>>({});
+  const [internalFollowMode, setInternalFollowMode] = useState(false);
+  const followMode = externalFollowMode || internalFollowMode;
+
+  // Track last heading per vehicle for rotating icon
+  const headingsRef = useRef<Record<string, number>>({});
+
   const validVehicles = useMemo(
     () =>
       vehicles.filter(
-        (vehicle) => vehicle.latitude !== null && vehicle.longitude !== null,
+        (v) =>
+          v.latitude != null &&
+          v.longitude != null &&
+          isValidCoordinate(v.latitude, v.longitude),
       ),
-
     [vehicles],
   );
 
-  /* ----------------------------- */
-  /* FETCH HISTORY */
-  /* ----------------------------- */
+  /* ------------------------------------------------ */
+  /* LOAD HISTORY when selected vehicle changes       */
+  /* ------------------------------------------------ */
 
   useEffect(() => {
-    const fetchVehicleHistory = async () => {
+    if (!selectedVehicle) return;
+
+    const fetchHistory = async () => {
       try {
-        if (!selectedVehicle) return;
-
         const token = localStorage.getItem("token");
-
-        const response = await fetch(
+        const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/vehicles/${selectedVehicle.id}/history`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.history)) return;
 
-        const data = await response.json();
+        const rawPoints: TrailPoint[] = data.history
+          .filter((h: any) => isValidCoordinate(h.latitude, h.longitude))
+          .map((h: any) => ({
+            lat: h.latitude,
+            lng: h.longitude,
+            timestamp: h.timestamp ?? new Date(h.createdAt).getTime(),
+            heading: h.heading ?? 0,
+            speed: h.speed ?? 0,
+          }));
 
-        if (!data.success) return;
-
-        const positions = data.history.map(
-          (item: any) => [item.latitude, item.longitude] as [number, number],
-        );
+        const sorted = sortAndDedupeTrail(rawPoints);
+        const filtered = filterGPSNoise(sorted, 10);
+        const enriched = enrichWithHeadings(filtered);
 
         setVehicleTrails((prev) => ({
           ...prev,
-
-          [selectedVehicle.id]: positions,
+          [selectedVehicle.id]: enriched,
         }));
-      } catch (error) {
-        console.log(error);
+
+        // Update heading ref from most recent history point
+        if (enriched.length > 0) {
+          headingsRef.current[selectedVehicle.id] =
+            enriched[enriched.length - 1].heading ?? 0;
+        }
+      } catch (err) {
+        console.error("History fetch failed:", err);
       }
     };
 
-    fetchVehicleHistory();
-  }, [selectedVehicle]);
+    fetchHistory();
+  }, [selectedVehicle?.id]);
 
-  /* ----------------------------- */
-  /* LIVE UPDATE */
-  /* ----------------------------- */
+  /* ------------------------------------------------ */
+  /* LIVE UPDATE — append new trail point             */
+  /* ------------------------------------------------ */
 
   useEffect(() => {
     setVehicleTrails((prev) => {
-      const updated = {
-        ...prev,
-      };
+      const updated = { ...prev };
 
-      vehicles.forEach((vehicle) => {
-        const point: [number, number] = [vehicle.latitude, vehicle.longitude];
+      for (const vehicle of vehicles) {
+        if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) continue;
 
-        if (!updated[vehicle.id]) {
-          updated[vehicle.id] = [point];
+        const now = vehicle.timestamp ?? Date.now();
+        const newPoint: TrailPoint = {
+          lat: vehicle.latitude,
+          lng: vehicle.longitude,
+          timestamp: now,
+          heading: 0,
+          speed: vehicle.speed,
+        };
 
-          return;
+        const existing = updated[vehicle.id] ?? [];
+
+        // GPS noise filter
+        if (existing.length > 0) {
+          const last = existing[existing.length - 1];
+          const dist = haversineDistance(
+            last.lat,
+            last.lng,
+            newPoint.lat,
+            newPoint.lng,
+          );
+          if (dist < 10) continue; // < 10m → skip
+
+          // Calculate heading
+          const bearing = calculateBearing(
+            last.lat,
+            last.lng,
+            newPoint.lat,
+            newPoint.lng,
+          );
+          newPoint.heading = bearing;
+          headingsRef.current[vehicle.id] = bearing;
         }
 
-        const lastPoint = updated[vehicle.id][updated[vehicle.id].length - 1];
-
-        const isSameLocation =
-          lastPoint && lastPoint[0] === point[0] && lastPoint[1] === point[1];
-
-        if (!isSameLocation) {
-          updated[vehicle.id] = [...updated[vehicle.id], point].slice(-20);
-        }
-      });
+        const merged = [...existing, newPoint].slice(-MAX_TRAIL_POINTS);
+        updated[vehicle.id] = merged;
+      }
 
       return updated;
     });
   }, [vehicles]);
 
-  /* ----------------------------- */
-  /* MARKER SLIDE */
-  /* ----------------------------- */
+  const visibleVehicles = selectedVehicle
+    ? validVehicles.filter((v) => v.id === selectedVehicle.id)
+    : validVehicles;
 
-  useEffect(() => {
-    validVehicles.forEach((vehicle) => {
-      const marker = markerRefs.current[vehicle.id];
-
-      if (!marker) return;
-
-      (marker as any).slideTo([vehicle.latitude, vehicle.longitude], {
-        duration: 2000,
-
-        keepAtCenter: false,
-      });
-    });
-  }, [validVehicles]);
+  /* ------------------------------------------------ */
+  /* RENDER                                           */
+  /* ------------------------------------------------ */
 
   return (
-<div className="relative h-full min-h-[350px] w-full overflow-hidden">      {/* LIVE BADGE */}
-
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-xl bg-white px-4 py-2 shadow-md dark:bg-[#1f2937]">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-
-        <span className="text-sm font-medium">Live Tracking</span>
+    <div className="relative h-full min-h-[350px] w-full overflow-hidden">
+      {/* LIVE BADGE */}
+      <div className="absolute right-4 top-4 z-[400] flex items-center gap-2 rounded-xl bg-white/95 backdrop-blur-sm px-4 py-2 shadow-lg dark:bg-[#1a2236]/95 border border-white/10">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+        <span className="text-sm font-semibold tracking-tight">
+          Live Tracking
+        </span>
       </div>
 
       {/* STATUS CARD */}
@@ -328,80 +591,58 @@ export default function TrackingMap({
       <MapContainer
         center={DEFAULT_LOCATION}
         zoom={8}
-        scrollWheelZoom={true}
+        scrollWheelZoom
         className="h-full w-full"
-        style={{ height: "100%", width: "100%" , zIndex: 1,}}
+        style={{ height: "100%", width: "100%", zIndex: 1 }}
         zoomControl={false}
-        preferCanvas={true}
+        preferCanvas
       >
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           subdomains={["a", "b", "c", "d"]}
+          maxZoom={20}
         />
 
+        {/* Fit to all vehicles on initial load */}
         {!selectedVehicle && <FitAllVehicles vehicles={validVehicles} />}
 
-        {selectedVehicle && (
-          <RecenterMap
-            latitude={selectedVehicle.latitude}
-            longitude={selectedVehicle.longitude}
-            centerTrigger={centerTrigger}
-          />
-        )}
+        {/* Recenter / follow */}
+        <MapController
+          selectedVehicle={selectedVehicle}
+          centerTrigger={centerTrigger}
+          followMode={followMode}
+        />
 
-        {/* ROUTE LINE */}
-
+        {/* TRAIL POLYLINES */}
         {validVehicles.map((vehicle) => {
           const trail = vehicleTrails[vehicle.id];
-
           if (!trail || trail.length < 2) return null;
+          if (selectedVehicle && selectedVehicle.id !== vehicle.id) return null;
 
-          if (selectedVehicle && selectedVehicle.id !== vehicle.id) {
-            return null;
-          }
+          return <TrailRenderer key={`trail-${vehicle.id}`} points={trail} />;
+        })}
+
+        {/* VEHICLE MARKERS */}
+        {visibleVehicles.map((vehicle) => {
+          const heading = headingsRef.current[vehicle.id] ?? 0;
 
           return (
-            <Polyline
-              key={`trail-${vehicle.id}`}
-              positions={trail}
-              pathOptions={{
-                color: "#2563eb",
-
-                weight: 5,
-
-                opacity: 0.9,
-              }}
+            <VehicleMarker
+              key={vehicle.id}
+              vehicle={vehicle}
+              heading={heading}
+              isSelected={selectedVehicle?.id === vehicle.id}
+              onClick={() => {}}
             />
           );
         })}
 
-        {/* VEHICLE MARKERS */}
-        {validVehicles.map((vehicle) => {
-          return (
-            <Marker
-              key={vehicle.id}
-              ref={(ref) => {
-                if (ref) {
-                  markerRefs.current[vehicle.id] = ref;
-                }
-              }}
-              position={[vehicle.latitude, vehicle.longitude]}
-              icon={vehicleIcon}
-              riseOnHover
-            >
-              <Popup>
-                <VehiclePopup vehicle={vehicle} />
-              </Popup>
-            </Marker>
-          );
-        })}
-
         {/* MAP CONTROLS */}
-
         <MapControls
-          latitude={selectedVehicle?.latitude || DEFAULT_LOCATION[0]}
-          longitude={selectedVehicle?.longitude || DEFAULT_LOCATION[1]}
+          onLocate={() => {}}
+          followMode={internalFollowMode}
+          onToggleFollow={() => setInternalFollowMode((v) => !v)}
         />
       </MapContainer>
     </div>
