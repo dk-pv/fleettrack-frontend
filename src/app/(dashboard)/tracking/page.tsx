@@ -110,7 +110,7 @@ export default function TrackingPage() {
 
             {vehicles.map((vehicle) => (
               <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.vehicleNumber}
+                {vehicle.vehicleNumber} • {vehicle.status}
               </option>
             ))}
           </select>
@@ -118,7 +118,7 @@ export default function TrackingPage() {
 
         {/* Map */}
 
-       <div className=" min-h-[300px] flex-1 overflow-hidden " >
+        <div className=" min-h-[300px] flex-1 overflow-hidden ">
           <TrackingMap
             vehicles={vehicles}
             selectedVehicle={selected}
