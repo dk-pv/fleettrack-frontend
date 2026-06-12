@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.marker.slideto";
@@ -199,13 +199,21 @@ function MapController({
   selectedVehicle,
   centerTrigger,
   followMode,
+  onDragStart,
 }: {
   selectedVehicle: Vehicle | null;
   centerTrigger: number;
   followMode: boolean;
+  onDragStart: () => void;
 }) {
   const map = useMap();
   const lastCenterTrigger = useRef(centerTrigger);
+
+  useMapEvents({
+    dragstart: () => {
+      onDragStart();
+    },
+  });
 
   // Pan to center on button press
   useEffect(() => {
@@ -288,34 +296,34 @@ function MapControls({
 }) {
   const map = useMap();
   return (
-    <div className="absolute bottom-4 right-4 z-[400] flex flex-col gap-2">
+    <div className="absolute bottom-4 right-4 z-[400] flex flex-col gap-2.5 md:gap-2">
       <button
         onClick={() => map.zoomIn()}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
+        className="flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
         title="Zoom in"
       >
-        <Plus className="h-4 w-4" />
+        <Plus className="h-5 w-5 md:h-4 md:w-4" />
       </button>
 
       <button
         onClick={() => map.zoomOut()}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
+        className="flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
         title="Zoom out"
       >
-        <Minus className="h-4 w-4" />
+        <Minus className="h-5 w-5 md:h-4 md:w-4" />
       </button>
 
       <button
         onClick={onLocate}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
+        className="flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
         title="Center on vehicle"
       >
-        <LocateFixed className="h-4 w-4" />
+        <LocateFixed className="h-5 w-5 md:h-4 md:w-4" />
       </button>
 
       <button
         onClick={onToggleFollow}
-        className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-all ${
+        className={`flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl shadow-lg transition-all ${
           followMode
             ? "bg-blue-500 text-white hover:bg-blue-600"
             : "bg-white hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548]"
@@ -324,7 +332,7 @@ function MapControls({
           followMode ? "Following vehicle (click to stop)" : "Follow vehicle"
         }
       >
-        <Navigation2 className={`h-4 w-4 ${followMode ? "fill-white" : ""}`} />
+        <Navigation2 className={`h-5 w-5 md:h-4 md:w-4 ${followMode ? "fill-white" : ""}`} />
       </button>
     </div>
   );
@@ -337,14 +345,13 @@ function MapControls({
 function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
   const moving = vehicles.filter((v) => v.status === "MOVING").length;
   const idle = vehicles.filter((v) => v.status === "IDLE").length;
-  const offline = vehicles.filter((v) => v.status === "OFFLINE").length;
 
   return (
-    <div className="absolute bottom-4 left-4 z-[400] rounded-2xl bg-white/95 backdrop-blur-sm px-5 py-3 shadow-xl dark:bg-[#1a2236]/95 border border-white/20">
-      <div className="flex gap-5">
+    <div className="absolute top-4 left-4 md:top-auto md:bottom-4 md:left-4 z-[400] rounded-2xl bg-white/95 backdrop-blur-sm px-3.5 py-2 md:px-5 md:py-3 shadow-xl dark:bg-[#1a2236]/95 border border-white/20">
+      <div className="flex gap-3 md:gap-5">
         <div className="text-center">
-          <p className="text-xl font-bold text-emerald-500">{moving}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+          <p className="text-lg md:text-xl font-bold text-emerald-500">{moving}</p>
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
             Moving
           </p>
         </div>
@@ -352,8 +359,8 @@ function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
         <div className="w-px bg-border" />
 
         <div className="text-center">
-          <p className="text-xl font-bold text-amber-500">{idle}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+          <p className="text-lg md:text-xl font-bold text-amber-500">{idle}</p>
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
             Idle
           </p>
         </div>
@@ -361,8 +368,8 @@ function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
         <div className="w-px bg-border" />
 
         <div className="text-center">
-          <p className="text-xl font-bold text-blue-500">{vehicles.length}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+          <p className="text-lg md:text-xl font-bold text-blue-500">{vehicles.length}</p>
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
             Total
           </p>
         </div>
@@ -446,10 +453,12 @@ export default function TrackingMap({
     Record<string, TrailPoint[]>
   >({});
   const [internalFollowMode, setInternalFollowMode] = useState(false);
+  const [localCenterTrigger, setLocalCenterTrigger] = useState(0);
   const followMode = externalFollowMode || internalFollowMode;
 
   // Track last heading per vehicle for rotating icon
   const headingsRef = useRef<Record<string, number>>({});
+  const loadedHistoriesRef = useRef<Record<string, boolean>>({});
 
   const validVehicles = useMemo(
     () =>
@@ -468,6 +477,11 @@ export default function TrackingMap({
 
   useEffect(() => {
     if (!selectedVehicle) return;
+
+    // Check if already loaded
+    if (loadedHistoriesRef.current[selectedVehicle.id]) {
+      return;
+    }
 
     const fetchHistory = async () => {
       try {
@@ -493,16 +507,27 @@ export default function TrackingMap({
         const filtered = filterGPSNoise(sorted, 10);
         const enriched = enrichWithHeadings(filtered);
 
-        setVehicleTrails((prev) => ({
-          ...prev,
-          [selectedVehicle.id]: enriched,
-        }));
+        setVehicleTrails((prev) => {
+          const existing = prev[selectedVehicle.id] ?? [];
+          const combined = [...enriched, ...existing];
+          const sortedCombined = sortAndDedupeTrail(combined);
+          const filteredCombined = filterGPSNoise(sortedCombined, 10);
+          const finalTrails = enrichWithHeadings(filteredCombined).slice(-MAX_TRAIL_POINTS);
+
+          return {
+            ...prev,
+            [selectedVehicle.id]: finalTrails,
+          };
+        });
 
         // Update heading ref from most recent history point
         if (enriched.length > 0) {
           headingsRef.current[selectedVehicle.id] =
             enriched[enriched.length - 1].heading ?? 0;
         }
+
+        // Mark as loaded
+        loadedHistoriesRef.current[selectedVehicle.id] = true;
       } catch (err) {
         console.error("History fetch failed:", err);
       }
@@ -516,8 +541,17 @@ export default function TrackingMap({
   /* ------------------------------------------------ */
 
   useEffect(() => {
+    const vehicleIds = new Set(vehicles.map((v) => v.id));
+
     setVehicleTrails((prev) => {
       const updated = { ...prev };
+
+      // Clean up old vehicle trails
+      for (const id of Object.keys(updated)) {
+        if (!vehicleIds.has(id)) {
+          delete updated[id];
+        }
+      }
 
       for (const vehicle of vehicles) {
         if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) continue;
@@ -561,6 +595,18 @@ export default function TrackingMap({
 
       return updated;
     });
+
+    // Also clean up headingsRef and loadedHistoriesRef
+    for (const id of Object.keys(headingsRef.current)) {
+      if (!vehicleIds.has(id)) {
+        delete headingsRef.current[id];
+      }
+    }
+    for (const id of Object.keys(loadedHistoriesRef.current)) {
+      if (!vehicleIds.has(id)) {
+        delete loadedHistoriesRef.current[id];
+      }
+    }
   }, [vehicles]);
 
   const visibleVehicles = selectedVehicle
@@ -572,14 +618,14 @@ export default function TrackingMap({
   /* ------------------------------------------------ */
 
   return (
-    <div className="relative h-full min-h-[350px] w-full overflow-hidden">
+    <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden">
       {/* LIVE BADGE */}
-      <div className="absolute right-4 top-4 z-[400] flex items-center gap-2 rounded-xl bg-white/95 backdrop-blur-sm px-4 py-2 shadow-lg dark:bg-[#1a2236]/95 border border-white/10">
-        <span className="relative flex h-2.5 w-2.5">
+      <div className="absolute right-4 top-4 z-[400] flex items-center gap-1.5 md:gap-2 rounded-xl bg-white/95 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 shadow-lg dark:bg-[#1a2236]/95 border border-white/10">
+        <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          <span className="relative inline-flex h-full w-full rounded-full bg-emerald-500" />
         </span>
-        <span className="text-sm font-semibold tracking-tight">
+        <span className="text-xs md:text-sm font-semibold tracking-tight">
           Live Tracking
         </span>
       </div>
@@ -610,8 +656,9 @@ export default function TrackingMap({
         {/* Recenter / follow */}
         <MapController
           selectedVehicle={selectedVehicle}
-          centerTrigger={centerTrigger}
+          centerTrigger={centerTrigger + localCenterTrigger}
           followMode={followMode}
+          onDragStart={() => setInternalFollowMode(false)}
         />
 
         {/* TRAIL POLYLINES */}
@@ -640,7 +687,7 @@ export default function TrackingMap({
 
         {/* MAP CONTROLS */}
         <MapControls
-          onLocate={() => {}}
+          onLocate={() => setLocalCenterTrigger((prev) => prev + 1)}
           followMode={internalFollowMode}
           onToggleFollow={() => setInternalFollowMode((v) => !v)}
         />

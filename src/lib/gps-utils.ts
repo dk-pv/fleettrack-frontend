@@ -212,16 +212,4 @@ export function buildFadedTrailSegments(points: TrailPoint[]): TrailSegment[] {
   return segments;
 }
 
-/* -------------------------------------------------- */
-/* SMOOTH INTERPOLATION (for follow-camera)           */
-/* -------------------------------------------------- */
 
-/**
- * Linearly interpolates between two headings, taking the short arc.
- */
-export function lerpHeading(a: number, b: number, t: number): number {
-  let diff = b - a;
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-  return (a + diff * t + 360) % 360;
-}
