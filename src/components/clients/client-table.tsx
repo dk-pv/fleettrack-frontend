@@ -2,7 +2,7 @@
 
 import { Pencil, Trash2 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { apiFetch } from "@/lib/fetcher";
 
@@ -26,7 +26,11 @@ interface User {
   createdAt: string;
 }
 
-export default function ClientTable() {
+interface ClientTableProps {
+  searchQuery?: string;
+}
+
+export default function ClientTable({ searchQuery = "" }: ClientTableProps) {
   const [users, setUsers] = useState<User[]>([]);
 
   const { user } = useAuthStore();
@@ -46,6 +50,20 @@ export default function ClientTable() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const filteredUsers = useMemo(() => {
+    if (searchQuery.trim() === "") {
+      return users;
+    }
+
+    const q = searchQuery.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        u.role?.toLowerCase().includes(q)
+    );
+  }, [users, searchQuery]);
 
   const deleteUser = async (id: string) => {
     const confirmDelete = confirm("Are you sure you want to delete this user?");
@@ -76,78 +94,89 @@ export default function ClientTable() {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-background">
+    <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
       {/* Header */}
       <div className="border-b border-border px-5 py-4">
-        <h3 className="text-lg font-semibold">All Clients ({users.length})</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">All Clients ({filteredUsers.length})</h3>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border text-left">
-              <th className="px-5 py-4 text-sm font-semibold">User Name</th>
+      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+        <table className="w-full border-collapse text-left">
+          <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b border-border z-10">
+            <tr>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">User Name</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Email</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Role</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Status</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Created</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Created</th>
 
               {user?.role === "ADMIN" && (
-                <th className="px-5 py-4 text-right text-sm font-semibold">
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               )}
             </tr>
           </thead>
 
-          <tbody>
-            {users.map((client) => (
-              <tr
-                key={client.id}
-                className="border-b border-border last:border-none"
-              >
-                <td className="px-5 py-5 text-sm font-semibold">
-                  {client.name}
+          <tbody className="divide-y divide-border">
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                  No clients found.
                 </td>
-
-                <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {client.email}
-                </td>
-
-                <td className="px-5 py-5">
-                  <ClientRoleBadge role={client.role} />
-                </td>
-
-                <td className="px-5 py-5">
-                  <ClientStatusBadge status="Active" />
-                </td>
-
-                <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {new Date(client.createdAt).toLocaleDateString()}
-                </td>
-
-                {user?.role === "ADMIN" && (
-                  <td className="px-5 py-5">
-                    <div className="flex justify-end gap-4">
-                      <AddClientModal editUser={client}>
-                        <button>
-                          <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
-                        </button>
-                      </AddClientModal>
-
-                      <button onClick={() => deleteUser(client.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </button>
-                    </div>
-                  </td>
-                )}
               </tr>
-            ))}
+            ) : (
+              filteredUsers.map((client) => (
+                <tr
+                  key={client.id}
+                  className="group hover:bg-muted/30 transition-colors"
+                >
+                  <td className="px-5 py-4 text-sm font-bold text-foreground">
+                    {client.name}
+                  </td>
+
+                  <td className="px-5 py-4 text-xs font-semibold text-muted-foreground">
+                    {client.email}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <ClientRoleBadge role={client.role} />
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <ClientStatusBadge status="Active" />
+                  </td>
+
+                  <td className="px-5 py-4 text-xs text-muted-foreground font-medium">
+                    {new Date(client.createdAt).toLocaleDateString()}
+                  </td>
+
+                  {user?.role === "ADMIN" && (
+                    <td className="px-5 py-4">
+                      <div className="flex justify-end gap-2.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <AddClientModal editUser={client}>
+                          <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        </AddClientModal>
+
+                        <button 
+                          onClick={() => deleteUser(client.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-destructive/10 bg-destructive/5 hover:bg-destructive/15 text-destructive transition-all cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

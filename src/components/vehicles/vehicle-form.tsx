@@ -89,36 +89,38 @@ export default function VehicleForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4 text-left">
       {/* Vehicle Name */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Vehicle Name</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Vehicle Name</label>
 
         <input
           type="text"
           value={vehicleName}
           onChange={(e) => setVehicleName(e.target.value)}
           placeholder="Enter vehicle name"
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Vehicle Number */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Vehicle Number</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Vehicle Number</label>
 
         <input
           type="text"
           value={vehicleNumber}
           onChange={(e) => setVehicleNumber(e.target.value)}
           placeholder="Enter vehicle number"
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Driver */}
       <div>
-        <label className="mb-2 block text-sm font-medium">
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">
           Assigned Driver
         </label>
 
@@ -127,44 +129,47 @@ export default function VehicleForm({
           value={driverName}
           onChange={(e) => setDriverName(e.target.value)}
           placeholder="Enter driver name"
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Client */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Client Name</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Client Name</label>
 
         <input
           type="text"
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="Enter client name"
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* GPS */}
       <div>
-        <label className="mb-2 block text-sm font-medium">GPS Device ID</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">GPS Device ID</label>
 
         <input
           type="text"
           value={gpsDeviceId}
           onChange={(e) => setGpsDeviceId(e.target.value)}
           placeholder="Enter GPS device ID"
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Status */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Status</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</label>
 
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 cursor-pointer"
         >
           <option value="MOVING">Moving</option>
 
@@ -175,13 +180,15 @@ export default function VehicleForm({
       </div>
 
       {/* Submit */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="h-11 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black"
-      >
-        {loading ? "Loading..." : buttonText}
-      </button>
+      <div className="pt-2 flex justify-end">
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-10 w-full sm:w-auto rounded-lg bg-primary hover:bg-primary/90 px-5 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {loading ? "Saving..." : buttonText}
+        </button>
+      </div>
     </form>
   );
 }

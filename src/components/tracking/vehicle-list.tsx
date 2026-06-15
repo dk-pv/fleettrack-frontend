@@ -44,62 +44,60 @@ export default function VehicleList({
   ).length;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] flex-col border-r border-border bg-background">
+    <div className="flex h-full flex-col border-r border-border bg-card">
       {/* Header */}
-
       <div className="border-b border-border px-4 py-4">
-        <h2 className="text-lg font-bold">Fleet Vehicles</h2>
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Fleet Vehicles</h2>
 
         <div className="relative mt-3">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search vehicles..."
-            className="h-9 w-full rounded-lg border border-border bg-muted pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-blue-400 dark:focus:border-blue-500"
+            className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
           />
         </div>
       </div>
 
       {/* Vehicle List */}
-
-      <div className="flex-1 space-y-2.5 overflow-y-auto p-3">
+      <div className="flex-1 space-y-2.5 overflow-y-auto p-3 no-scrollbar bg-background/30">
         {/* ALL VEHICLES CARD */}
-
         <button
           onClick={() => onSelect(null)}
-          className={`w-full rounded-xl border p-3.5 text-left transition-all duration-200 ${
+          className={`w-full rounded-xl border p-3.5 text-left transition-all duration-200 select-none ${
             selected === null
-              ? "border-blue-300 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/10"
-              : "border-border bg-background hover:border-border/80 hover:bg-muted/40"
+              ? "border-primary bg-primary/5 dark:border-primary/10 shadow-xs"
+              : "border-border bg-card hover:bg-muted/40"
           }`}
         >
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-2.5">
             <div>
-              <h3 className="text-sm font-semibold">All Vehicles</h3>
+              <h3 className="text-xs font-bold leading-none text-foreground">All Vehicles</h3>
 
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Show all vehicles on map
+              <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                Show all active units
               </p>
             </div>
 
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-              <Layers3 className="h-4 w-4" />
+            <div className="flex h-8.5 w-8.5 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/10">
+              <Layers3 className="h-4.5 w-4.5" />
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="mt-3.5 flex items-center gap-3.5 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
             <div>
-              <span className="font-semibold text-foreground">
+              <span className="font-bold text-foreground">
                 {vehicles.length}
               </span>{" "}
               Total
             </div>
 
-            <div>
-              <span className="font-semibold text-green-500">
+            <div className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              <span className="font-bold text-success">
                 {movingCount}
               </span>{" "}
               Moving
@@ -108,9 +106,8 @@ export default function VehicleList({
         </button>
 
         {/* VEHICLES */}
-
         {filtered.length === 0 ? (
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-6 text-center text-xs text-muted-foreground font-medium">
             No vehicles found.
           </p>
         ) : (

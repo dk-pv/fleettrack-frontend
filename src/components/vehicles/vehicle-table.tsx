@@ -27,7 +27,11 @@ interface Vehicle {
   createdAt: string;
 }
 
-export default function VehicleTable() {
+interface VehicleTableProps {
+  searchQuery?: string;
+}
+
+export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const { user } = useAuthStore();
@@ -50,12 +54,25 @@ export default function VehicleTable() {
   }, []);
 
   const filteredVehicles = useMemo(() => {
-    if (statusFilter === "ALL") {
-      return vehicles;
+    let list = vehicles;
+
+    if (statusFilter !== "ALL") {
+      list = list.filter((vehicle) => vehicle.status === statusFilter);
     }
 
-    return vehicles.filter((vehicle) => vehicle.status === statusFilter);
-  }, [vehicles, statusFilter]);
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (vehicle) =>
+          vehicle.vehicleNumber?.toLowerCase().includes(q) ||
+          vehicle.vehicleName?.toLowerCase().includes(q) ||
+          vehicle.driverName?.toLowerCase().includes(q) ||
+          vehicle.clientName?.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [vehicles, statusFilter, searchQuery]);
 
   const deleteVehicle = async (id: string) => {
     const confirmDelete = confirm(
@@ -88,50 +105,51 @@ export default function VehicleTable() {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-background">
+    <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
       {/* Header */}
       <div className="border-b border-border px-5 py-4">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           All Vehicles ({filteredVehicles.length})
         </h3>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border text-left">
-              <th className="px-5 py-4 text-sm font-semibold">Vehicle</th>
+      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+        <table className="w-full border-collapse text-left">
+          <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b border-border z-10">
+            <tr>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vehicle</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Driver</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Driver</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">GPS Device</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">GPS Device</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Client</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Client</th>
 
-              <th className="px-5 py-4 text-sm font-semibold">
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1 hover:text-primary">
+                    <button className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer outline-none select-none">
                       Status
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setStatusFilter("ALL")}>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setStatusFilter("ALL")}>
                       All
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => setStatusFilter("MOVING")}>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setStatusFilter("MOVING")}>
                       Moving
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => setStatusFilter("IDLE")}>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setStatusFilter("IDLE")}>
                       Idle
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
+                      className="cursor-pointer"
                       onClick={() => setStatusFilter("OFFLINE")}
                     >
                       Offline
@@ -140,75 +158,87 @@ export default function VehicleTable() {
                 </DropdownMenu>
               </th>
 
-              <th className="px-5 py-4 text-sm font-semibold">Created</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Created</th>
 
-              <th className="px-5 py-4 text-right text-sm font-semibold">
+              <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
 
-          <tbody>
-            {filteredVehicles.map((vehicle) => (
-              <tr
-                key={vehicle.id}
-                className="border-b border-border last:border-none"
-              >
-                <td className="px-5 py-5">
-                  <div>
-                    <h4 className="text-sm font-semibold">
-                      {vehicle.vehicleNumber}
-                    </h4>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {vehicle.vehicleName}
-                    </p>
-                  </div>
-                </td>
-
-                <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {vehicle.driverName}
-                </td>
-
-                <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {vehicle.gpsDeviceId}
-                </td>
-
-                <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {vehicle.clientName}
-                </td>
-
-                <td className="px-5 py-5">
-                  <VehicleStatusBadge status={vehicle.status} />
-                </td>
-
-                <td className="px-5 py-5 text-sm text-muted-foreground">
-                  {new Date(vehicle.createdAt).toLocaleDateString()}
-                </td>
-
-                <td className="px-5 py-5">
-                  <div className="flex justify-end gap-4">
-                    <AddVehicleModal editVehicle={vehicle}>
-                      <button>
-                        <Pencil className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
-                      </button>
-                    </AddVehicleModal>
-
-                    {user?.role === "ADMIN" && (
-                      <button onClick={() => deleteVehicle(vehicle.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => router.push(`/vehicles/${vehicle.id}`)}
-                      className="text-sm font-medium text-blue-600 hover:underline"
-                    >
-                      View
-                    </button>
-                  </div>
+          <tbody className="divide-y divide-border">
+            {filteredVehicles.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                  No vehicles found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredVehicles.map((vehicle) => (
+                <tr
+                  key={vehicle.id}
+                  className="group hover:bg-muted/30 transition-colors"
+                >
+                  <td className="px-5 py-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">
+                        {vehicle.vehicleNumber}
+                      </h4>
+
+                      <p className="mt-1 text-xs text-muted-foreground font-medium">
+                        {vehicle.vehicleName}
+                      </p>
+                    </div>
+                  </td>
+
+                  <td className="px-5 py-4 text-xs font-semibold text-foreground">
+                    {vehicle.driverName}
+                  </td>
+
+                  <td className="px-5 py-4 text-xs font-mono text-muted-foreground">
+                    {vehicle.gpsDeviceId}
+                  </td>
+
+                  <td className="px-5 py-4 text-xs font-medium text-foreground">
+                    {vehicle.clientName}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <VehicleStatusBadge status={vehicle.status} />
+                  </td>
+
+                  <td className="px-5 py-4 text-xs text-muted-foreground font-medium">
+                    {new Date(vehicle.createdAt).toLocaleDateString()}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-2.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <AddVehicleModal editVehicle={vehicle}>
+                        <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      </AddVehicleModal>
+
+                      {user?.role === "ADMIN" && (
+                        <button 
+                          onClick={() => deleteVehicle(vehicle.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-destructive/10 bg-destructive/5 hover:bg-destructive/15 text-destructive transition-all cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => router.push(`/vehicles/${vehicle.id}`)}
+                        className="flex h-7 px-2.5 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 text-xs font-bold text-primary transition-all cursor-pointer"
+                      >
+                        View
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

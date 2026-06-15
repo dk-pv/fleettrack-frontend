@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronDown, CircleCheck, LogOut, Menu } from "lucide-react";
+import { Bell, ChevronDown, CircleCheck, LogOut, Menu, Search } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import ThemeToggle from "./theme-toggle";
 
@@ -46,14 +46,14 @@ export default function Navbar({ expanded, setSidebarOpen }: NavbarProps) {
   return (
     <header
       className={`
-        fixed top-0 right-0 z-20
+        fixed top-0 right-0 z-25
         flex h-16 items-center justify-between
         border-b border-border
-        bg-background/95 backdrop-blur
+        bg-background/80 backdrop-blur-md
         px-4 sm:px-6 lg:px-8
         transition-all duration-300
         left-0
-${expanded ? "lg:left-[250px]" : "lg:left-[88px]"}
+        ${expanded ? "lg:left-[250px]" : "lg:left-[88px]"}
       `}
     >
       {/* Left */}
@@ -61,31 +61,37 @@ ${expanded ? "lg:left-[250px]" : "lg:left-[88px]"}
         {/* Mobile Menu */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors lg:hidden"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4.5 w-4.5 text-muted-foreground" />
         </button>
 
         {/* Search */}
-        <div className="hidden md:block w-[260px] lg:w-[400px]">
-          <input
-            type="text"
-            placeholder="Search vehicles..."
-            className="
-              h-11 w-full rounded-xl border border-border
-              bg-muted px-4 text-sm outline-none
-              placeholder:text-muted-foreground
-              focus:border-primary
-            "
-          />
+        <div className="hidden md:block w-[240px] lg:w-[320px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search dashboard..."
+              className="
+                h-9 w-full rounded-lg border border-border
+                bg-muted/40 pl-9 pr-4 text-xs outline-none transition-all
+                placeholder:text-muted-foreground
+                focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20
+              "
+            />
+          </div>
         </div>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* System Status */}
-        <div className="hidden xl:flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400">
-          <CircleCheck className="h-4 w-4" />
+        <div className="hidden sm:flex items-center gap-2 rounded-full bg-success/10 px-3.5 py-1.5 text-xs font-semibold text-success border border-success/10">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-full w-full rounded-full bg-success" />
+          </span>
           <span>All Systems Online</span>
         </div>
 
@@ -93,38 +99,37 @@ ${expanded ? "lg:left-[250px]" : "lg:left-[88px]"}
         <ThemeToggle />
 
         {/* Notifications */}
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted">
-          <Bell className="h-5 w-5" />
-
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
+        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-muted text-muted-foreground hover:text-foreground">
+          <Bell className="h-4 w-4" />
+          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-destructive" />
         </button>
 
         {/* Profile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-muted">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+            <button className="flex items-center gap-2.5 rounded-lg border border-border bg-background px-2.5 py-1.5 hover:bg-muted/80 transition-all cursor-pointer">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {getInitials()}
               </div>
 
               <div className="hidden lg:block text-left">
-                <h4 className="text-sm font-semibold">
+                <h4 className="text-xs font-semibold leading-tight text-foreground">
                   {user?.name || "Unknown"}
                 </h4>
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground font-medium mt-0.5 leading-none">
                   {formatRole(user?.role)}
                 </p>
               </div>
 
-              <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-muted-foreground transition-transform duration-200" />
             </button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem
               onClick={handleLogout}
-              className="cursor-pointer text-red-500 focus:text-red-500"
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout

@@ -61,7 +61,7 @@ export default function Sidebar({
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-xs lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -78,11 +78,11 @@ export default function Sidebar({
           }
         }}
         className={`
-        fixed left-0 top-0 z-[100] flex h-screen flex-col
-          border-r border-white/10
-          bg-[linear-gradient(180deg,#111827_0%,#0f172a_55%,#020817_100%)]
-          text-white
-          transition-all duration-300
+          fixed left-0 top-0 z-[100] flex h-screen flex-col
+          border-r border-border
+          bg-card
+          text-card-foreground
+          transition-all duration-300 ease-in-out
 
           ${expanded ? "lg:w-[250px]" : "lg:w-[88px]"}
 
@@ -94,32 +94,35 @@ export default function Sidebar({
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600">
-              <Truck className="h-5 w-5" />
+        <div className="flex items-center justify-between border-b border-border px-5 py-5 h-16">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform duration-300 hover:scale-105">
+              <Truck className="h-4.5 w-4.5" />
             </div>
 
             <div
-              className={`transition-all duration-200 ${
-                expanded ? "lg:block" : "lg:hidden"
+              className={`transition-all duration-300 ${
+                expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-4 lg:hidden"
               } block`}
             >
-              <h1 className="text-xl font-bold">FleetTrack</h1>
+              <h1 className="text-sm font-semibold tracking-tight leading-none text-foreground">FleetTrack</h1>
 
-              <p className="text-xs text-slate-400">GPS Monitoring</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-medium tracking-wider uppercase">GPS Portal</p>
             </div>
           </div>
 
           {/* Mobile Close */}
-          <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
+          <button 
+            className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" 
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 px-3 py-6">
-          <ul className="space-y-2">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto no-scrollbar">
+          <ul className="space-y-1">
             {sidebarMenu
               .filter((item) => item.roles.includes(user?.role || "VIEWER"))
               .map((item) => {
@@ -133,23 +136,28 @@ export default function Sidebar({
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
                       className={`
-                        flex h-[52px] items-center gap-4 rounded-xl px-4
-                        transition-all duration-300
+                        relative flex h-10 items-center gap-3.5 rounded-lg px-3.5
+                        transition-all duration-200 group/navlink
 
                         ${
                           active
-                            ? "bg-blue-600 text-white"
-                            : "text-slate-300 hover:bg-white/5 hover:text-white"
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                         }
                       `}
                     >
-                      <Icon className="h-5 w-5 min-w-5" />
+                      {/* Left border active indicator */}
+                      {active && (
+                        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
+                      )}
+
+                      <Icon className={`h-4.5 w-4.5 min-w-[18px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
 
                       <span
                         className={`
-                          text-sm font-medium whitespace-nowrap
+                          text-xs font-medium whitespace-nowrap transition-all duration-300
 
-                          ${expanded ? "lg:block" : "lg:hidden"}
+                          ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
 
                           block
                         `}
@@ -164,17 +172,17 @@ export default function Sidebar({
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-white/10 px-5 py-5">
+        <div className="border-t border-border px-5 py-4 flex items-center justify-between">
           <p
             className={`
-              text-xs text-slate-500
+              text-[10px] text-muted-foreground font-semibold uppercase tracking-wider
 
               ${expanded ? "lg:block" : "lg:hidden"}
 
               block
             `}
           >
-            Version 1.0.0
+            v1.0.0
           </p>
         </div>
       </aside>

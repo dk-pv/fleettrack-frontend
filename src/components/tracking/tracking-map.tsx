@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet.marker.slideto";
-
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  MapContainer,
+  GoogleMap,
+  Marker,
   Polyline,
-  TileLayer,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
+  useJsApiLoader,
+} from "@react-google-maps/api";
 import { LocateFixed, Minus, Navigation2, Plus } from "lucide-react";
 import {
   buildFadedTrailSegments,
@@ -56,22 +51,63 @@ interface TrackingMapProps {
 /* CONSTANTS                                          */
 /* -------------------------------------------------- */
 
-const DEFAULT_LOCATION: [number, number] = [11.2588, 75.7804];
+const DEFAULT_LOCATION = { lat: 11.2588, lng: 75.7804 };
+const DEFAULT_ZOOM = 8;
 const MAX_TRAIL_POINTS = 300;
 const TRAIL_COLOR = "#3b82f6";
 const MOVING_COLOR = "#10b981";
 
+const MAP_CONTAINER_STYLE: React.CSSProperties = {
+  height: "100%",
+  width: "100%",
+};
+
+const MAP_OPTIONS: google.maps.MapOptions = {
+  disableDefaultUI: true,
+  gestureHandling: "greedy",
+  mapTypeControl: false,
+  streetViewControl: false,
+  fullscreenControl: false,
+  zoomControl: false,
+  clickableIcons: false,
+  styles: [
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+  ],
+};
+
 /* -------------------------------------------------- */
-/* ROTATING VEHICLE ICON                              */
+/* INJECT PULSE KEYFRAMES                             */
 /* -------------------------------------------------- */
 
-function createVehicleIcon(heading: number, status: string): L.DivIcon {
+if (typeof window !== "undefined") {
+  const styleId = "ft-pulse-ring-style";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      @keyframes pulse-ring {
+        0%   { transform: scale(1);   opacity: 0.8; }
+        80%  { transform: scale(1.8); opacity: 0;   }
+        100% { transform: scale(1.8); opacity: 0;   }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+/* -------------------------------------------------- */
+/* VEHICLE ICON (DivIcon → google.maps.Icon)          */
+/* -------------------------------------------------- */
+
+function createVehicleIconUrl(heading: number, status: string): google.maps.Icon {
   const isMoving = status === "MOVING";
   const color = isMoving
     ? "#10b981"
     : status === "IDLE"
       ? "#f59e0b"
       : "#ef4444";
+
   const pulse = isMoving
     ? `<span style="
         position:absolute;top:-6px;left:-6px;width:52px;height:52px;
@@ -80,36 +116,44 @@ function createVehicleIcon(heading: number, status: string): L.DivIcon {
       "></span>`
     : "";
 
-  return L.divIcon({
-    html: `
+  const svg = `
+    <div style="
+      position:relative;
+      width:40px;height:40px;
+      display:flex;align-items:center;justify-content:center;
+      transform:rotate(${heading}deg);
+      transition:transform 0.6s ease;
+    ">
+      ${pulse}
       <div style="
-        position:relative;
-        width:40px;height:40px;
+        width:36px;height:36px;border-radius:50%;
+        background:white;
+        box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 2px ${color};
         display:flex;align-items:center;justify-content:center;
-        transform:rotate(${heading}deg);
-        transition:transform 0.6s ease;
+        overflow:hidden;
       ">
-        ${pulse}
-        <div style="
-          width:36px;height:36px;border-radius:50%;
-          background:white;
-          box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 2px ${color};
-          display:flex;align-items:center;justify-content:center;
-          overflow:hidden;
-        ">
-          <img src="/cargo-truck.png" style="width:22px;height:22px;object-fit:contain;" />
-        </div>
+        <img src="/cargo-truck.png" style="width:22px;height:22px;object-fit:contain;" />
       </div>
-    `,
-    className: "",
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -24],
-  });
+    </div>
+  `;
+
+  const encoded = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+      <foreignObject width="40" height="40">
+        <div xmlns="http://www.w3.org/1999/xhtml">${svg}</div>
+      </foreignObject>
+    </svg>`
+  )}`;
+
+  return {
+    url: encoded,
+    scaledSize: new google.maps.Size(40, 40),
+    anchor: new google.maps.Point(20, 20),
+  };
 }
 
 /* -------------------------------------------------- */
-/* VEHICLE MARKER (with smooth slide + rotation)      */
+/* VEHICLE MARKER                                     */
 /* -------------------------------------------------- */
 
 interface VehicleMarkerProps {
@@ -119,262 +163,108 @@ interface VehicleMarkerProps {
   onClick: () => void;
 }
 
-function VehicleMarker({
-  vehicle,
-  heading,
-  isSelected,
-  onClick,
-}: VehicleMarkerProps) {
-  const markerRef = useRef<L.Marker | null>(null);
-  const prevPos = useRef<[number, number]>([
-    vehicle.latitude,
-    vehicle.longitude,
-  ]);
-  const map = useMap();
+function VehicleMarker({ vehicle, heading, isSelected, onClick }: VehicleMarkerProps) {
+  const markerRef = useRef<google.maps.Marker | null>(null);
+  const prevPos = useRef<{ lat: number; lng: number }>({
+    lat: vehicle.latitude,
+    lng: vehicle.longitude,
+  });
 
-  // Create the icon
-  const icon = useMemo(
-    () => createVehicleIcon(heading, vehicle.status),
-    [heading, vehicle.status],
+  const position = useMemo(
+    () => ({ lat: vehicle.latitude, lng: vehicle.longitude }),
+    [vehicle.latitude, vehicle.longitude]
   );
 
-  // Initialize marker once
-  useEffect(() => {
-    if (!map) return;
+  // Smooth animated move toward new position
+  const animateMarkerTo = useCallback(
+    (marker: google.maps.Marker, destination: { lat: number; lng: number }) => {
+      const start = marker.getPosition();
+      if (!start) return;
 
-    const marker = L.marker([vehicle.latitude, vehicle.longitude], {
-      icon,
-      zIndexOffset: isSelected ? 1000 : 0,
-    });
+      const startLat = start.lat();
+      const startLng = start.lng();
+      const destLat = destination.lat;
+      const destLng = destination.lng;
 
-    marker.on("click", onClick);
-    marker.addTo(map);
-    markerRef.current = marker;
+      const duration = 1500;
+      const startTime = performance.now();
 
-    prevPos.current = [vehicle.latitude, vehicle.longitude];
+      const step = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // ease-out cubic
+        const ease = 1 - Math.pow(1 - progress, 3);
 
-    return () => {
-      marker.removeFrom(map);
-    };
+        const lat = startLat + (destLat - startLat) * ease;
+        const lng = startLng + (destLng - startLng) * ease;
+        marker.setPosition({ lat, lng });
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      };
+
+      requestAnimationFrame(step);
+    },
+    []
+  );
+
+  const handleLoad = useCallback(
+    (marker: google.maps.Marker) => {
+      markerRef.current = marker;
+      prevPos.current = { lat: vehicle.latitude, lng: vehicle.longitude };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, vehicle.id]);
+    [vehicle.id]
+  );
 
-  // Update icon when heading/status changes
-  useEffect(() => {
-    if (!markerRef.current) return;
-    markerRef.current.setIcon(icon);
-    markerRef.current.setZIndexOffset(isSelected ? 1000 : 0);
-  }, [icon, isSelected]);
+  const handleUnmount = useCallback(() => {
+    markerRef.current = null;
+  }, []);
 
-  // Smooth slide to new position
+  // Smooth slide when position changes
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) return;
 
-    const [prevLat, prevLng] = prevPos.current;
+    const { lat: prevLat, lng: prevLng } = prevPos.current;
     const newLat = vehicle.latitude;
     const newLng = vehicle.longitude;
 
     if (!isValidCoordinate(newLat, newLng)) return;
 
     const dist = haversineDistance(prevLat, prevLng, newLat, newLng);
-    // Only animate if actually moved (avoids jitter on same position)
     if (dist > 1) {
-      (marker as any).slideTo([newLat, newLng], {
-        duration: 1500,
-        keepAtCenter: false,
-      });
-      prevPos.current = [newLat, newLng];
+      animateMarkerTo(marker, { lat: newLat, lng: newLng });
+      prevPos.current = { lat: newLat, lng: newLng };
     }
-  }, [vehicle.latitude, vehicle.longitude]);
+  }, [vehicle.latitude, vehicle.longitude, animateMarkerTo]);
 
-  return null;
-}
+  // Icon is fully rebuilt on heading / status change — includes rotation, color ring, pulse
+ const icon = useMemo(
+  () => ({
+    url: "/cargo-truck.png",
+    scaledSize: new google.maps.Size(40, 40),
+  }),
+  []
+);
 
-/* -------------------------------------------------- */
-/* MAP CONTROLLER (recenter / follow)                 */
-/* -------------------------------------------------- */
-
-function MapController({
-  selectedVehicle,
-  centerTrigger,
-  followMode,
-  onDragStart,
-}: {
-  selectedVehicle: Vehicle | null;
-  centerTrigger: number;
-  followMode: boolean;
-  onDragStart: () => void;
-}) {
-  const map = useMap();
-  const lastCenterTrigger = useRef(centerTrigger);
-
-  useMapEvents({
-    dragstart: () => {
-      onDragStart();
-    },
-  });
-
-  // Pan to center on button press
+  // Update icon imperatively when it changes (avoids full re-mount)
   useEffect(() => {
-    if (!selectedVehicle) return;
-    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude))
-      return;
-
-    map.setView([selectedVehicle.latitude, selectedVehicle.longitude], 16, {
-      animate: true,
-    });
-    lastCenterTrigger.current = centerTrigger;
-  }, [centerTrigger, map, selectedVehicle]);
-
-  // Follow mode: smooth pan when selected vehicle moves
-  useEffect(() => {
-    if (!followMode || !selectedVehicle) return;
-    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude))
-      return;
-
-    map.panTo([selectedVehicle.latitude, selectedVehicle.longitude], {
-      animate: true,
-      duration: 0.8,
-    });
-  }, [
-    followMode,
-    selectedVehicle,
-    selectedVehicle?.latitude,
-    selectedVehicle?.longitude,
-    map,
-  ]);
-
-  return null;
-}
-
-/* -------------------------------------------------- */
-/* FIT ALL VEHICLES                                   */
-/* -------------------------------------------------- */
-
-function FitAllVehicles({ vehicles }: { vehicles: Vehicle[] }) {
-  const map = useMap();
-  const fitted = useRef(false);
-
-  useEffect(() => {
-    if (fitted.current || vehicles.length === 0) return;
-
-    const valid = vehicles.filter((v) =>
-      isValidCoordinate(v.latitude, v.longitude),
-    );
-    if (valid.length === 0) return;
-
-    if (valid.length === 1) {
-      map.setView([valid[0].latitude, valid[0].longitude], 15, {
-        animate: true,
-      });
-    } else {
-      const bounds = L.latLngBounds(
-        valid.map((v) => [v.latitude, v.longitude]),
-      );
-      map.fitBounds(bounds, { padding: [80, 80], animate: true });
-    }
-
-    fitted.current = true;
-  }, [vehicles, map]);
-
-  return null;
-}
-
-/* -------------------------------------------------- */
-/* MAP CONTROLS                                       */
-/* -------------------------------------------------- */
-
-function MapControls({
-  onLocate,
-  followMode,
-  onToggleFollow,
-}: {
-  onLocate: () => void;
-  followMode: boolean;
-  onToggleFollow: () => void;
-}) {
-  const map = useMap();
-  return (
-    <div className="absolute bottom-4 right-4 z-[400] flex flex-col gap-2.5 md:gap-2">
-      <button
-        onClick={() => map.zoomIn()}
-        className="flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
-        title="Zoom in"
-      >
-        <Plus className="h-5 w-5 md:h-4 md:w-4" />
-      </button>
-
-      <button
-        onClick={() => map.zoomOut()}
-        className="flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
-        title="Zoom out"
-      >
-        <Minus className="h-5 w-5 md:h-4 md:w-4" />
-      </button>
-
-      <button
-        onClick={onLocate}
-        className="flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white shadow-lg hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548] transition-all"
-        title="Center on vehicle"
-      >
-        <LocateFixed className="h-5 w-5 md:h-4 md:w-4" />
-      </button>
-
-      <button
-        onClick={onToggleFollow}
-        className={`flex h-12 w-12 md:h-10 md:w-10 items-center justify-center rounded-xl shadow-lg transition-all ${
-          followMode
-            ? "bg-blue-500 text-white hover:bg-blue-600"
-            : "bg-white hover:bg-gray-50 dark:bg-[#1f2937] dark:hover:bg-[#263548]"
-        }`}
-        title={
-          followMode ? "Following vehicle (click to stop)" : "Follow vehicle"
-        }
-      >
-        <Navigation2 className={`h-5 w-5 md:h-4 md:w-4 ${followMode ? "fill-white" : ""}`} />
-      </button>
-    </div>
-  );
-}
-
-/* -------------------------------------------------- */
-/* LIVE STATUS CARD                                   */
-/* -------------------------------------------------- */
-
-function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
-  const moving = vehicles.filter((v) => v.status === "MOVING").length;
-  const idle = vehicles.filter((v) => v.status === "IDLE").length;
+    if (!markerRef.current) return;
+    markerRef.current.setIcon(icon);
+    markerRef.current.setZIndex(isSelected ? 1000 : 1);
+  }, [icon, isSelected]);
 
   return (
-    <div className="absolute top-4 left-4 md:top-auto md:bottom-4 md:left-4 z-[400] rounded-2xl bg-white/95 backdrop-blur-sm px-3.5 py-2 md:px-5 md:py-3 shadow-xl dark:bg-[#1a2236]/95 border border-white/20">
-      <div className="flex gap-3 md:gap-5">
-        <div className="text-center">
-          <p className="text-lg md:text-xl font-bold text-emerald-500">{moving}</p>
-          <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
-            Moving
-          </p>
-        </div>
-
-        <div className="w-px bg-border" />
-
-        <div className="text-center">
-          <p className="text-lg md:text-xl font-bold text-amber-500">{idle}</p>
-          <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
-            Idle
-          </p>
-        </div>
-
-        <div className="w-px bg-border" />
-
-        <div className="text-center">
-          <p className="text-lg md:text-xl font-bold text-blue-500">{vehicles.length}</p>
-          <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
-            Total
-          </p>
-        </div>
-      </div>
-    </div>
+    <Marker
+      position={position}
+      icon={icon}
+      zIndex={isSelected ? 1000 : 1}
+      onClick={onClick}
+      onLoad={handleLoad}
+      onUnmount={handleUnmount}
+    />
   );
 }
 
@@ -392,28 +282,27 @@ function TrailRenderer({ points }: { points: TrailPoint[] }) {
       {segments.map((seg, idx) => (
         <Polyline
           key={idx}
-          positions={seg.positions}
-          pathOptions={{
-            color: TRAIL_COLOR,
-            weight: seg.weight,
-            opacity: seg.opacity,
-            lineCap: "round",
-            lineJoin: "round",
+          path={seg.positions.map(([lat, lng]) => ({ lat, lng }))}
+          options={{
+            strokeColor: TRAIL_COLOR,
+            strokeWeight: seg.weight,
+            strokeOpacity: seg.opacity,
+            geodesic: true,
           }}
         />
       ))}
-      {/* Direction arrow at the tip */}
+      {/* Direction highlight at the tip */}
       {points.length >= 2 && (
         <Polyline
-          positions={[
-            [points[points.length - 2].lat, points[points.length - 2].lng],
-            [points[points.length - 1].lat, points[points.length - 1].lng],
+          path={[
+            { lat: points[points.length - 2].lat, lng: points[points.length - 2].lng },
+            { lat: points[points.length - 1].lat, lng: points[points.length - 1].lng },
           ]}
-          pathOptions={{
-            color: MOVING_COLOR,
-            weight: 5,
-            opacity: 1,
-            lineCap: "round",
+          options={{
+            strokeColor: MOVING_COLOR,
+            strokeWeight: 5,
+            strokeOpacity: 1,
+            geodesic: true,
           }}
         />
       )}
@@ -422,25 +311,104 @@ function TrailRenderer({ points }: { points: TrailPoint[] }) {
 }
 
 /* -------------------------------------------------- */
-/* MAIN COMPONENT                                     */
+/* LIVE STATUS CARD                                   */
 /* -------------------------------------------------- */
 
-// Inject pulse-ring keyframes into document head once
-if (typeof window !== "undefined") {
-  const styleId = "ft-pulse-ring-style";
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement("style");
-    style.id = styleId;
-    style.textContent = `
-      @keyframes pulse-ring {
-        0% { transform: scale(1); opacity: 0.8; }
-        80% { transform: scale(1.8); opacity: 0; }
-        100% { transform: scale(1.8); opacity: 0; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
+function LiveStatusCard({ vehicles }: { vehicles: Vehicle[] }) {
+  const moving = vehicles.filter((v) => v.status === "MOVING").length;
+  const idle = vehicles.filter((v) => v.status === "IDLE").length;
+
+  return (
+    <div className="absolute top-4 left-4 md:top-auto md:bottom-4 md:left-4 z-[40] rounded-xl bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-md border border-border select-none">
+      <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider">
+        <div className="text-center">
+          <p className="text-sm font-extrabold text-success leading-none">{moving}</p>
+          <p className="text-[9px] text-muted-foreground font-bold mt-1">
+            Moving
+          </p>
+        </div>
+
+        <div className="h-6 w-px bg-border" />
+
+        <div className="text-center">
+          <p className="text-sm font-extrabold text-warning leading-none">{idle}</p>
+          <p className="text-[9px] text-muted-foreground font-bold mt-1">
+            Idle
+          </p>
+        </div>
+
+        <div className="h-6 w-px bg-border" />
+
+        <div className="text-center">
+          <p className="text-sm font-extrabold text-foreground leading-none">{vehicles.length}</p>
+          <p className="text-[9px] text-muted-foreground font-bold mt-1">
+            Total
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
+
+/* -------------------------------------------------- */
+/* MAP CONTROLS                                       */
+/* -------------------------------------------------- */
+
+function MapControls({
+  onLocate,
+  followMode,
+  onToggleFollow,
+  mapRef,
+}: {
+  onLocate: () => void;
+  followMode: boolean;
+  onToggleFollow: () => void;
+  mapRef: React.RefObject<google.maps.Map | null>;
+}) {
+  return (
+    <div className="absolute bottom-4 right-4 z-[40] flex flex-col gap-1.5">
+      <button
+        onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? DEFAULT_ZOOM) + 1)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        title="Zoom in"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? DEFAULT_ZOOM) - 1)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        title="Zoom out"
+      >
+        <Minus className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={onLocate}
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        title="Center on vehicle"
+      >
+        <LocateFixed className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={onToggleFollow}
+        className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-all cursor-pointer shadow-sm outline-none ${
+          followMode
+            ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+            : "bg-card/90 backdrop-blur-md border-border hover:bg-muted/80 text-foreground"
+        }`}
+        title={followMode ? "Following vehicle (click to stop)" : "Follow vehicle"}
+      >
+        <Navigation2 className={`h-4 w-4 ${followMode ? "fill-white text-primary-foreground" : "text-foreground"}`} />
+      </button>
+    </div>
+  );
+}
+
+/* -------------------------------------------------- */
+/* MAIN COMPONENT                                     */
+/* -------------------------------------------------- */
 
 export default function TrackingMap({
   vehicles,
@@ -448,17 +416,26 @@ export default function TrackingMap({
   centerTrigger,
   followMode: externalFollowMode = false,
 }: TrackingMapProps) {
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
+    id: "google-map-script",
+  });
+
   // Trail state: vehicleId → sorted, filtered TrailPoint[]
-  const [vehicleTrails, setVehicleTrails] = useState<
-    Record<string, TrailPoint[]>
-  >({});
+  const [vehicleTrails, setVehicleTrails] = useState<Record<string, TrailPoint[]>>({});
   const [internalFollowMode, setInternalFollowMode] = useState(false);
   const [localCenterTrigger, setLocalCenterTrigger] = useState(0);
   const followMode = externalFollowMode || internalFollowMode;
 
+  // Google Maps instance ref
+  const mapRef = useRef<google.maps.Map | null>(null);
+
   // Track last heading per vehicle for rotating icon
   const headingsRef = useRef<Record<string, number>>({});
   const loadedHistoriesRef = useRef<Record<string, boolean>>({});
+
+  // Track whether we've done the initial fitBounds
+  const fittedRef = useRef(false);
 
   const validVehicles = useMemo(
     () =>
@@ -466,10 +443,107 @@ export default function TrackingMap({
         (v) =>
           v.latitude != null &&
           v.longitude != null &&
-          isValidCoordinate(v.latitude, v.longitude),
+          isValidCoordinate(v.latitude, v.longitude)
       ),
-    [vehicles],
+    [vehicles]
   );
+
+  const handleMapUnmount = useCallback(() => {
+    mapRef.current = null;
+  }, []);
+
+  /* ------------------------------------------------ */
+  /* FIT ALL VEHICLES helper                          */
+  /* ------------------------------------------------ */
+
+  const fitAllVehicles = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || validVehicles.length === 0) return;
+
+    if (validVehicles.length === 1) {
+      map.setCenter({ lat: validVehicles[0].latitude, lng: validVehicles[0].longitude });
+      map.setZoom(15);
+    } else {
+      const bounds = new google.maps.LatLngBounds();
+      validVehicles.forEach((v) => bounds.extend({ lat: v.latitude, lng: v.longitude }));
+      map.fitBounds(bounds, 80);
+    }
+  }, [validVehicles]);
+
+  /* ------------------------------------------------ */
+  /* FIT ALL VEHICLES on initial map load             */
+  /* ------------------------------------------------ */
+
+  const handleMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    // Defer so the map container has rendered at full size
+    setTimeout(() => {
+      if (!selectedVehicle) {
+        fitAllVehicles();
+        fittedRef.current = true;
+      }
+    }, 100);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ------------------------------------------------ */
+  /* CENTER TRIGGER (from parent + locate button)     */
+  /* ------------------------------------------------ */
+
+  const effectiveCenterTrigger = centerTrigger + localCenterTrigger;
+  const lastCenterTriggerRef = useRef(effectiveCenterTrigger);
+
+  useEffect(() => {
+    if (effectiveCenterTrigger === lastCenterTriggerRef.current) return;
+    lastCenterTriggerRef.current = effectiveCenterTrigger;
+
+    if (!selectedVehicle) return;
+    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude)) return;
+    if (!mapRef.current) return;
+
+    mapRef.current.panTo({ lat: selectedVehicle.latitude, lng: selectedVehicle.longitude });
+    mapRef.current.setZoom(16);
+  }, [effectiveCenterTrigger, selectedVehicle]);
+
+  /* ------------------------------------------------ */
+  /* SELECTION CHANGE: pan-to or fit-all              */
+  /* ------------------------------------------------ */
+
+  const prevSelectedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const prevId = prevSelectedIdRef.current;
+    const currId = selectedVehicle?.id ?? null;
+
+    prevSelectedIdRef.current = currId;
+
+    if (!mapRef.current) return;
+
+    if (currId !== null) {
+      // A vehicle was selected → pan & zoom in
+      if (!isValidCoordinate(selectedVehicle!.latitude, selectedVehicle!.longitude)) return;
+      mapRef.current.panTo({ lat: selectedVehicle!.latitude, lng: selectedVehicle!.longitude });
+      mapRef.current.setZoom(16);
+    } else if (prevId !== null) {
+      // Vehicle was deselected → fit all vehicles
+      fitAllVehicles();
+    }
+  // selectedVehicle?.id is the key dependency; fitAllVehicles is stable via useCallback
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVehicle?.id]);
+
+  /* ------------------------------------------------ */
+  /* FOLLOW MODE: smooth pan when vehicle moves       */
+  /* ------------------------------------------------ */
+
+  useEffect(() => {
+    if (!followMode || !selectedVehicle) return;
+    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude)) return;
+    if (!mapRef.current) return;
+
+    mapRef.current.panTo({ lat: selectedVehicle.latitude, lng: selectedVehicle.longitude });
+  // followMode must be in deps so enabling it immediately pans to the vehicle
+  }, [followMode, selectedVehicle, selectedVehicle?.latitude, selectedVehicle?.longitude]);
 
   /* ------------------------------------------------ */
   /* LOAD HISTORY when selected vehicle changes       */
@@ -488,7 +562,7 @@ export default function TrackingMap({
         const token = localStorage.getItem("token");
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/vehicles/${selectedVehicle.id}/history`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
         if (!data.success || !Array.isArray(data.history)) return;
@@ -574,7 +648,7 @@ export default function TrackingMap({
             last.lat,
             last.lng,
             newPoint.lat,
-            newPoint.lng,
+            newPoint.lng
           );
           if (dist < 10) continue; // < 10m → skip
 
@@ -583,7 +657,7 @@ export default function TrackingMap({
             last.lat,
             last.lng,
             newPoint.lat,
-            newPoint.lng,
+            newPoint.lng
           );
           newPoint.heading = bearing;
           headingsRef.current[vehicle.id] = bearing;
@@ -614,18 +688,34 @@ export default function TrackingMap({
     : validVehicles;
 
   /* ------------------------------------------------ */
+  /* DRAG — disable follow mode                       */
+  /* ------------------------------------------------ */
+
+  const handleDragStart = useCallback(() => {
+    setInternalFollowMode(false);
+  }, []);
+
+  /* ------------------------------------------------ */
   /* RENDER                                           */
   /* ------------------------------------------------ */
+
+  if (!isLoaded) {
+    return (
+      <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden flex items-center justify-center bg-muted">
+        <span className="text-muted-foreground text-sm">Loading map…</span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden">
       {/* LIVE BADGE */}
-      <div className="absolute right-4 top-4 z-[400] flex items-center gap-1.5 md:gap-2 rounded-xl bg-white/95 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 shadow-lg dark:bg-[#1a2236]/95 border border-white/10">
-        <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-full w-full rounded-full bg-emerald-500" />
+      <div className="absolute right-4 top-4 z-[40] flex items-center gap-2 rounded-lg bg-card/90 backdrop-blur-md px-3.5 py-1.5 shadow-sm border border-border">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+          <span className="relative inline-flex h-full w-full rounded-full bg-success" />
         </span>
-        <span className="text-xs md:text-sm font-semibold tracking-tight">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">
           Live Tracking
         </span>
       </div>
@@ -633,34 +723,24 @@ export default function TrackingMap({
       {/* STATUS CARD */}
       <LiveStatusCard vehicles={vehicles} />
 
-      {/* MAP */}
-      <MapContainer
+      {/* MAP CONTROLS (outside GoogleMap so they remain above the map) */}
+      <MapControls
+        onLocate={() => setLocalCenterTrigger((prev) => prev + 1)}
+        followMode={internalFollowMode}
+        onToggleFollow={() => setInternalFollowMode((v) => !v)}
+        mapRef={mapRef}
+      />
+
+      {/* GOOGLE MAP */}
+      <GoogleMap
+        mapContainerStyle={MAP_CONTAINER_STYLE}
         center={DEFAULT_LOCATION}
-        zoom={8}
-        scrollWheelZoom
-        className="h-full w-full"
-        style={{ height: "100%", width: "100%", zIndex: 1 }}
-        zoomControl={false}
-        preferCanvas
+        zoom={DEFAULT_ZOOM}
+        options={MAP_OPTIONS}
+        onLoad={handleMapLoad}
+        onUnmount={handleMapUnmount}
+        onDragStart={handleDragStart}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          subdomains={["a", "b", "c", "d"]}
-          maxZoom={20}
-        />
-
-        {/* Fit to all vehicles on initial load */}
-        {!selectedVehicle && <FitAllVehicles vehicles={validVehicles} />}
-
-        {/* Recenter / follow */}
-        <MapController
-          selectedVehicle={selectedVehicle}
-          centerTrigger={centerTrigger + localCenterTrigger}
-          followMode={followMode}
-          onDragStart={() => setInternalFollowMode(false)}
-        />
-
         {/* TRAIL POLYLINES */}
         {validVehicles.map((vehicle) => {
           const trail = vehicleTrails[vehicle.id];
@@ -684,14 +764,7 @@ export default function TrackingMap({
             />
           );
         })}
-
-        {/* MAP CONTROLS */}
-        <MapControls
-          onLocate={() => setLocalCenterTrigger((prev) => prev + 1)}
-          followMode={internalFollowMode}
-          onToggleFollow={() => setInternalFollowMode((v) => !v)}
-        />
-      </MapContainer>
+      </GoogleMap>
     </div>
   );
 }

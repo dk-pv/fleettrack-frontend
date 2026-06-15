@@ -8,35 +8,35 @@ export default function ActiveVehicles({
   vehicles,
 }: ActiveVehiclesProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background p-5">
-      <h3 className="mb-6 text-lg font-semibold">
-        Active Vehicles
-      </h3>
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Active Vehicles
+        </h3>
 
-      <div className="space-y-4">
+        <p className="text-xs text-muted-foreground mt-1">Real-time status of active fleet units</p>
+      </div>
+
+      <div className="space-y-3 mt-6">
         {vehicles?.map((vehicle) => (
           <div
             key={vehicle.id}
-            className="flex items-center justify-between rounded-xl bg-muted p-4"
+            className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-4 transition-all duration-200 hover:bg-muted/40"
           >
             {/* LEFT */}
 
-            <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10">
-                <Truck className="h-5 w-5 text-blue-500" />
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 border border-primary/10">
+                <Truck className="h-4.5 w-4.5 text-primary" />
               </div>
 
               <div>
-                <h4 className="font-medium">
-                  {
-                    vehicle.vehicleNumber
-                  }
+                <h4 className="text-sm font-bold leading-none text-foreground">
+                  {vehicle.vehicleNumber}
                 </h4>
 
-                <p className="text-sm text-muted-foreground">
-                  {
-                    vehicle.driverName
-                  }
+                <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+                  {vehicle.driverName}
                 </p>
               </div>
             </div>
@@ -45,18 +45,26 @@ export default function ActiveVehicles({
 
             <div className="text-right">
               <div
-                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase border ${
                   vehicle.status === "MOVING"
-                    ? "bg-green-500/10 text-green-600"
+                    ? "bg-success/10 text-success border-success/15"
                     : vehicle.status === "IDLE"
-                      ? "bg-yellow-500/10 text-yellow-600"
-                      : "bg-red-500/10 text-red-500"
+                      ? "bg-warning/10 text-warning border border-warning/15"
+                      : "bg-destructive/10 text-destructive border border-destructive/15"
                 }`}
               >
+                <span className={`h-1.5 w-1.5 rounded-full ${
+                  vehicle.status === "MOVING"
+                    ? "bg-success"
+                    : vehicle.status === "IDLE"
+                      ? "bg-warning"
+                      : "bg-destructive"
+                }`} />
+
                 {vehicle.status}
               </div>
 
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-xs text-foreground font-semibold">
                 {vehicle.speed} km/h
               </p>
             </div>

@@ -63,15 +63,15 @@ export default function ClientStats() {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
       {stats.map((item) => (
         <div
           key={item.title}
-          className="rounded-xl border border-border bg-background p-5"
+          className="rounded-2xl border border-border bg-card p-6 shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
         >
-          <p className="text-sm text-muted-foreground">{item.title}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.title}</p>
 
-          <h3 className="mt-6 text-4xl font-bold">{item.value}</h3>
+          <h3 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground leading-none">{item.value}</h3>
         </div>
       ))}
     </div>

@@ -78,41 +78,43 @@ export default function ClientForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4 text-left">
       {/* Name */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Full Name</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Full Name</label>
 
         <input
           type="text"
           placeholder="Enter full name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Email */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Email Address</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Email Address</label>
 
         <input
           type="email"
           placeholder="Enter email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          required
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Role */}
       <div>
-        <label className="mb-2 block text-sm font-medium">User Role</label>
+        <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">User Role</label>
 
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+          className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 cursor-pointer"
         >
           <option value="ADMIN">Admin</option>
 
@@ -125,25 +127,29 @@ export default function ClientForm({
       {/* Password */}
       {!isEdit && (
         <div>
-          <label className="mb-2 block text-sm font-medium">Password</label>
+          <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase tracking-wider">Password</label>
 
           <input
             type="password"
             placeholder="Enter password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="h-11 w-full rounded-lg border border-border bg-muted px-4 text-sm outline-none"
+            required
+            className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3.5 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
           />
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-3 h-11 rounded-lg bg-[#0f172a] px-5 text-sm font-medium text-white dark:bg-white dark:text-black"
-      >
-        {loading ? "Loading..." : buttonText}
-      </button>
+      {/* Submit */}
+      <div className="pt-2 flex justify-end">
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-10 w-full sm:w-auto rounded-lg bg-primary hover:bg-primary/90 px-5 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {loading ? "Saving..." : buttonText}
+        </button>
+      </div>
     </form>
   );
 }
