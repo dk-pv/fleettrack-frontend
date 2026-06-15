@@ -1,25 +1,18 @@
-
-
 export interface TrailPoint {
   lat: number;
   lng: number;
   timestamp: number; // Unix ms
-  heading?: number;  // degrees 0–360
-  speed?: number;    // km/h
+  heading?: number; // degrees 0–360
+  speed?: number; // km/h
 }
-
-/* -------------------------------------------------- */
-/* HAVERSINE DISTANCE                                  */
-/* -------------------------------------------------- */
 
 const EARTH_RADIUS_M = 6371000;
 
-/**
- * Calculates the great-circle distance (in meters) between two GPS coordinates.
- */
 export function haversineDistance(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number,
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
 ): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -37,16 +30,11 @@ export function haversineDistance(
   return EARTH_RADIUS_M * c;
 }
 
-/* -------------------------------------------------- */
-/* BEARING (HEADING)                                   */
-/* -------------------------------------------------- */
-
-/**
- * Calculates bearing in degrees (0 = North, 90 = East) from point A to point B.
- */
 export function calculateBearing(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number,
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
 ): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const toDeg = (rad: number) => (rad * 180) / Math.PI;
@@ -57,20 +45,12 @@ export function calculateBearing(
 
   const y = Math.sin(dLng) * Math.cos(φ2);
   const x =
-    Math.cos(φ1) * Math.sin(φ2) -
-    Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLng);
+    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLng);
 
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
-/* -------------------------------------------------- */
-/* COORDINATE VALIDATION                               */
-/* -------------------------------------------------- */
 
-/**
- * Returns true if the coordinate is a valid GPS position.
- * Filters out 0,0 (null island), extreme values, and NaN.
- */
 export function isValidCoordinate(lat: number, lng: number): boolean {
   if (isNaN(lat) || isNaN(lng)) return false;
   if (lat === 0 && lng === 0) return false;
@@ -79,16 +59,12 @@ export function isValidCoordinate(lat: number, lng: number): boolean {
   return true;
 }
 
-/* -------------------------------------------------- */
-/* GPS NOISE FILTER                                    */
-/* -------------------------------------------------- */
 
-const MIN_DISTANCE_METERS = 10; // skip points closer than this
 
-/**
- * Removes GPS jitter by filtering out points that are too close
- * to their predecessor (< MIN_DISTANCE_METERS apart).
- */
+const MIN_DISTANCE_METERS = 10;
+const MAX_JUMP_DISTANCE = 500;
+
+
 export function filterGPSNoise(
   points: TrailPoint[],
   minDistanceMeters = MIN_DISTANCE_METERS,
@@ -104,7 +80,8 @@ export function filterGPSNoise(
     if (!isValidCoordinate(curr.lat, curr.lng)) continue;
 
     const dist = haversineDistance(prev.lat, prev.lng, curr.lat, curr.lng);
-    if (dist >= minDistanceMeters) {
+
+    if (dist >= minDistanceMeters && dist <= MAX_JUMP_DISTANCE) {
       filtered.push(curr);
     }
   }
@@ -112,14 +89,8 @@ export function filterGPSNoise(
   return filtered;
 }
 
-/* -------------------------------------------------- */
-/* SORT BY TIMESTAMP                                   */
-/* -------------------------------------------------- */
 
-/**
- * Sorts trail points chronologically by timestamp.
- * Removes any points with the exact same timestamp as a predecessor.
- */
+
 export function sortAndDedupeTrail(points: TrailPoint[]): TrailPoint[] {
   const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
 
@@ -138,13 +109,7 @@ export function sortAndDedupeTrail(points: TrailPoint[]): TrailPoint[] {
   return deduped;
 }
 
-/* -------------------------------------------------- */
-/* ADD HEADINGS TO TRAIL                               */
-/* -------------------------------------------------- */
 
-/**
- * Enriches a sorted trail with bearing/heading between consecutive points.
- */
 export function enrichWithHeadings(points: TrailPoint[]): TrailPoint[] {
   return points.map((p, i) => {
     if (i === 0) return { ...p, heading: p.heading ?? 0 };
@@ -155,9 +120,7 @@ export function enrichWithHeadings(points: TrailPoint[]): TrailPoint[] {
   });
 }
 
-/* -------------------------------------------------- */
-/* TRAIL SEGMENTS FOR FADE EFFECT                      */
-/* -------------------------------------------------- */
+
 
 export interface TrailSegment {
   positions: [number, number][];
@@ -165,10 +128,7 @@ export interface TrailSegment {
   weight: number;
 }
 
-/**
- * Splits a trail into 3 segments with fading opacity for a professional
- * GPS trail effect (recent = bright, old = faint).
- */
+
 export function buildFadedTrailSegments(points: TrailPoint[]): TrailSegment[] {
   if (points.length < 2) return [];
 
@@ -211,5 +171,3 @@ export function buildFadedTrailSegments(points: TrailPoint[]): TrailSegment[] {
 
   return segments;
 }
-
-
