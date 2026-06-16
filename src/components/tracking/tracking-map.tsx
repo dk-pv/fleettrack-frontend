@@ -1,22 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  GoogleMap,
-  Polyline,
-  useJsApiLoader,
-} from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import { LocateFixed, Minus, Navigation2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  buildFadedTrailSegments,
   calculateBearing,
-  enrichWithHeadings,
-  filterGPSNoise,
   haversineDistance,
   isValidCoordinate,
-  sortAndDedupeTrail,
-  type TrailPoint,
 } from "@/lib/gps-utils";
 
 /* -------------------------------------------------- */
@@ -53,9 +44,7 @@ interface TrackingMapProps {
 
 const DEFAULT_LOCATION = { lat: 11.2588, lng: 75.7804 };
 const DEFAULT_ZOOM = 8;
-const MAX_TRAIL_POINTS = 300;
-const TRAIL_COLOR = "#3b82f6";
-const MOVING_COLOR = "#10b981";
+
 
 const MAP_CONTAINER_STYLE: React.CSSProperties = {
   height: "100%",
@@ -101,7 +90,10 @@ if (typeof window !== "undefined") {
 /* VEHICLE ICON (DivIcon → google.maps.Icon)          */
 /* -------------------------------------------------- */
 
-function createVehicleIconUrl(heading: number, status: string): google.maps.Icon {
+function createVehicleIconUrl(
+  heading: number,
+  status: string,
+): google.maps.Icon {
   const isMoving = status === "MOVING";
   const color = isMoving
     ? "#10b981"
@@ -143,7 +135,7 @@ function createVehicleIconUrl(heading: number, status: string): google.maps.Icon
       <foreignObject width="40" height="40">
         <div xmlns="http://www.w3.org/1999/xhtml">${svg}</div>
       </foreignObject>
-    </svg>`
+    </svg>`,
   )}`;
 
   return {
@@ -165,8 +157,16 @@ interface VehicleMarkerProps {
   onClick: () => void;
 }
 
-function VehicleMarker({ map, vehicle, heading, isSelected, onClick }: VehicleMarkerProps) {
-  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+function VehicleMarker({
+  map,
+  vehicle,
+  heading,
+  isSelected,
+  onClick,
+}: VehicleMarkerProps) {
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(
+    null,
+  );
   const elementRef = useRef<HTMLDivElement | null>(null);
   const prevPos = useRef<{ lat: number; lng: number }>({
     lat: vehicle.latitude,
@@ -175,12 +175,21 @@ function VehicleMarker({ map, vehicle, heading, isSelected, onClick }: VehicleMa
 
   // Smooth animated move toward new position
   const animateMarkerTo = useCallback(
-    (marker: google.maps.marker.AdvancedMarkerElement, destination: { lat: number; lng: number }) => {
+    (
+      marker: google.maps.marker.AdvancedMarkerElement,
+      destination: { lat: number; lng: number },
+    ) => {
       const start = marker.position;
       if (!start) return;
 
-      const startLat = typeof start.lat === "function" ? (start as any).lat() : (start.lat ?? destination.lat);
-      const startLng = typeof start.lng === "function" ? (start as any).lng() : (start.lng ?? destination.lng);
+      const startLat =
+        typeof start.lat === "function"
+          ? (start as any).lat()
+          : (start.lat ?? destination.lat);
+      const startLng =
+        typeof start.lng === "function"
+          ? (start as any).lng()
+          : (start.lng ?? destination.lng);
       const destLat = destination.lat;
       const destLng = destination.lng;
 
@@ -203,7 +212,7 @@ function VehicleMarker({ map, vehicle, heading, isSelected, onClick }: VehicleMa
 
       requestAnimationFrame(step);
     },
-    []
+    [],
   );
 
   // Initialize marker imperatively on map load
@@ -263,19 +272,21 @@ function VehicleMarker({ map, vehicle, heading, isSelected, onClick }: VehicleMa
 
     marker.zIndex = isSelected ? 1000 : 1;
 
-    const color = vehicle.status === "MOVING"
-      ? "#10b981"
-      : vehicle.status === "IDLE"
-        ? "#f59e0b"
-        : "#ef4444";
+    const color =
+      vehicle.status === "MOVING"
+        ? "#10b981"
+        : vehicle.status === "IDLE"
+          ? "#f59e0b"
+          : "#ef4444";
 
-    const pulseHtml = vehicle.status === "MOVING"
-      ? `<span style="
+    const pulseHtml =
+      vehicle.status === "MOVING"
+        ? `<span style="
           position:absolute;top:-6px;left:-6px;width:52px;height:52px;
           border-radius:50%;border:2px solid ${color};
           animation:pulse-ring 1.5s ease-out infinite;pointer-events:none;
         "></span>`
-      : "";
+        : "";
 
     elementRef.current.innerHTML = `
       <div style="
@@ -302,47 +313,7 @@ function VehicleMarker({ map, vehicle, heading, isSelected, onClick }: VehicleMa
   return null;
 }
 
-/* -------------------------------------------------- */
-/* TRAIL RENDERER                                     */
-/* -------------------------------------------------- */
 
-function TrailRenderer({ points }: { points: TrailPoint[] }) {
-  const segments = useMemo(() => buildFadedTrailSegments(points), [points]);
-
-  if (segments.length === 0) return null;
-
-  return (
-    <>
-      {segments.map((seg, idx) => (
-        <Polyline
-          key={idx}
-          path={seg.positions.map(([lat, lng]) => ({ lat, lng }))}
-          options={{
-            strokeColor: TRAIL_COLOR,
-            strokeWeight: seg.weight,
-            strokeOpacity: seg.opacity,
-            geodesic: true,
-          }}
-        />
-      ))}
-      {/* Direction highlight at the tip */}
-      {points.length >= 2 && (
-        <Polyline
-          path={[
-            { lat: points[points.length - 2].lat, lng: points[points.length - 2].lng },
-            { lat: points[points.length - 1].lat, lng: points[points.length - 1].lng },
-          ]}
-          options={{
-            strokeColor: MOVING_COLOR,
-            strokeWeight: 5,
-            strokeOpacity: 1,
-            geodesic: true,
-          }}
-        />
-      )}
-    </>
-  );
-}
 
 /* -------------------------------------------------- */
 /* LIVE STATUS CARD                                   */
@@ -363,12 +334,14 @@ function LiveStatusCard({ vehicles, hasSelected }: LiveStatusCardProps) {
         "absolute z-[40] rounded-xl bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-md border border-border select-none transition-all duration-300",
         hasSelected
           ? "bottom-[300px] left-3 md:bottom-4 md:left-4"
-          : "bottom-4 left-3 md:bottom-4 md:left-4"
+          : "bottom-4 left-3 md:bottom-4 md:left-4",
       )}
     >
       <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider">
         <div className="text-center">
-          <p className="text-sm font-extrabold text-success leading-none">{moving}</p>
+          <p className="text-sm font-extrabold text-success leading-none">
+            {moving}
+          </p>
           <p className="text-[9px] text-muted-foreground font-bold mt-1">
             Moving
           </p>
@@ -377,7 +350,9 @@ function LiveStatusCard({ vehicles, hasSelected }: LiveStatusCardProps) {
         <div className="h-6 w-px bg-border" />
 
         <div className="text-center">
-          <p className="text-sm font-extrabold text-warning leading-none">{idle}</p>
+          <p className="text-sm font-extrabold text-warning leading-none">
+            {idle}
+          </p>
           <p className="text-[9px] text-muted-foreground font-bold mt-1">
             Idle
           </p>
@@ -386,7 +361,9 @@ function LiveStatusCard({ vehicles, hasSelected }: LiveStatusCardProps) {
         <div className="h-6 w-px bg-border" />
 
         <div className="text-center">
-          <p className="text-sm font-extrabold text-foreground leading-none">{vehicles.length}</p>
+          <p className="text-sm font-extrabold text-foreground leading-none">
+            {vehicles.length}
+          </p>
           <p className="text-[9px] text-muted-foreground font-bold mt-1">
             Total
           </p>
@@ -417,11 +394,15 @@ function MapControls({
         "absolute z-[40] flex flex-col gap-1.5 transition-all duration-300",
         hasSelected
           ? "bottom-[300px] right-3 md:bottom-4 md:right-4"
-          : "bottom-4 right-3 md:bottom-4 md:right-4"
+          : "bottom-4 right-3 md:bottom-4 md:right-4",
       )}
     >
       <button
-        onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? DEFAULT_ZOOM) + 1)}
+        onClick={() =>
+          mapRef.current?.setZoom(
+            (mapRef.current.getZoom() ?? DEFAULT_ZOOM) + 1,
+          )
+        }
         className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
         title="Zoom in"
       >
@@ -429,7 +410,11 @@ function MapControls({
       </button>
 
       <button
-        onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? DEFAULT_ZOOM) - 1)}
+        onClick={() =>
+          mapRef.current?.setZoom(
+            (mapRef.current.getZoom() ?? DEFAULT_ZOOM) - 1,
+          )
+        }
         className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
         title="Zoom out"
       >
@@ -451,9 +436,13 @@ function MapControls({
             ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
             : "bg-card/90 backdrop-blur-md border-border hover:bg-muted/80 text-foreground"
         }`}
-        title={followMode ? "Following vehicle (click to stop)" : "Follow vehicle"}
+        title={
+          followMode ? "Following vehicle (click to stop)" : "Follow vehicle"
+        }
       >
-        <Navigation2 className={`h-4 w-4 ${followMode ? "fill-white text-primary-foreground" : "text-foreground"}`} />
+        <Navigation2
+          className={`h-4 w-4 ${followMode ? "fill-white text-primary-foreground" : "text-foreground"}`}
+        />
       </button>
     </div>
   );
@@ -476,19 +465,15 @@ export default function TrackingMap({
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
-
-  // Trail state: vehicleId → sorted, filtered TrailPoint[]
-  const [vehicleTrails, setVehicleTrails] = useState<Record<string, TrailPoint[]>>({});
   const [internalFollowMode, setInternalFollowMode] = useState(false);
   const [localCenterTrigger, setLocalCenterTrigger] = useState(0);
   const followMode = externalFollowMode || internalFollowMode;
 
   // Google Maps instance ref
   const mapRef = useRef<google.maps.Map | null>(null);
-  
+
   // Track last heading per vehicle for rotating icon
   const headingsRef = useRef<Record<string, number>>({});
-  const loadedHistoriesRef = useRef<Record<string, boolean>>({});
 
   // Track whether we've done the initial fitBounds
   const fittedRef = useRef(false);
@@ -499,9 +484,9 @@ export default function TrackingMap({
         (v) =>
           v.latitude != null &&
           v.longitude != null &&
-          isValidCoordinate(v.latitude, v.longitude)
+          isValidCoordinate(v.latitude, v.longitude),
       ),
-    [vehicles]
+    [vehicles],
   );
 
   const handleMapUnmount = useCallback(() => {
@@ -509,20 +494,21 @@ export default function TrackingMap({
     setMap(null);
   }, []);
 
-  /* ------------------------------------------------ */
-  /* FIT ALL VEHICLES helper                          */
-  /* ------------------------------------------------ */
-
   const fitAllVehicles = useCallback(() => {
     const mapInstance = mapRef.current;
     if (!mapInstance || validVehicles.length === 0) return;
 
     if (validVehicles.length === 1) {
-      mapInstance.setCenter({ lat: validVehicles[0].latitude, lng: validVehicles[0].longitude });
+      mapInstance.setCenter({
+        lat: validVehicles[0].latitude,
+        lng: validVehicles[0].longitude,
+      });
       mapInstance.setZoom(15);
     } else {
       const bounds = new google.maps.LatLngBounds();
-      validVehicles.forEach((v) => bounds.extend({ lat: v.latitude, lng: v.longitude }));
+      validVehicles.forEach((v) =>
+        bounds.extend({ lat: v.latitude, lng: v.longitude }),
+      );
       mapInstance.fitBounds(bounds, 80);
     }
   }, [validVehicles]);
@@ -541,7 +527,7 @@ export default function TrackingMap({
         fittedRef.current = true;
       }
     }, 100);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ------------------------------------------------ */
@@ -556,17 +542,16 @@ export default function TrackingMap({
     lastCenterTriggerRef.current = effectiveCenterTrigger;
 
     if (!selectedVehicle) return;
-    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude)) return;
+    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude))
+      return;
     if (!mapRef.current) return;
 
-    mapRef.current.panTo({ lat: selectedVehicle.latitude, lng: selectedVehicle.longitude });
+    mapRef.current.panTo({
+      lat: selectedVehicle.latitude,
+      lng: selectedVehicle.longitude,
+    });
     mapRef.current.setZoom(16);
   }, [effectiveCenterTrigger, selectedVehicle]);
-
-  /* ------------------------------------------------ */
-  /* SELECTION CHANGE: pan-to or fit-all              */
-  /* ------------------------------------------------ */
-
   const prevSelectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -579,164 +564,78 @@ export default function TrackingMap({
 
     if (currId !== null) {
       // A vehicle was selected → pan & zoom in
-      if (!isValidCoordinate(selectedVehicle!.latitude, selectedVehicle!.longitude)) return;
-      mapRef.current.panTo({ lat: selectedVehicle!.latitude, lng: selectedVehicle!.longitude });
+      if (
+        !isValidCoordinate(
+          selectedVehicle!.latitude,
+          selectedVehicle!.longitude,
+        )
+      )
+        return;
+      mapRef.current.panTo({
+        lat: selectedVehicle!.latitude,
+        lng: selectedVehicle!.longitude,
+      });
       mapRef.current.setZoom(16);
     } else if (prevId !== null) {
-      // Vehicle was deselected → fit all vehicles
       fitAllVehicles();
     }
-  // selectedVehicle?.id is the key dependency; fitAllVehicles is stable via useCallback
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVehicle?.id]);
-
-  /* ------------------------------------------------ */
-  /* FOLLOW MODE: smooth pan when vehicle moves       */
-  /* ------------------------------------------------ */
 
   useEffect(() => {
     if (!followMode || !selectedVehicle) return;
-    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude)) return;
+    if (!isValidCoordinate(selectedVehicle.latitude, selectedVehicle.longitude))
+      return;
     if (!mapRef.current) return;
 
-    mapRef.current.panTo({ lat: selectedVehicle.latitude, lng: selectedVehicle.longitude });
-  // followMode must be in deps so enabling it immediately pans to the vehicle
-  }, [followMode, selectedVehicle, selectedVehicle?.latitude, selectedVehicle?.longitude]);
-
-  /* ------------------------------------------------ */
-  /* LOAD HISTORY when selected vehicle changes       */
-  /* ------------------------------------------------ */
-
-  useEffect(() => {
-    if (!selectedVehicle) return;
-
-    // Check if already loaded
-    if (loadedHistoriesRef.current[selectedVehicle.id]) {
-      return;
-    }
-
-    const fetchHistory = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/vehicles/${selectedVehicle.id}/history`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const data = await res.json();
-        if (!data.success || !Array.isArray(data.history)) return;
-
-        const rawPoints: TrailPoint[] = data.history
-          .filter((h: any) => isValidCoordinate(h.latitude, h.longitude))
-          .map((h: any) => ({
-            lat: h.latitude,
-            lng: h.longitude,
-            timestamp: h.timestamp ?? new Date(h.createdAt).getTime(),
-            heading: h.heading ?? 0,
-            speed: h.speed ?? 0,
-          }));
-
-        const sorted = sortAndDedupeTrail(rawPoints);
-        const filtered = filterGPSNoise(sorted, 10);
-        const enriched = enrichWithHeadings(filtered);
-
-        setVehicleTrails((prev) => {
-          const existing = prev[selectedVehicle.id] ?? [];
-          const combined = [...enriched, ...existing];
-          const sortedCombined = sortAndDedupeTrail(combined);
-          const filteredCombined = filterGPSNoise(sortedCombined, 10);
-          const finalTrails = enrichWithHeadings(filteredCombined).slice(-MAX_TRAIL_POINTS);
-
-          return {
-            ...prev,
-            [selectedVehicle.id]: finalTrails,
-          };
-        });
-
-        // Update heading ref from most recent history point
-        if (enriched.length > 0) {
-          headingsRef.current[selectedVehicle.id] =
-            enriched[enriched.length - 1].heading ?? 0;
-        }
-
-        // Mark as loaded
-        loadedHistoriesRef.current[selectedVehicle.id] = true;
-      } catch (err) {
-        console.error("History fetch failed:", err);
-      }
-    };
-
-    fetchHistory();
-  }, [selectedVehicle?.id]);
-
-  /* ------------------------------------------------ */
-  /* LIVE UPDATE — append new trail point             */
-  /* ------------------------------------------------ */
+    mapRef.current.panTo({
+      lat: selectedVehicle.latitude,
+      lng: selectedVehicle.longitude,
+    });
+  }, [
+    followMode,
+    selectedVehicle,
+    selectedVehicle?.latitude,
+    selectedVehicle?.longitude,
+  ]);
 
   useEffect(() => {
     const vehicleIds = new Set(vehicles.map((v) => v.id));
 
-    setVehicleTrails((prev) => {
-      const updated = { ...prev };
+    // Update headings for marker rotation
+    const prevPositions: Record<string, { lat: number; lng: number }> = {};
 
-      // Clean up old vehicle trails
-      for (const id of Object.keys(updated)) {
-        if (!vehicleIds.has(id)) {
-          delete updated[id];
-        }
-      }
+    for (const vehicle of vehicles) {
+      if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) continue;
 
-      for (const vehicle of vehicles) {
-        if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) continue;
-
-        const now = vehicle.timestamp ?? Date.now();
-        const newPoint: TrailPoint = {
-          lat: vehicle.latitude,
-          lng: vehicle.longitude,
-          timestamp: now,
-          heading: 0,
-          speed: vehicle.speed,
-        };
-
-        const existing = updated[vehicle.id] ?? [];
-
-        // GPS noise filter
-        if (existing.length > 0) {
-          const last = existing[existing.length - 1];
-          const dist = haversineDistance(
-            last.lat,
-            last.lng,
-            newPoint.lat,
-            newPoint.lng
-          );
-          if (dist < 10) continue; // < 10m → skip
-
-          // Calculate heading
+      const prev = prevPositions[vehicle.id];
+      if (prev) {
+        const dist = haversineDistance(
+          prev.lat,
+          prev.lng,
+          vehicle.latitude,
+          vehicle.longitude,
+        );
+        if (dist >= 10) {
           const bearing = calculateBearing(
-            last.lat,
-            last.lng,
-            newPoint.lat,
-            newPoint.lng
+            prev.lat,
+            prev.lng,
+            vehicle.latitude,
+            vehicle.longitude,
           );
-          newPoint.heading = bearing;
           headingsRef.current[vehicle.id] = bearing;
         }
-
-        const merged = [...existing, newPoint].slice(-MAX_TRAIL_POINTS);
-        updated[vehicle.id] = merged;
       }
 
-      return updated;
-    });
+      prevPositions[vehicle.id] = {
+        lat: vehicle.latitude,
+        lng: vehicle.longitude,
+      };
+    }
 
-    // Also clean up headingsRef and loadedHistoriesRef
+    // Clean up stale heading entries
     for (const id of Object.keys(headingsRef.current)) {
       if (!vehicleIds.has(id)) {
         delete headingsRef.current[id];
-      }
-    }
-    for (const id of Object.keys(loadedHistoriesRef.current)) {
-      if (!vehicleIds.has(id)) {
-        delete loadedHistoriesRef.current[id];
       }
     }
   }, [vehicles]);
@@ -745,18 +644,9 @@ export default function TrackingMap({
     ? validVehicles.filter((v) => v.id === selectedVehicle.id)
     : validVehicles;
 
-  /* ------------------------------------------------ */
-  /* DRAG — disable follow mode                       */
-  /* ------------------------------------------------ */
-
   const handleDragStart = useCallback(() => {
     setInternalFollowMode(false);
   }, []);
-
-  /* ------------------------------------------------ */
-  /* RENDER                                           */
-  /* ------------------------------------------------ */
-
   if (!isLoaded) {
     return (
       <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden flex items-center justify-center bg-muted">
@@ -779,7 +669,10 @@ export default function TrackingMap({
       </div>
 
       {/* STATUS CARD */}
-      <LiveStatusCard vehicles={vehicles} hasSelected={selectedVehicle !== null} />
+      <LiveStatusCard
+        vehicles={vehicles}
+        hasSelected={selectedVehicle !== null}
+      />
 
       {/* MAP CONTROLS (outside GoogleMap so they remain above the map) */}
       <MapControls
@@ -800,30 +693,24 @@ export default function TrackingMap({
         onUnmount={handleMapUnmount}
         onDragStart={handleDragStart}
       >
-        {/* TRAIL POLYLINES */}
-        {validVehicles.map((vehicle) => {
-          const trail = vehicleTrails[vehicle.id];
-          if (!trail || trail.length < 2) return null;
-          if (selectedVehicle && selectedVehicle.id !== vehicle.id) return null;
 
-          return <TrailRenderer key={`trail-${vehicle.id}`} points={trail} />;
-        })}
 
         {/* VEHICLE MARKERS */}
-        {map && visibleVehicles.map((vehicle) => {
-          const heading = headingsRef.current[vehicle.id] ?? 0;
+        {map &&
+          visibleVehicles.map((vehicle) => {
+            const heading = headingsRef.current[vehicle.id] ?? 0;
 
-          return (
-            <VehicleMarker
-              key={vehicle.id}
-              map={map}
-              vehicle={vehicle}
-              heading={heading}
-              isSelected={selectedVehicle?.id === vehicle.id}
-              onClick={() => {}}
-            />
-          );
-        })}
+            return (
+              <VehicleMarker
+                key={vehicle.id}
+                map={map}
+                vehicle={vehicle}
+                heading={heading}
+                isSelected={selectedVehicle?.id === vehicle.id}
+                onClick={() => {}}
+              />
+            );
+          })}
       </GoogleMap>
     </div>
   );
