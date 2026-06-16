@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
+import CustomSelect from "@/components/ui/custom-select";
 
 interface Vehicle {
   id: string;
@@ -69,6 +70,18 @@ export default function TrackingPage() {
     setCenterTrigger((prev) => prev + 1);
   };
 
+  const selectOptions = useMemo(() => {
+    return [
+      { value: "", label: "All Vehicles" },
+      ...vehicles.map((v) => ({
+        value: v.id,
+        label: v.vehicleNumber,
+        sublabel: v.driverName,
+        status: v.status,
+      })),
+    ];
+  }, [vehicles]);
+
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
@@ -78,47 +91,24 @@ export default function TrackingPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden">
-      {/* MOBILE */}
-
-      <div className="flex h-full flex-col lg:hidden">
-        {/* Dropdown */}
-
-        <div className="border-b border-border bg-background p-3">
-          <select
+    <div className="relative h-[calc(100vh-64px)] overflow-hidden bg-background">
+      {/* MOBILE VIEW (< 768px / md) */}
+      <div className="flex h-full flex-col md:hidden">
+        {/* Search & Custom Dropdown Header */}
+        <div className="border-b border-border bg-background p-3.5 z-30">
+          <CustomSelect
             value={selected?.id || ""}
-            onChange={(e) => {
-              const vehicle =
-                vehicles.find((item) => item.id === e.target.value) || null;
-
+            onChange={(val) => {
+              const vehicle = vehicles.find((item) => item.id === val) || null;
               setSelected(vehicle);
             }}
-            className="
-              h-11
-              w-full
-              rounded-xl
-              border
-              border-border
-              bg-background
-              px-4
-              text-sm
-              font-medium
-              outline-none
-            "
-          >
-            <option value="">All Vehicles</option>
-
-            {vehicles.map((vehicle) => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.vehicleNumber} • {vehicle.status}
-              </option>
-            ))}
-          </select>
+            options={selectOptions}
+            placeholder="Select a vehicle..."
+          />
         </div>
 
-        {/* Map */}
-
-        <div className=" min-h-[300px] flex-1 overflow-hidden ">
+        {/* Map Area */}
+        <div className="relative flex-1 overflow-hidden min-h-[300px]">
           <TrackingMap
             vehicles={vehicles}
             selectedVehicle={selected}
@@ -126,26 +116,65 @@ export default function TrackingPage() {
           />
         </div>
 
-        {/* Details */}
-
+        {/* Mobile bottom sheet drawer details */}
         {selected && (
-          <div className="min-h-0 flex-1 overflow-y-auto border-t border-border bg-background">
-            <VehicleDetails
-              vehicle={selected}
-              onCenterMap={handleCenterMap}
-              onClose={() => setSelected(null)}
-              mobile
-            />
+          <div className="absolute bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="w-full bg-card/95 backdrop-blur-md rounded-t-3xl border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
+              {/* Drag Handle */}
+              <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-3" />
+              <div className="max-h-[50vh] overflow-y-auto pb-8 px-4 no-scrollbar">
+                <VehicleDetails
+                  vehicle={selected}
+                  onCenterMap={handleCenterMap}
+                  onClose={() => setSelected(null)}
+                  mobile
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* TABLET + DESKTOP */}
+      {/* TABLET VIEW (>= 768px and < 1280px / xl) */}
+      <div className="hidden md:flex xl:hidden h-full">
+        {/* Left Side Vehicle List */}
+        <div className="w-[260px] flex-shrink-0 border-r border-border bg-card">
+          <VehicleList
+            vehicles={vehicles}
+            selected={selected}
+            onSelect={setSelected}
+          />
+        </div>
 
-      <div className="hidden h-full lg:flex">
+        {/* Map with floating overlay details */}
+        <div className="relative flex-1 overflow-hidden">
+          <TrackingMap
+            vehicles={vehicles}
+            selectedVehicle={selected}
+            centerTrigger={centerTrigger}
+          />
+
+          {/* Floating Tablet Vehicle Details */}
+          {selected && (
+            <div className="absolute right-4 bottom-4 top-4 w-[310px] z-50 animate-in fade-in-50 slide-in-from-right duration-300">
+              <div className="h-full w-full bg-card/95 backdrop-blur-md rounded-2xl border border-border shadow-xl flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto no-scrollbar">
+                  <VehicleDetails
+                    vehicle={selected}
+                    onCenterMap={handleCenterMap}
+                    onClose={() => setSelected(null)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* DESKTOP VIEW (>= 1280px / xl) */}
+      <div className="hidden xl:flex h-full">
         {/* Vehicle List */}
-
-        <div className="w-[250px] flex-shrink-0 border-r border-border">
+        <div className="w-[280px] flex-shrink-0 border-r border-border bg-card">
           <VehicleList
             vehicles={vehicles}
             selected={selected}
@@ -154,7 +183,6 @@ export default function TrackingPage() {
         </div>
 
         {/* Map */}
-
         <div className="min-w-0 flex-1 overflow-hidden">
           <TrackingMap
             vehicles={vehicles}
@@ -163,10 +191,9 @@ export default function TrackingPage() {
           />
         </div>
 
-        {/* Details */}
-
+        {/* Details Panel Sidebar */}
         {selected && (
-          <div className="w-[300px] flex-shrink-0 border-l border-border">
+          <div className="w-[320px] flex-shrink-0 border-l border-border bg-card">
             <VehicleDetails
               vehicle={selected}
               onCenterMap={handleCenterMap}

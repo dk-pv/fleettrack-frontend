@@ -51,9 +51,8 @@ export default function WeeklyActivityChart() {
       <div className="h-[240px] w-full mt-6 min-h-0 min-w-0">
         {mounted && (
           <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={0}
+            width="99%"
+            height={240}
           >
             <AreaChart 
               data={weeklyActivity}

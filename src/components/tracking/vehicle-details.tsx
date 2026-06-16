@@ -32,101 +32,113 @@ export default function VehicleDetails({
   return (
     <div
       className={`
-        flex flex-col bg-background
-${mobile ? "p-4" : "h-full overflow-y-auto p-4"}`}
+        flex flex-col bg-transparent
+        ${mobile ? "p-1" : "h-full overflow-y-auto p-4"}
+      `}
     >
       <div
-        className={`
-          flex items-center justify-between
-
-        ${mobile ? "mb-4" : "mb-4"}
-        `}
+        className="flex items-center justify-between mb-4"
       >
         <div>
-          <h2 className="text-lg font-bold">{vehicle.vehicleNumber}</h2>
-          <p className="text-sm text-muted-foreground">{vehicle.driverName}</p>
+          <h2 className="text-lg font-extrabold text-foreground tracking-tight">{vehicle.vehicleNumber}</h2>
+          <p className="text-xs font-medium text-muted-foreground mt-0.5">{vehicle.driverName}</p>
         </div>
 
-        <button
-          onClick={onClose}
-          className="
-            flex h-8 w-8 items-center justify-center
-            rounded-lg hover:bg-muted
-          "
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="
+              flex h-10 w-10 items-center justify-center
+              rounded-xl border border-border bg-card/50 hover:bg-muted text-muted-foreground hover:text-foreground
+              transition-all duration-200 active:scale-95 cursor-pointer
+            "
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        )}
       </div>
 
       {/* Content */}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">Status</p>
+      <div className="grid grid-cols-2 gap-3.5">
+        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</p>
 
-          <div className="mt-2">
+          <div className="mt-2.5">
             <span
               className={`
-                inline-flex items-center gap-1 rounded-full
-                px-2.5 py-1 text-xs font-medium
+                inline-flex items-center gap-1.5 rounded-full
+                px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase border
 
                 ${
                   vehicle.status === "MOVING"
-                    ? "bg-green-500/10 text-green-500"
+                    ? "bg-success/10 text-success border-success/15"
                     : vehicle.status === "IDLE"
-                      ? "bg-yellow-500/10 text-yellow-500"
-                      : "bg-red-500/10 text-red-500"
+                      ? "bg-warning/10 text-warning border-warning/15"
+                      : "bg-destructive/10 text-destructive border-destructive/15"
                 }
               `}
             >
+              <span className={`h-1.5 w-1.5 rounded-full ${
+                vehicle.status === "MOVING"
+                  ? "bg-success"
+                  : vehicle.status === "IDLE"
+                    ? "bg-warning"
+                    : "bg-destructive"
+              }`} />
               {vehicle.status}
             </span>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">Speed</p>
+        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Speed</p>
 
-          <p className="mt-2 text-lg font-bold">{Number(vehicle.speed).toFixed(1)} km/h</p>
+          <p className="mt-2 text-lg font-extrabold text-foreground tracking-tight">
+            {Number(vehicle.speed).toFixed(1)} <span className="text-xs font-semibold text-muted-foreground">km/h</span>
+          </p>
         </div>
 
-        <div className="rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">Client</p>
+        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Client</p>
 
-          <p className="mt-2 text-sm font-medium">{vehicle.clientName}</p>
+          <p className="mt-2 text-xs font-bold text-foreground truncate">{vehicle.clientName}</p>
         </div>
 
-        <div className="rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">GPS Device</p>
+        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">GPS Device</p>
 
-          <p className="mt-2 text-sm font-medium">{vehicle.gpsDeviceId}</p>
+          <p className="mt-2 text-xs font-bold text-foreground truncate">{vehicle.gpsDeviceId}</p>
         </div>
       </div>
 
       {/* Buttons */}
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-5 flex gap-3">
         <Link
           href={`/vehicles/${vehicle.id}/trips`}
           className="
-            flex h-10 flex-1 items-center justify-center
-            gap-2 rounded-xl border border-border
-            text-sm font-medium hover:bg-muted
+            flex h-11 flex-1 items-center justify-center
+            gap-2 rounded-xl border border-border bg-card/50
+            text-xs font-bold hover:bg-muted text-foreground
+            transition-all duration-200 active:scale-98 shadow-xs
           "
         >
-          <Route className="h-4 w-4" />
+          <Route className="h-4 w-4 text-muted-foreground" />
           Routes
         </Link>
 
         <button
           onClick={onCenterMap}
           className="
-            flex h-10 flex-1 items-center justify-center
-            gap-2 rounded-xl border border-border
-            text-sm font-medium hover:bg-muted
+            flex h-11 flex-1 items-center justify-center
+            gap-2 rounded-xl border border-border bg-card/50
+            text-xs font-bold hover:bg-muted text-foreground
+            transition-all duration-200 active:scale-98 shadow-xs
+            cursor-pointer
           "
         >
-          <LocateFixed className="h-4 w-4" />
+          <LocateFixed className="h-4 w-4 text-muted-foreground" />
           Center
         </button>
       </div>
