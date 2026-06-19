@@ -37,9 +37,7 @@ export default function ClientStats() {
 
   const admins = users.filter((user) => user.role === "ADMIN").length;
 
-  const fleetManagers = users.filter(
-    (user) => user.role === "FLEET_MANAGER",
-  ).length;
+  const clients = users.filter((user) => user.role === "CLIENT").length;
 
   const viewers = users.filter((user) => user.role === "VIEWER").length;
 
@@ -53,8 +51,8 @@ export default function ClientStats() {
       value: admins,
     },
     {
-      title: "Fleet Managers",
-      value: fleetManagers,
+      title: "Clients",
+      value: clients,
     },
     {
       title: "Viewers",

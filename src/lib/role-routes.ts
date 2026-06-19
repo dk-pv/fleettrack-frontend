@@ -7,13 +7,15 @@ export const roleRoutes = {
     "/settings",
   ],
 
-  FLEET_MANAGER: [
+  CLIENT: [
     "/dashboard",
     "/tracking",
     "/vehicles",
   ],
 
   VIEWER: [
-    "/dashboard",
+     "/dashboard",
+    "/tracking",
+    "/vehicles",
   ],
 };

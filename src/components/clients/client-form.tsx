@@ -118,7 +118,7 @@ export default function ClientForm({
         >
           <option value="ADMIN">Admin</option>
 
-          <option value="FLEET_MANAGER">Fleet Manager</option>
+          <option value="CLIENT">Client</option>
 
           <option value="VIEWER">Viewer</option>
         </select>
