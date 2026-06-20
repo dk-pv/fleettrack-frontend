@@ -20,7 +20,6 @@ export interface Vehicle {
   vehicleNumber: string;
   gpsDeviceId: string;
   driverName: string;
-  clientName: string;
   status: string;
   latitude: number;
   longitude: number;
@@ -29,6 +28,10 @@ export interface Vehicle {
   timestamp?: number;
   ignition?: boolean;
   batteryVoltage?: number;
+  client?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface TrackingMapProps {
@@ -44,7 +47,6 @@ interface TrackingMapProps {
 
 const DEFAULT_LOCATION = { lat: 11.2588, lng: 75.7804 };
 const DEFAULT_ZOOM = 8;
-
 
 const MAP_CONTAINER_STYLE: React.CSSProperties = {
   height: "100%",
@@ -87,65 +89,6 @@ if (typeof window !== "undefined") {
 }
 
 /* -------------------------------------------------- */
-/* VEHICLE ICON (DivIcon → google.maps.Icon)          */
-/* -------------------------------------------------- */
-
-function createVehicleIconUrl(
-  heading: number,
-  status: string,
-): google.maps.Icon {
-  const isMoving = status === "MOVING";
-  const color = isMoving
-    ? "#10b981"
-    : status === "IDLE"
-      ? "#f59e0b"
-      : "#ef4444";
-
-  const pulse = isMoving
-    ? `<span style="
-        position:absolute;top:-6px;left:-6px;width:52px;height:52px;
-        border-radius:50%;border:2px solid ${color};
-        animation:pulse-ring 1.5s ease-out infinite;pointer-events:none;
-      "></span>`
-    : "";
-
-  const svg = `
-    <div style="
-      position:relative;
-      width:40px;height:40px;
-      display:flex;align-items:center;justify-content:center;
-      transform:rotate(${heading}deg);
-      transition:transform 0.6s ease;
-    ">
-      ${pulse}
-      <div style="
-        width:36px;height:36px;border-radius:50%;
-        background:white;
-        box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 2px ${color};
-        display:flex;align-items:center;justify-content:center;
-        overflow:hidden;
-      ">
-        <img src="/cargo-truck.png" style="width:22px;height:22px;object-fit:contain;" />
-      </div>
-    </div>
-  `;
-
-  const encoded = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-      <foreignObject width="40" height="40">
-        <div xmlns="http://www.w3.org/1999/xhtml">${svg}</div>
-      </foreignObject>
-    </svg>`,
-  )}`;
-
-  return {
-    url: encoded,
-    scaledSize: new google.maps.Size(40, 40),
-    anchor: new google.maps.Point(20, 20),
-  };
-}
-
-/* -------------------------------------------------- */
 /* VEHICLE MARKER                                     */
 /* -------------------------------------------------- */
 
@@ -167,18 +110,30 @@ function VehicleMarker({
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(
     null,
   );
+  const animationFrameRef = useRef<number | null>(null);
   const elementRef = useRef<HTMLDivElement | null>(null);
   const prevPos = useRef<{ lat: number; lng: number }>({
     lat: vehicle.latitude,
     lng: vehicle.longitude,
   });
 
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
   // Smooth animated move toward new position
   const animateMarkerTo = useCallback(
     (
       marker: google.maps.marker.AdvancedMarkerElement,
       destination: { lat: number; lng: number },
     ) => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
       const start = marker.position;
       if (!start) return;
 
@@ -186,31 +141,36 @@ function VehicleMarker({
         typeof start.lat === "function"
           ? (start as any).lat()
           : (start.lat ?? destination.lat);
+
       const startLng =
         typeof start.lng === "function"
           ? (start as any).lng()
           : (start.lng ?? destination.lng);
+
       const destLat = destination.lat;
       const destLng = destination.lng;
 
-      const duration = 1500;
+      const duration = vehicle.status === "MOVING" ? 700 : 300;
       const startTime = performance.now();
 
       const step = (now: number) => {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const ease = 1 - Math.pow(1 - progress, 3);
 
         const lat = startLat + (destLat - startLat) * ease;
         const lng = startLng + (destLng - startLng) * ease;
+
         marker.position = { lat, lng };
 
         if (progress < 1) {
-          requestAnimationFrame(step);
+          animationFrameRef.current = requestAnimationFrame(step);
+        } else {
+          animationFrameRef.current = null;
         }
       };
 
-      requestAnimationFrame(step);
+      animationFrameRef.current = requestAnimationFrame(step);
     },
     [],
   );
@@ -241,6 +201,9 @@ function VehicleMarker({
 
     return () => {
       listener.remove();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
       marker.map = null;
     };
   }, [map]);
@@ -312,8 +275,6 @@ function VehicleMarker({
 
   return null;
 }
-
-
 
 /* -------------------------------------------------- */
 /* LIVE STATUS CARD                                   */
@@ -475,8 +436,9 @@ export default function TrackingMap({
   // Track last heading per vehicle for rotating icon
   const headingsRef = useRef<Record<string, number>>({});
 
-  // Track whether we've done the initial fitBounds
-  const fittedRef = useRef(false);
+  const prevPositionsRef = useRef<Record<string, { lat: number; lng: number }>>(
+    {},
+  );
 
   const validVehicles = useMemo(
     () =>
@@ -517,22 +479,19 @@ export default function TrackingMap({
   /* FIT ALL VEHICLES on initial map load             */
   /* ------------------------------------------------ */
 
-  const handleMapLoad = useCallback((mapInstance: google.maps.Map) => {
-    mapRef.current = mapInstance;
-    setMap(mapInstance);
-    // Defer so the map container has rendered at full size
-    setTimeout(() => {
-      if (!selectedVehicle) {
-        fitAllVehicles();
-        fittedRef.current = true;
-      }
-    }, 100);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handleMapLoad = useCallback(
+    (mapInstance: google.maps.Map) => {
+      mapRef.current = mapInstance;
+      setMap(mapInstance);
 
-  /* ------------------------------------------------ */
-  /* CENTER TRIGGER (from parent + locate button)     */
-  /* ------------------------------------------------ */
+      setTimeout(() => {
+        if (!selectedVehicle) {
+          fitAllVehicles();
+        }
+      }, 100);
+    },
+    [selectedVehicle, fitAllVehicles],
+  );
 
   const effectiveCenterTrigger = centerTrigger + localCenterTrigger;
   const lastCenterTriggerRef = useRef(effectiveCenterTrigger);
@@ -601,13 +560,11 @@ export default function TrackingMap({
   useEffect(() => {
     const vehicleIds = new Set(vehicles.map((v) => v.id));
 
-    // Update headings for marker rotation
-    const prevPositions: Record<string, { lat: number; lng: number }> = {};
-
     for (const vehicle of vehicles) {
       if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) continue;
 
-      const prev = prevPositions[vehicle.id];
+      const prev = prevPositionsRef.current[vehicle.id];
+
       if (prev) {
         const dist = haversineDistance(
           prev.lat,
@@ -615,27 +572,27 @@ export default function TrackingMap({
           vehicle.latitude,
           vehicle.longitude,
         );
+
         if (dist >= 10) {
-          const bearing = calculateBearing(
+          headingsRef.current[vehicle.id] = calculateBearing(
             prev.lat,
             prev.lng,
             vehicle.latitude,
             vehicle.longitude,
           );
-          headingsRef.current[vehicle.id] = bearing;
         }
       }
 
-      prevPositions[vehicle.id] = {
+      prevPositionsRef.current[vehicle.id] = {
         lat: vehicle.latitude,
         lng: vehicle.longitude,
       };
     }
 
-    // Clean up stale heading entries
     for (const id of Object.keys(headingsRef.current)) {
       if (!vehicleIds.has(id)) {
         delete headingsRef.current[id];
+        delete prevPositionsRef.current[id];
       }
     }
   }, [vehicles]);
@@ -677,7 +634,7 @@ export default function TrackingMap({
       {/* MAP CONTROLS (outside GoogleMap so they remain above the map) */}
       <MapControls
         onLocate={() => setLocalCenterTrigger((prev) => prev + 1)}
-        followMode={internalFollowMode}
+        followMode={followMode}
         onToggleFollow={() => setInternalFollowMode((v) => !v)}
         mapRef={mapRef}
         hasSelected={selectedVehicle !== null}
@@ -693,8 +650,6 @@ export default function TrackingMap({
         onUnmount={handleMapUnmount}
         onDragStart={handleDragStart}
       >
-
-
         {/* VEHICLE MARKERS */}
         {map &&
           visibleVehicles.map((vehicle) => {

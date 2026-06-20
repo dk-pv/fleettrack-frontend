@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import VehicleTable from "@/components/vehicles/vehicle-table";
-import AddVehicleModal from "@/components/vehicles/add-vehicle-modal";
+
 import { useAuthStore } from "@/store/auth-store";
 
 export default function VehiclesPage() {
@@ -35,19 +35,7 @@ export default function VehiclesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
             />
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-3">
-            {user?.role !== "VIEWER" && (
-              <AddVehicleModal>
-                <button className="flex h-10 items-center gap-2 rounded-lg bg-primary hover:bg-primary/90 px-4 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer transition-colors">
-                  <Plus className="h-4 w-4" />
-                  Add Vehicle
-                </button>
-              </AddVehicleModal>
-            )}
-          </div>
+          </div>        
         </div>
       </div>
 

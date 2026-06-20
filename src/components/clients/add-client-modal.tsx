@@ -11,20 +11,16 @@ import {
 
 import ClientForm from "./client-form";
 
-interface User {
+interface Client {
   id: string;
-
   name: string;
-
   email: string;
-
-  role: string;
+  apiUrl: string;
 }
 
 interface AddClientModalProps {
   children: React.ReactNode;
-
-  editUser?: User | null;
+  editUser?: Client | null;
 }
 
 export default function AddClientModal({
@@ -47,8 +43,8 @@ export default function AddClientModal({
 
           <DialogDescription>
             {isEdit
-              ? "Update client information."
-              : "Add a new client and assign access role."}
+              ? "Update client information and API."
+              : "Add a new client and assign tracking API."}
           </DialogDescription>
         </DialogHeader>
 

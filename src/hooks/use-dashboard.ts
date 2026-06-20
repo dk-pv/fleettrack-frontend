@@ -10,18 +10,17 @@ import {
   getActiveVehicles,
 } from "@/services/dashboard.service";
 
+import { useClientStore } from "@/store/client-store";
+
 export function useDashboard() {
-  /* STATS */
+  const { selectedClient } =
+    useClientStore();
 
   const [stats, setStats] =
     useState<any>(null);
 
-  /* VEHICLES */
-
   const [vehicles, setVehicles] =
     useState<any[]>([]);
-
-  /* LOADING */
 
   const [loading, setLoading] =
     useState(true);
@@ -29,17 +28,22 @@ export function useDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        /* FETCH STATS */
+        setLoading(true);
+
+        const clientId =
+          selectedClient?.id;
 
         const statsData =
-          await getDashboardStats();
+          await getDashboardStats(
+            clientId,
+          );
 
         setStats(statsData.data);
 
-        /* FETCH VEHICLES */
-
         const vehicleData =
-          await getActiveVehicles();
+          await getActiveVehicles(
+            clientId,
+          );
 
         setVehicles(
           vehicleData.data || [],
@@ -52,7 +56,7 @@ export function useDashboard() {
     }
 
     fetchData();
-  }, []);
+  }, [selectedClient]);
 
   return {
     stats,

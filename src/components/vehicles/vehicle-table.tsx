@@ -1,11 +1,10 @@
 "use client";
 
-import { ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import { useAuthStore } from "@/store/auth-store";
 import VehicleStatusBadge from "./vehicle-status-badge";
-import AddVehicleModal from "./add-vehicle-modal";
 import { useRouter } from "next/navigation";
 
 import {
@@ -17,32 +16,36 @@ import {
 
 interface Vehicle {
   id: string;
-
   vehicleName: string;
   vehicleNumber: string;
   gpsDeviceId: string;
   driverName: string;
-  clientName: string;
   status: string;
   createdAt: string;
+
+  client?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface VehicleTableProps {
   searchQuery?: string;
 }
 
-export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
+export default function VehicleTable({
+  searchQuery = "",
+}: VehicleTableProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
+
   const { user } = useAuthStore();
   const router = useRouter();
 
   const fetchVehicles = async () => {
     try {
       const response = await apiFetch("/vehicles");
-
       const data = await response.json();
-
       setVehicles(data.vehicles || []);
     } catch (error) {
       console.log(error);
@@ -57,52 +60,33 @@ export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
     let list = vehicles;
 
     if (statusFilter !== "ALL") {
-      list = list.filter((vehicle) => vehicle.status === statusFilter);
+      list = list.filter(
+        (vehicle) => vehicle.status === statusFilter,
+      );
     }
 
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
+
       list = list.filter(
         (vehicle) =>
-          vehicle.vehicleNumber?.toLowerCase().includes(q) ||
-          vehicle.vehicleName?.toLowerCase().includes(q) ||
-          vehicle.driverName?.toLowerCase().includes(q) ||
-          vehicle.clientName?.toLowerCase().includes(q)
+          vehicle.vehicleNumber
+            ?.toLowerCase()
+            .includes(q) ||
+          vehicle.vehicleName
+            ?.toLowerCase()
+            .includes(q) ||
+          vehicle.driverName
+            ?.toLowerCase()
+            .includes(q) ||
+          vehicle.client?.name
+            ?.toLowerCase()
+            .includes(q),
       );
     }
 
     return list;
   }, [vehicles, statusFilter, searchQuery]);
-
-  const deleteVehicle = async (id: string) => {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete this vehicle?",
-    );
-
-    if (!confirmDelete) {
-      return;
-    }
-
-    try {
-      const response = await apiFetch(`/vehicles/${id}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert("Vehicle deleted");
-
-        fetchVehicles();
-      } else {
-        alert(data.message);
-      }
-    } catch (error) {
-      console.log(error);
-
-      alert("Server error");
-    }
-  };
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
@@ -118,13 +102,23 @@ export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
         <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b border-border z-10">
             <tr>
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vehicle</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Vehicle
+              </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Driver</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Driver
+              </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">GPS Device</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                GPS Device
+              </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Client</th>
+              {user?.role === "ADMIN" && (
+                <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Client
+                </th>
+              )}
 
               <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <DropdownMenu>
@@ -136,21 +130,38 @@ export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent>
-                    <DropdownMenuItem className="cursor-pointer" onClick={() => setStatusFilter("ALL")}>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setStatusFilter("ALL")
+                      }
+                    >
                       All
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem className="cursor-pointer" onClick={() => setStatusFilter("MOVING")}>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setStatusFilter("MOVING")
+                      }
+                    >
                       Moving
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem className="cursor-pointer" onClick={() => setStatusFilter("IDLE")}>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setStatusFilter("IDLE")
+                      }
+                    >
                       Idle
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
                       className="cursor-pointer"
-                      onClick={() => setStatusFilter("OFFLINE")}
+                      onClick={() =>
+                        setStatusFilter("OFFLINE")
+                      }
                     >
                       Offline
                     </DropdownMenuItem>
@@ -158,7 +169,9 @@ export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
                 </DropdownMenu>
               </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Created</th>
+              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Created
+              </th>
 
               <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Actions
@@ -169,7 +182,14 @@ export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
           <tbody className="divide-y divide-border">
             {filteredVehicles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={
+                    user?.role === "ADMIN"
+                      ? 7
+                      : 6
+                  }
+                  className="px-5 py-10 text-center text-sm text-muted-foreground"
+                >
                   No vehicles found.
                 </td>
               </tr>
@@ -199,37 +219,32 @@ export default function VehicleTable({ searchQuery = "" }: VehicleTableProps) {
                     {vehicle.gpsDeviceId}
                   </td>
 
-                  <td className="px-5 py-4 text-xs font-medium text-foreground">
-                    {vehicle.clientName}
-                  </td>
+                  {user?.role === "ADMIN" && (
+                    <td className="px-5 py-4 text-xs font-medium text-foreground">
+                      {vehicle.client?.name || "-"}
+                    </td>
+                  )}
 
                   <td className="px-5 py-4">
-                    <VehicleStatusBadge status={vehicle.status} />
+                    <VehicleStatusBadge
+                      status={vehicle.status}
+                    />
                   </td>
 
                   <td className="px-5 py-4 text-xs text-muted-foreground font-medium">
-                    {new Date(vehicle.createdAt).toLocaleDateString()}
+                    {new Date(
+                      vehicle.createdAt,
+                    ).toLocaleDateString()}
                   </td>
 
                   <td className="px-5 py-4">
-                    <div className="flex justify-end gap-2.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                      <AddVehicleModal editVehicle={vehicle}>
-                        <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                      </AddVehicleModal>
-
-                      {user?.role === "ADMIN" && (
-                        <button 
-                          onClick={() => deleteVehicle(vehicle.id)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-destructive/10 bg-destructive/5 hover:bg-destructive/15 text-destructive transition-all cursor-pointer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-
+                    <div className="flex justify-end">
                       <button
-                        onClick={() => router.push(`/vehicles/${vehicle.id}`)}
+                        onClick={() =>
+                          router.push(
+                            `/vehicles/${vehicle.id}`,
+                          )
+                        }
                         className="flex h-7 px-2.5 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 text-xs font-bold text-primary transition-all cursor-pointer"
                       >
                         View

@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 type UserRole =
   | "ADMIN"
-  | "FLEET_MANAGER"
+  | "CLIENT"
   | "VIEWER";
 
 interface User {

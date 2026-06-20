@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
+import { useAuthStore } from "@/store/auth-store";
 import dynamic from "next/dynamic";
 const VehicleMap = dynamic(() => import("@/components/vehicles/vehicle-map"), {
   ssr: false,
@@ -24,33 +25,25 @@ const VehicleMap = dynamic(() => import("@/components/vehicles/vehicle-map"), {
 
 interface Vehicle {
   id: string;
-
   vehicleName: string;
-
   vehicleNumber: string;
-
   gpsDeviceId: string;
-
   driverName: string;
-
-  clientName: string;
-
   status: string;
-
   latitude: number;
-
   longitude: number;
-
   speed: number;
-
   createdAt: string;
-
   updatedAt: string;
-}
 
+  client?: {
+    id: string;
+    name: string;
+  };
+}
 export default function VehicleDetailPage() {
   const params = useParams();
-
+  const { user } = useAuthStore();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -183,17 +176,18 @@ export default function VehicleDetailPage() {
         </div>
 
         {/* Client */}
-        <div className="rounded-xl border border-border bg-background p-5">
-          <div className="flex items-center gap-3">
-            <Car className="h-5 w-5 text-yellow-600" />
+        {user?.role === "ADMIN" && (
+          <div className="rounded-xl border border-border bg-background p-5">
+            <div className="flex items-center gap-3">
+              <Car className="h-5 w-5 text-yellow-600" />
+              <h3 className="font-semibold">Client</h3>
+            </div>
 
-            <h3 className="font-semibold">Client</h3>
+            <p className="mt-4 break-all text-2xl font-bold">
+              {vehicle.client?.name || "N/A"}
+            </p>
           </div>
-
-          <p className="mt-4 break-all text-2xl font-bold">
-            {vehicle.clientName}
-          </p>
-        </div>
+        )}
       </div>
 
       {/* Live Stats Bar */}
@@ -274,7 +268,7 @@ export default function VehicleDetailPage() {
                 />
               </div>
             ) : (
-              <div className="flex h-[320px] flex-col md:h-[420px]l items-center justify-center rounded-xl border border-dashed border-border text-center">
+              <div className="flex h-[320px] flex-col md:h-[420px] items-center justify-center rounded-xl border border-dashed border-border text-center">
                 <MapPin className="h-8 w-8 text-muted-foreground" />
 
                 <p className="mt-3 text-sm font-medium">
@@ -321,7 +315,7 @@ export default function VehicleDetailPage() {
             </h2>
           </div>
 
-         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href={`/tracking/${vehicle.id}`}
               className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"

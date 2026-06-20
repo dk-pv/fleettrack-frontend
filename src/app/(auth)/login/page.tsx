@@ -33,10 +33,14 @@ export default function LoginPage() {
       console.log(response.status);
 
       const data = await response.json();
-      console.log("LOGIN RESPONSE:", data);
+
+      if (!response.ok) {
+        toast.error(data.message || "Login failed");
+        return;
+      }
 
       if (data.success) {
-        toast.success("Login successful");
+        toast.success(`Welcome ${data.user.name}`);
 
         setAuth(data.user, data.token);
 
@@ -44,9 +48,9 @@ export default function LoginPage() {
 
         setTimeout(() => {
           window.location.href = "/dashboard";
-        }, 1000);
+        }, 800);
       } else {
-        toast.error("Login failed");
+        toast.error(data.message || "Login failed");
       }
     } catch (error) {
       console.error(error);

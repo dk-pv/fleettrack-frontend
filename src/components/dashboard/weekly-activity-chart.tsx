@@ -11,7 +11,15 @@ import {
 
 import { useEffect, useState } from "react";
 
-import { weeklyActivity } from "@/data/dashboard-data";
+export const weeklyActivity = [
+  { day: "Mon", value: 42 },
+  { day: "Tue", value: 58 },
+  { day: "Wed", value: 47 },
+  { day: "Thu", value: 71 },
+  { day: "Fri", value: 66 },
+  { day: "Sat", value: 53 },
+  { day: "Sun", value: 38 },
+];
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
