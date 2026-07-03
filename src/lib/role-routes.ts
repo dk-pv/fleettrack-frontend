@@ -3,6 +3,7 @@ export const roleRoutes = {
     "/dashboard",
     "/tracking",
     "/vehicles",
+    "/trips",
     "/clients",
     "/users",
     "/settings",
@@ -12,6 +13,7 @@ export const roleRoutes = {
     "/dashboard",
     "/tracking",
     "/vehicles",
+    "/trips",
   ],
 
   VIEWER: [

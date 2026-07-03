@@ -2,14 +2,12 @@
 
 interface Props {
   open: boolean;
-  userName?: string;
   onClose: () => void;
   onConfirm: () => void;
 }
 
-export default function DeleteConfirmModal({
+export default function DeleteClientDialog({
   open,
-  userName,
   onClose,
   onConfirm,
 }: Props) {
@@ -18,13 +16,10 @@ export default function DeleteConfirmModal({
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">Delete User?</h2>
+        <h2 className="text-lg font-semibold">Delete Client?</h2>
 
         <p className="mt-3 text-sm text-muted-foreground">
-          This action cannot be undone. This will permanently delete{" "}
-          <span className="font-semibold text-foreground">
-            {userName ?? "this user"}
-          </span>{" "}
+          This action cannot be undone. This will permanently delete the client
           and related data.
         </p>
 

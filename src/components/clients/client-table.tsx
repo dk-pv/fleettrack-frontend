@@ -1,75 +1,11 @@
-// "use client";
-
-// import { useEffect, useState, useMemo } from "react";
-// import { apiFetch } from "@/lib/fetcher";
-
-// interface Client {
-//   id: string;
-//   name: string;
-//   email: string;
-//   apiUrl: string;
-//   createdAt: string;
-// }
-
-// export default function ClientTable({ searchQuery = "" }) {
-//   const [clients, setClients] = useState<Client[]>([]);
-
-//   const fetchClients = async () => {
-//     const res = await apiFetch("/clients");
-//     const data = await res.json();
-//     setClients(data.clients || []);
-//   };
-
-//   useEffect(() => {
-//     fetchClients();
-//   }, []);
-
-//   const filtered = useMemo(() => {
-//     const q = searchQuery.toLowerCase();
-
-//     return clients.filter(
-//       (c) =>
-//         c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
-//     );
-//   }, [clients, searchQuery]);
-
-//   return (
-//     <div className="rounded-xl border bg-card overflow-hidden">
-//       <table className="w-full">
-//         <thead>
-//           <tr>
-//             <th>Name</th>
-//             <th>Email</th>
-//             <th>API URL</th>
-//             <th>Created</th>
-//           </tr>
-//         </thead>
-
-//         <tbody>
-//           {filtered.map((client) => (
-//             <tr key={client.id}>
-//               <td>{client.name}</td>
-//               <td>{client.email}</td>
-//               <td className="max-w-[300px] truncate">{client.apiUrl}</td>
-//               <td>{new Date(client.createdAt).toLocaleDateString()}</td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// }
-
-
-
-
-
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import AddClientModal from "./add-client-modal";
+import DeleteClientDialog from "./DeleteClientDialog";
+import { toast } from "sonner";
+
 
 interface Client {
   id: string;
@@ -83,10 +19,9 @@ interface Props {
   searchQuery?: string;
 }
 
-export default function ClientTable({
-  searchQuery = "",
-}: Props) {
+export default function ClientTable({ searchQuery = "" }: Props) {
   const [clients, setClients] = useState<Client[]>([]);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchClients = async () => {
     const res = await apiFetch("/clients");
@@ -98,13 +33,36 @@ export default function ClientTable({
     fetchClients();
   }, []);
 
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      const res = await apiFetch(`/clients/${deleteId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Client deleted");
+        fetchClients();
+      } else {
+        toast.error(data.message || "Delete failed");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong");
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
 
     return clients.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q)
+        c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
     );
   }, [clients, searchQuery]);
 
@@ -156,9 +114,7 @@ export default function ClientTable({
                     transition-colors
                   "
                 >
-                  <td className="px-6 py-4 font-medium">
-                    {client.name}
-                  </td>
+                  <td className="px-6 py-4 font-medium">{client.name}</td>
 
                   <td className="px-6 py-4 text-muted-foreground">
                     {client.email}
@@ -174,9 +130,7 @@ export default function ClientTable({
                   </td>
 
                   <td className="px-6 py-4 text-muted-foreground">
-                    {new Date(
-                      client.createdAt
-                    ).toLocaleDateString()}
+                    {new Date(client.createdAt).toLocaleDateString()}
                   </td>
 
                   <td className="px-6 py-4">
@@ -187,7 +141,10 @@ export default function ClientTable({
                         </button>
                       </AddClientModal>
 
-                      <button className="text-red-500 text-sm font-medium hover:underline">
+                      <button
+                        onClick={() => setDeleteId(client.id)}
+                        className="text-red-500 text-sm font-medium hover:underline"
+                      >
                         Delete
                       </button>
                     </div>
@@ -198,6 +155,12 @@ export default function ClientTable({
           </tbody>
         </table>
       </div>
+
+      <DeleteClientDialog
+        open={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

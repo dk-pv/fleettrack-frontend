@@ -27,7 +27,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!hydrated || !user) return;
 
-    const allowedRoutes = roleRoutes[user.role];
+    const allowedRoutes = roleRoutes[user.role] ?? ["/dashboard"];
 
     const hasAccess = allowedRoutes.some((route) => pathname.startsWith(route));
 

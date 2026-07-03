@@ -116,7 +116,7 @@ export default function VehicleDetails({
 
       <div className="mt-5 flex gap-3">
         <Link
-          href={`/vehicles/${vehicle.id}/trips`}
+          href="/trips"
           className="
             flex h-11 flex-1 items-center justify-center
             gap-2 rounded-xl border border-border bg-card/50
@@ -125,7 +125,7 @@ export default function VehicleDetails({
           "
         >
           <Route className="h-4 w-4 text-muted-foreground" />
-          Routes
+          Trips
         </Link>
 
         <button

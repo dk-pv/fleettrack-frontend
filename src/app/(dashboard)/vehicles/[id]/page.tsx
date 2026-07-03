@@ -18,6 +18,7 @@ import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
 import { useAuthStore } from "@/store/auth-store";
+import { toast } from "sonner";
 import dynamic from "next/dynamic";
 const VehicleMap = dynamic(() => import("@/components/vehicles/vehicle-map"), {
   ssr: false,
@@ -80,7 +81,7 @@ export default function VehicleDetailPage() {
     } catch (error) {
       console.log(error);
 
-      alert("Failed to download report");
+      toast.error("Failed to download report");
     } finally {
       setDownloading(false);
     }
@@ -324,10 +325,10 @@ export default function VehicleDetailPage() {
             </Link>
 
             <Link
-              href={`/vehicles/${vehicle.id}/trips`}
+              href="/trips"
               className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg border border-border px-5 py-3 text-sm font-medium"
             >
-              Trip History
+              Trips
             </Link>
 
             <button
