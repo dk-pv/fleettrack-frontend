@@ -5,12 +5,14 @@ import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { useTrip } from "@/hooks/use-trip";
+import { TripStatus } from "@/types/trip";
 import TripDetailsCard from "@/components/trips/trip-details-card";
 import TripStatusControls from "@/components/trips/trip-status-controls";
 import TripTimeline from "@/components/trips/trip-timeline";
 import TripRouteMap from "@/components/trips/trip-route-map";
 import TripProgressCard from "@/components/trips/trip-progress";
 import TripDeviationAlert from "@/components/trips/trip-deviation-alert";
+import TripPlayback from "@/components/trips/trip-playback";
 
 export default function TripDetailPage() {
   const params = useParams();
@@ -54,15 +56,21 @@ export default function TripDetailPage() {
             </p>
           </div>
 
-          <TripRouteMap
-            points={route}
-            vehiclePosition={vehiclePosition}
-            deviating={progress?.isDeviating}
-          />
+          {trip.status === TripStatus.COMPLETED ? (
+            <TripPlayback tripId={id} route={route} />
+          ) : (
+            <>
+              <TripRouteMap
+                points={route}
+                vehiclePosition={vehiclePosition}
+                deviating={progress?.isDeviating}
+              />
 
-          <TripDeviationAlert progress={progress} />
+              <TripDeviationAlert progress={progress} />
 
-          <TripProgressCard progress={progress} live={live} />
+              <TripProgressCard progress={progress} live={live} />
+            </>
+          )}
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">

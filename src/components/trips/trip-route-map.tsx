@@ -37,6 +37,8 @@ const WRAPPER_CLASS =
 interface Props {
   points: RoutePoint[];
   vehiclePosition?: GeoPoint | null;
+  /** Travelled path so far (route playback) — drawn over the planned route. */
+  trail?: GeoPoint[];
   /** Tints the vehicle marker amber when it has strayed off the planned route. */
   deviating?: boolean;
   loading?: boolean;
@@ -45,6 +47,7 @@ interface Props {
 export default function TripRouteMap({
   points,
   vehiclePosition = null,
+  trail = [],
   deviating = false,
   loading = false,
 }: Props) {
@@ -142,6 +145,18 @@ export default function TripRouteMap({
             strokeWeight: 3,
           }}
         />
+
+        {/* Travelled path (route playback) — overlays the planned route. */}
+        {trail.length > 1 && (
+          <Polyline
+            path={trail}
+            options={{
+              strokeColor: "#7c3aed",
+              strokeOpacity: 0.95,
+              strokeWeight: 5,
+            }}
+          />
+        )}
 
         {points.map((point, index) => (
           <Marker

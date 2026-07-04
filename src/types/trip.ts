@@ -230,14 +230,41 @@ export interface TripResponse {
 }
 
 /* ------------------------------------------------------------------ */
-/* Timeline (lifecycle events)                                         */
+/* Audit log (trip activity events)                                    */
 /* ------------------------------------------------------------------ */
+
+/** What kind of action an audit event records. */
+export type TripEventAction = "CREATED" | "UPDATED" | "STATUS_CHANGED";
+
+/** Who performed the action. */
+export type TripActorRole = "ADMIN" | "CLIENT" | "SYSTEM";
+
+export interface TripActor {
+  role: TripActorRole;
+  name?: string | null;
+}
+
+/**
+ * Map an authenticated user to an audit actor. On the real API the actor is
+ * derived server-side from the JWT; here the client supplies it for the mock.
+ */
+export function toTripActor(
+  role: UserRole | undefined,
+  name?: string | null,
+): TripActor {
+  const actorRole: TripActorRole =
+    role === "ADMIN" ? "ADMIN" : role === "CLIENT" ? "CLIENT" : "SYSTEM";
+  return { role: actorRole, name: name ?? null };
+}
 
 export interface TripEvent {
   id: string;
   tripId: string;
-  status: TripStatus;
+  action: TripEventAction;
+  /** Set for status changes (and the initial CREATED, which records PLANNED). */
+  status: TripStatus | null;
   note: string | null;
+  actor: TripActor;
   timestamp: string;
 }
 

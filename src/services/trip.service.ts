@@ -5,7 +5,9 @@ import {
   RoutePoint,
   ROUTE_DEVIATION_THRESHOLD_M,
   Trip,
+  TripActor,
   TripEvent,
+  TripEventAction,
   TripFormOptions,
   TripResponse,
   TripRouteResponse,
@@ -32,6 +34,11 @@ import {
   OverlapCandidate,
   DriverOverlapCandidate,
 } from "@/lib/trip-overlap";
+import {
+  buildBreadcrumbTrail,
+  TripBreadcrumbsResponse,
+} from "@/lib/trip-breadcrumbs";
+import { TrailPoint } from "@/lib/gps-utils";
 
 /**
  * Trip service — the ONLY module that touches trip data.
@@ -69,6 +76,10 @@ function findTrip(id: string): Trip {
 /* Timeline — in-memory event log per trip; seeded lazily, appended on transition. */
 const timelines: Record<string, TripEvent[]> = {};
 
+/* Breadcrumb history — lazily synthesized per trip and cached (stand-in for the
+   server-recorded GPS trail; the real API serves this from storage). */
+const breadcrumbTrails: Record<string, TrailPoint[]> = {};
+
 const STATUS_NOTE: Record<TripStatus, string> = {
   [TripStatus.PLANNED]: "Trip created",
   [TripStatus.ASSIGNED]: "Vehicle & driver assigned",
@@ -79,45 +90,76 @@ const STATUS_NOTE: Record<TripStatus, string> = {
   [TripStatus.CANCELLED]: "Trip cancelled",
 };
 
+/* Seeded/historical events with no known user are attributed to the system. */
+const SYSTEM_ACTOR: TripActor = { role: "SYSTEM" };
+
 function makeEvent(
   tripId: string,
-  status: TripStatus,
+  action: TripEventAction,
   timestamp: string,
+  opts: {
+    status?: TripStatus | null;
+    note?: string | null;
+    actor?: TripActor;
+  } = {},
 ): TripEvent {
   return {
     id: `evt-${crypto.randomUUID()}`,
     tripId,
-    status,
-    note: STATUS_NOTE[status],
+    action,
+    status: opts.status ?? null,
+    note: opts.note ?? null,
+    actor: opts.actor ?? SYSTEM_ACTOR,
     timestamp,
   };
+}
+
+/** Convenience for status events (and the initial CREATED, which records PLANNED). */
+function statusEvent(
+  tripId: string,
+  status: TripStatus,
+  timestamp: string,
+  actor: TripActor = SYSTEM_ACTOR,
+  action: TripEventAction = "STATUS_CHANGED",
+): TripEvent {
+  return makeEvent(tripId, action, timestamp, {
+    status,
+    note: STATUS_NOTE[status],
+    actor,
+  });
 }
 
 /** Derive a dummy starting timeline from a trip's known timestamps. */
 function buildInitialTimeline(trip: Trip): TripEvent[] {
   const events: TripEvent[] = [
-    makeEvent(trip.id, TripStatus.PLANNED, trip.createdAt),
+    statusEvent(
+      trip.id,
+      TripStatus.PLANNED,
+      trip.createdAt,
+      SYSTEM_ACTOR,
+      "CREATED",
+    ),
   ];
 
   if (trip.vehicleId) {
-    events.push(makeEvent(trip.id, TripStatus.ASSIGNED, trip.createdAt));
+    events.push(statusEvent(trip.id, TripStatus.ASSIGNED, trip.createdAt));
   }
   if (trip.startedAt) {
-    events.push(makeEvent(trip.id, TripStatus.STARTED, trip.startedAt));
+    events.push(statusEvent(trip.id, TripStatus.STARTED, trip.startedAt));
   }
   if (
     trip.status === TripStatus.ONGOING ||
     trip.status === TripStatus.DELAYED
   ) {
     events.push(
-      makeEvent(trip.id, trip.status, trip.startedAt ?? trip.scheduledStart),
+      statusEvent(trip.id, trip.status, trip.startedAt ?? trip.scheduledStart),
     );
   }
   if (trip.completedAt) {
-    events.push(makeEvent(trip.id, TripStatus.COMPLETED, trip.completedAt));
+    events.push(statusEvent(trip.id, TripStatus.COMPLETED, trip.completedAt));
   }
   if (trip.status === TripStatus.CANCELLED) {
-    events.push(makeEvent(trip.id, TripStatus.CANCELLED, trip.updatedAt));
+    events.push(statusEvent(trip.id, TripStatus.CANCELLED, trip.updatedAt));
   }
 
   return events;
@@ -193,7 +235,10 @@ export async function checkDriverOverlap(
 /* Writes (CLIENT only — enforced in the UI now, on the API later)     */
 /* ------------------------------------------------------------------ */
 
-export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
+export async function createTrip(
+  dto: CreateTripDto,
+  actor: TripActor = SYSTEM_ACTOR,
+): Promise<TripResponse> {
   await delay();
 
   // Future: const res = await apiFetch("/trips", { method: "POST", body: JSON.stringify(dto) }); return res.json();
@@ -272,7 +317,9 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
   };
 
   trips = [trip, ...trips];
-  timelines[trip.id] = [makeEvent(trip.id, TripStatus.PLANNED, now)];
+  timelines[trip.id] = [
+    statusEvent(trip.id, TripStatus.PLANNED, now, actor, "CREATED"),
+  ];
   return { trip: clone(trip) };
 }
 
@@ -291,6 +338,7 @@ export async function getTripFormOptions(): Promise<TripFormOptions> {
 export async function updateTrip(
   id: string,
   dto: UpdateTripDto,
+  actor: TripActor = SYSTEM_ACTOR,
 ): Promise<TripResponse> {
   await delay();
 
@@ -313,12 +361,19 @@ export async function updateTrip(
   };
 
   trips = trips.map((trip) => (trip.id === id ? updated : trip));
+  ensureTimeline(current).push(
+    makeEvent(id, "UPDATED", updated.updatedAt, {
+      note: "Trip details updated",
+      actor,
+    }),
+  );
   return { trip: clone(updated) };
 }
 
 export async function updateTripStatus(
   id: string,
   status: TripStatus,
+  actor: TripActor = SYSTEM_ACTOR,
 ): Promise<TripResponse> {
   await delay();
 
@@ -337,7 +392,7 @@ export async function updateTripStatus(
     updatedAt: now,
   };
 
-  ensureTimeline(current).push(makeEvent(id, status, now));
+  ensureTimeline(current).push(statusEvent(id, status, now, actor));
 
   trips = trips.map((trip) => (trip.id === id ? updated : trip));
   return { trip: clone(updated) };
@@ -427,6 +482,46 @@ export async function getTripRoute(tripId: string): Promise<TripRouteResponse> {
       })),
     }),
   };
+}
+
+/**
+ * GPS breadcrumb history for route playback (TM-21.1). Returned only for
+ * COMPLETED trips (they have a fully travelled route); empty otherwise. Lazily
+ * synthesized along the route and cached — the real API serves recorded points.
+ *
+ *   Future API: GET /trips/:id/breadcrumbs -> { breadcrumbs }
+ */
+export async function getTripBreadcrumbs(
+  tripId: string,
+): Promise<TripBreadcrumbsResponse> {
+  await delay();
+
+  const trip = findTrip(tripId);
+
+  if (trip.status !== TripStatus.COMPLETED) {
+    return { breadcrumbs: [] };
+  }
+
+  if (!breadcrumbTrails[tripId]) {
+    const coords = toRoutePoints({
+      origin: trip.origin,
+      originCoords: trip.originCoords,
+      destination: trip.destination,
+      destinationCoords: trip.destinationCoords,
+      stops: trip.stops.map((s) => ({
+        address: s.address,
+        sequence: s.sequence,
+        coords: s.coords,
+      })),
+    }).map((point) => point.coords);
+
+    const startMs = new Date(trip.startedAt ?? trip.scheduledStart).getTime();
+    const endMs = new Date(trip.completedAt ?? trip.scheduledEnd).getTime();
+
+    breadcrumbTrails[tripId] = buildBreadcrumbTrail(coords, startMs, endMs);
+  }
+
+  return { breadcrumbs: breadcrumbTrails[tripId].map((p) => ({ ...p })) };
 }
 
 /** Geocode draft addresses for a live route preview in the creation modal. */
