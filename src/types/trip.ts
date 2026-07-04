@@ -336,3 +336,32 @@ export interface OverlapResponse {
 
 export type VehicleOverlapResponse = OverlapResponse;
 export type DriverOverlapResponse = OverlapResponse;
+
+/* ------------------------------------------------------------------ */
+/* Route optimization (multi-stop ordering)                            */
+/* ------------------------------------------------------------------ */
+
+export interface OptimizeStopsInput {
+  origin: string;
+  destination: string;
+  /** Intermediate stop addresses in their current order. */
+  stops: string[];
+}
+
+/** A stop in optimized order, tagged with its index in the original input. */
+export interface OptimizedStop {
+  address: string;
+  originalIndex: number;
+}
+
+export interface RouteOptimization {
+  optimizedStops: OptimizedStop[];
+  originalDistanceMeters: number;
+  optimizedDistanceMeters: number;
+  originalDurationMins: number;
+  optimizedDurationMins: number;
+}
+
+export interface RouteOptimizationResponse {
+  optimization: RouteOptimization;
+}

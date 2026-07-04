@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Sparkles, X } from "lucide-react";
 
 import {
   Dialog,
@@ -16,13 +16,16 @@ import { useAuthStore } from "@/store/auth-store";
 import { useTripOptions } from "@/hooks/use-trip-options";
 import { useRoutePreview } from "@/hooks/use-route-preview";
 import { useOverlapCheck } from "@/hooks/use-overlap-check";
+import { useRouteOptimization } from "@/hooks/use-route-optimization";
 import TripRouteMap from "@/components/trips/trip-route-map";
 import OverlapNotice from "@/components/trips/overlap-notice";
+import TripOptimizationPanel from "@/components/trips/trip-optimization-panel";
 import { CreateTripDto, MAX_TRIP_STOPS } from "@/types/trip";
 import {
   addStop,
   moveStop,
   removeStop,
+  reorderStops,
   StopDraft,
   updateStopAddress,
 } from "@/lib/trip-stops";
@@ -56,6 +59,9 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
   const [notes, setNotes] = useState("");
   const [stops, setStops] = useState<StopDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [preOptimizeStops, setPreOptimizeStops] = useState<StopDraft[] | null>(
+    null,
+  );
 
   // Live double-booking checks (TM-09 / TM-10) — through the service, never the mock.
   const vehicleOverlap = useOverlapCheck("vehicle", {
@@ -69,7 +75,55 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     scheduledEnd: end,
   });
 
+  // Multi-stop route optimization (TM-06) — through the service, never the mock.
+  const {
+    result: optimization,
+    loading: optimizing,
+    optimize,
+    clear: clearOptimization,
+  } = useRouteOptimization();
+
   const scheduleValid = !!start && !!end && new Date(end) > new Date(start);
+
+  // Need pickup + delivery to anchor the path and >= 2 filled stops to reorder.
+  const canOptimize =
+    !!pickup &&
+    !!delivery &&
+    stops.length >= 2 &&
+    stops.every((s) => s.address.trim().length > 0);
+
+  const previewOrder = (nextStops: StopDraft[]) =>
+    generateRoute({
+      origin: pickup,
+      destination: delivery,
+      stops: nextStops.map((s) => s.address.trim()).filter((a) => a.length > 0),
+    });
+
+  const handleOptimize = async () => {
+    const res = await optimize({
+      origin: pickup,
+      destination: delivery,
+      stops: stops.map((s) => s.address.trim()),
+    });
+    if (!res) return;
+
+    setPreOptimizeStops(stops);
+    const reordered = reorderStops(
+      stops,
+      res.optimizedStops.map((s) => s.originalIndex),
+    );
+    setStops(reordered);
+    previewOrder(reordered); // reuse the existing route preview/map
+  };
+
+  const handleUndoOptimize = () => {
+    if (preOptimizeStops) {
+      setStops(preOptimizeStops);
+      previewOrder(preOptimizeStops);
+    }
+    setPreOptimizeStops(null);
+    clearOptimization();
+  };
 
   const resetForm = () => {
     setReference("");
@@ -81,7 +135,9 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     setDriverId("");
     setNotes("");
     setStops([]);
+    setPreOptimizeStops(null);
     clearRoute();
+    clearOptimization();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -266,15 +322,35 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => setStops((prev) => addStop(prev))}
-              disabled={stops.length >= MAX_TRIP_STOPS}
-              className="mt-2 inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-              Add stop
-            </button>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStops((prev) => addStop(prev))}
+                disabled={stops.length >= MAX_TRIP_STOPS}
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add stop
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOptimize}
+                disabled={!canOptimize || optimizing}
+                className="inline-flex items-center gap-1 rounded-lg border border-primary/40 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" />
+                {optimizing ? "Optimizing…" : "Optimize route"}
+              </button>
+            </div>
+
+            {optimization && preOptimizeStops && (
+              <TripOptimizationPanel
+                result={optimization}
+                originalStops={preOptimizeStops.map((s) => s.address)}
+                onUndo={handleUndoOptimize}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

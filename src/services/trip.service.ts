@@ -19,6 +19,8 @@ import {
   UpdateTripDto,
   VehicleOverlapResponse,
   DriverOverlapResponse,
+  OptimizeStopsInput,
+  RouteOptimizationResponse,
 } from "@/types/trip";
 import { mockDrivers, mockTrips } from "@/lib/mock/trips.mock";
 import { mockGeocode } from "@/lib/mock/geocode.mock";
@@ -27,7 +29,8 @@ import {
   getVehiclePosition,
   toVehiclePosition,
 } from "@/services/vehicle.service";
-import { computeRouteProgress } from "@/lib/route-progress";
+import { computeRouteProgress, routeTotalDistance } from "@/lib/route-progress";
+import { optimizeStopOrder } from "@/lib/route-optimize";
 import {
   findVehicleConflicts,
   findDriverConflicts,
@@ -578,6 +581,58 @@ export function progressFromVehicle(
   vehicle: { latitude?: unknown; longitude?: unknown } | null,
 ): TripProgressResponse {
   return buildTripProgress(points, toVehiclePosition(vehicle));
+}
+
+/* Mock: derive travel time from distance until the Routes API supplies real durations. */
+const AVG_SPEED_KMH = 40;
+
+function estimateDurationMins(meters: number): number {
+  return Math.round((meters / 1000 / AVG_SPEED_KMH) * 60);
+}
+
+/**
+ * Optimal multi-stop ordering (TM-06). Geocodes the addresses (reusing the mock
+ * geocoder), then reorders the intermediate stops to minimise total distance with
+ * the pickup/destination fixed, returning before/after distance & (estimated) time.
+ *
+ *   Future (Google Routes API): POST directions/v2:computeRoutes with
+ *   optimizeWaypointOrder=true → read optimizedIntermediateWaypointIndex + legs.
+ */
+export async function optimizeTripRoute(
+  input: OptimizeStopsInput,
+): Promise<RouteOptimizationResponse> {
+  await delay();
+
+  const originCoords = mockGeocode(input.origin);
+  const destinationCoords = mockGeocode(input.destination);
+  const stopCoords = input.stops.map((address) => mockGeocode(address));
+
+  const originalDistanceMeters = routeTotalDistance([
+    originCoords,
+    ...stopCoords,
+    destinationCoords,
+  ]);
+
+  const order = optimizeStopOrder(originCoords, destinationCoords, stopCoords);
+  const optimizedStops = order.map((originalIndex) => ({
+    address: input.stops[originalIndex],
+    originalIndex,
+  }));
+  const optimizedDistanceMeters = routeTotalDistance([
+    originCoords,
+    ...order.map((i) => stopCoords[i]),
+    destinationCoords,
+  ]);
+
+  return {
+    optimization: {
+      optimizedStops,
+      originalDistanceMeters,
+      optimizedDistanceMeters,
+      originalDurationMins: estimateDurationMins(originalDistanceMeters),
+      optimizedDurationMins: estimateDurationMins(optimizedDistanceMeters),
+    },
+  };
 }
 
 /** Route progress + distance metrics from the assigned vehicle's live position. */

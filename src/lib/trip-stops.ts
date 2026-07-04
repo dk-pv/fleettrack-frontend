@@ -45,3 +45,8 @@ export function moveStop(
   [next[index], next[target]] = [next[target], next[index]];
   return next;
 }
+
+/** Reorder stops by a permutation of their current indices (e.g. optimized order). */
+export function reorderStops(stops: StopDraft[], order: number[]): StopDraft[] {
+  return order.map((i) => stops[i]).filter(Boolean);
+}
