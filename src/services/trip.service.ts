@@ -1,13 +1,8 @@
 import {
   CreateTripDto,
   GeoPoint,
-  MAX_TRIP_STOPS,
   RoutePoint,
   ROUTE_DEVIATION_THRESHOLD_M,
-  Trip,
-  TripActor,
-  TripEvent,
-  TripEventAction,
   TripFormOptions,
   TripResponse,
   TripRouteResponse,
@@ -15,165 +10,46 @@ import {
   TripProgressResponse,
   TripStatus,
   TripTimelineResponse,
-  TripVehicle,
   UpdateTripDto,
+  OverlapResponse,
   VehicleOverlapResponse,
   DriverOverlapResponse,
   OptimizeStopsInput,
   RouteOptimizationResponse,
 } from "@/types/trip";
-import { mockDrivers, mockTrips } from "@/lib/mock/trips.mock";
-import { mockGeocode } from "@/lib/mock/geocode.mock";
-import {
-  getVehicles,
-  getVehiclePosition,
-  toVehiclePosition,
-} from "@/services/vehicle.service";
+import { mockDrivers } from "@/lib/mock/trips.mock";
+import { getVehicles, toVehiclePosition } from "@/services/vehicle.service";
 import { computeRouteProgress, routeTotalDistance } from "@/lib/route-progress";
 import { optimizeStopOrder } from "@/lib/route-optimize";
-import {
-  findVehicleConflicts,
-  findDriverConflicts,
-  OverlapCandidate,
-  DriverOverlapCandidate,
-} from "@/lib/trip-overlap";
-import {
-  buildBreadcrumbTrail,
-  TripBreadcrumbsResponse,
-} from "@/lib/trip-breadcrumbs";
-import { TrailPoint } from "@/lib/gps-utils";
+import { OverlapCandidate, DriverOverlapCandidate } from "@/lib/trip-overlap";
+import { TripBreadcrumbsResponse } from "@/lib/trip-breadcrumbs";
+import { apiFetch } from "@/lib/fetcher";
 
 /**
  * Trip service — the ONLY module that touches trip data.
  *
- * Phase 2 is frontend-first: these functions read/mutate an in-memory copy of the
- * mock data. Their signatures and return types are already API-shaped, so switching
- * to the real backend later means replacing each function BODY with an `apiFetch(...)`
- * call (see the commented reference under each function) — no consumer changes.
+ * Backend integration: the full CRUD surface — reads AND writes — hits the real
+ * NestJS API via `apiFetch`. Trips are sent as addresses; the server geocodes and
+ * persists coordinates, so route/progress/deviation use real positions. The server
+ * owns the reference, owning client, lifecycle validation and audit actor (all
+ * from the JWT). Route preview + optimization geocode via the API's /geocode.
  *
- *   Future API (NestJS):
- *     GET    /trips            -> { trips }
- *     GET    /trips/:id        -> { trip }
- *     POST   /trips            -> { trip }
- *     PATCH  /trips/:id        -> { trip }
- *     PATCH  /trips/:id/status -> { trip }
- *     DELETE /trips/:id        -> { success }
+ * Still mock: the assignable driver list (no drivers endpoint yet). Everything
+ * else — CRUD, overlap, geocoding, and breadcrumb playback — is served by the API.
+ *
+ *   API (NestJS):
+ *     GET    /trips                 -> { trips }
+ *     GET    /trips/overlap         -> { hasOverlap, conflicts }
+ *     GET    /trips/:id             -> { trip }
+ *     GET    /trips/:id/timeline    -> { events }
+ *     GET    /trips/:id/progress    -> { progress, vehiclePosition }
+ *     GET    /trips/:id/breadcrumbs -> { breadcrumbs }
+ *     POST   /trips                 -> { trip }
+ *     PATCH  /trips/:id             -> { trip }
+ *     PATCH  /trips/:id/status      -> { trip }
+ *     DELETE /trips/:id             -> { success }
+ *     POST   /geocode               -> { points }   (address batch → coordinates)
  */
-
-/* In-memory store (seeded from the mock). Replaced by the API in a later phase. */
-let trips: Trip[] = mockTrips.map((trip) => ({ ...trip }));
-
-/* Simulate network latency so loading states are exercised in the UI. */
-const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const clone = (trip: Trip): Trip => ({ ...trip });
-
-function findTrip(id: string): Trip {
-  const trip = trips.find((t) => t.id === id);
-  if (!trip) {
-    throw new Error(`Trip not found: ${id}`);
-  }
-  return trip;
-}
-
-/* Timeline — in-memory event log per trip; seeded lazily, appended on transition. */
-const timelines: Record<string, TripEvent[]> = {};
-
-/* Breadcrumb history — lazily synthesized per trip and cached (stand-in for the
-   server-recorded GPS trail; the real API serves this from storage). */
-const breadcrumbTrails: Record<string, TrailPoint[]> = {};
-
-const STATUS_NOTE: Record<TripStatus, string> = {
-  [TripStatus.PLANNED]: "Trip created",
-  [TripStatus.ASSIGNED]: "Vehicle & driver assigned",
-  [TripStatus.STARTED]: "Trip started",
-  [TripStatus.ONGOING]: "In transit",
-  [TripStatus.DELAYED]: "Trip delayed",
-  [TripStatus.COMPLETED]: "Trip completed",
-  [TripStatus.CANCELLED]: "Trip cancelled",
-};
-
-/* Seeded/historical events with no known user are attributed to the system. */
-const SYSTEM_ACTOR: TripActor = { role: "SYSTEM" };
-
-function makeEvent(
-  tripId: string,
-  action: TripEventAction,
-  timestamp: string,
-  opts: {
-    status?: TripStatus | null;
-    note?: string | null;
-    actor?: TripActor;
-  } = {},
-): TripEvent {
-  return {
-    id: `evt-${crypto.randomUUID()}`,
-    tripId,
-    action,
-    status: opts.status ?? null,
-    note: opts.note ?? null,
-    actor: opts.actor ?? SYSTEM_ACTOR,
-    timestamp,
-  };
-}
-
-/** Convenience for status events (and the initial CREATED, which records PLANNED). */
-function statusEvent(
-  tripId: string,
-  status: TripStatus,
-  timestamp: string,
-  actor: TripActor = SYSTEM_ACTOR,
-  action: TripEventAction = "STATUS_CHANGED",
-): TripEvent {
-  return makeEvent(tripId, action, timestamp, {
-    status,
-    note: STATUS_NOTE[status],
-    actor,
-  });
-}
-
-/** Derive a dummy starting timeline from a trip's known timestamps. */
-function buildInitialTimeline(trip: Trip): TripEvent[] {
-  const events: TripEvent[] = [
-    statusEvent(
-      trip.id,
-      TripStatus.PLANNED,
-      trip.createdAt,
-      SYSTEM_ACTOR,
-      "CREATED",
-    ),
-  ];
-
-  if (trip.vehicleId) {
-    events.push(statusEvent(trip.id, TripStatus.ASSIGNED, trip.createdAt));
-  }
-  if (trip.startedAt) {
-    events.push(statusEvent(trip.id, TripStatus.STARTED, trip.startedAt));
-  }
-  if (
-    trip.status === TripStatus.ONGOING ||
-    trip.status === TripStatus.DELAYED
-  ) {
-    events.push(
-      statusEvent(trip.id, trip.status, trip.startedAt ?? trip.scheduledStart),
-    );
-  }
-  if (trip.completedAt) {
-    events.push(statusEvent(trip.id, TripStatus.COMPLETED, trip.completedAt));
-  }
-  if (trip.status === TripStatus.CANCELLED) {
-    events.push(statusEvent(trip.id, TripStatus.CANCELLED, trip.updatedAt));
-  }
-
-  return events;
-}
-
-function ensureTimeline(trip: Trip): TripEvent[] {
-  if (!timelines[trip.id]) {
-    timelines[trip.id] = buildInitialTimeline(trip);
-  }
-  return timelines[trip.id];
-}
 
 /* ------------------------------------------------------------------ */
 /* Reads                                                               */
@@ -184,146 +60,113 @@ function ensureTimeline(trip: Trip): TripEvent[] {
  * (this is how ADMIN filtering and CLIENT self-scoping both work).
  */
 export async function getTrips(clientId?: string): Promise<TripsResponse> {
-  await delay();
-
-  // Future: const query = clientId ? `?clientId=${clientId}` : "";
-  //         const res = await apiFetch(`/trips${query}`); return res.json();
-  const scoped = clientId
-    ? trips.filter((trip) => trip.clientId === clientId)
-    : trips;
-
-  return { trips: scoped.map(clone) };
+  // The backend scopes to the CLIENT via the JWT; clientId only narrows an ADMIN.
+  const query = clientId ? `?clientId=${clientId}` : "";
+  const res = await apiFetch(`/trips${query}`);
+  const data = await res.json();
+  return { trips: data.trips ?? [] };
 }
 
 export async function getTrip(id: string): Promise<TripResponse> {
-  await delay();
-
-  // Future: const res = await apiFetch(`/trips/${id}`); return res.json();
-  return { trip: clone(findTrip(id)) };
+  const res = await apiFetch(`/trips/${id}`);
+  if (!res.ok) {
+    throw new Error(`Trip not found: ${id}`);
+  }
+  const data = await res.json();
+  return { trip: data.trip };
 }
 
 /**
- * Vehicle availability check for double-booking (TM-09.1). Returns the existing
- * trips that clash with a candidate vehicle + schedule; empty when the vehicle is
- * free. COMPLETED/CANCELLED trips never block (see findVehicleConflicts).
+ * Shared double-booking request (TM-09 / TM-10). Hits the real API, which scopes
+ * conflicts to the caller's own trips and never counts COMPLETED/CANCELLED trips.
+ * Normalises the (datetime-local) window to ISO so it aligns with stored trips,
+ * and fails open (no conflicts) on a transient error so a blip can't block the form.
  *
- *   Future API: GET /trips/overlap?vehicleId=&start=&end=&excludeTripId=
+ *   API: GET /trips/overlap?vehicleId=|driverId=&start=&end=&excludeTripId=
+ */
+async function requestOverlap(params: {
+  vehicleId?: string;
+  driverId?: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  excludeTripId?: string;
+}): Promise<OverlapResponse> {
+  const start = new Date(params.scheduledStart);
+  const end = new Date(params.scheduledEnd);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { hasOverlap: false, conflicts: [] };
+  }
+
+  const query = new URLSearchParams();
+  if (params.vehicleId) query.set("vehicleId", params.vehicleId);
+  if (params.driverId) query.set("driverId", params.driverId);
+  query.set("start", start.toISOString());
+  query.set("end", end.toISOString());
+  if (params.excludeTripId) query.set("excludeTripId", params.excludeTripId);
+
+  const res = await apiFetch(`/trips/overlap?${query.toString()}`);
+  if (!res.ok) {
+    return { hasOverlap: false, conflicts: [] };
+  }
+  const data = await res.json();
+  return {
+    hasOverlap: data.hasOverlap ?? false,
+    conflicts: data.conflicts ?? [],
+  };
+}
+
+/**
+ * Vehicle availability check for double-booking (TM-09.1). Empty when the vehicle
+ * is free; COMPLETED/CANCELLED trips never block.
  */
 export async function checkVehicleOverlap(
   candidate: OverlapCandidate,
 ): Promise<VehicleOverlapResponse> {
-  await delay();
-
-  const conflicts = findVehicleConflicts(trips, candidate);
-  return { hasOverlap: conflicts.length > 0, conflicts };
+  return requestOverlap({
+    vehicleId: candidate.vehicleId,
+    scheduledStart: candidate.scheduledStart,
+    scheduledEnd: candidate.scheduledEnd,
+    excludeTripId: candidate.excludeTripId,
+  });
 }
 
 /**
- * Driver availability check for double-booking (TM-10.1). Returns the existing
- * trips that clash with a candidate driver + schedule; empty when the driver is
- * free. COMPLETED/CANCELLED trips never block (see findDriverConflicts).
- *
- *   Future API: GET /trips/overlap?driverId=&start=&end=&excludeTripId=
+ * Driver availability check for double-booking (TM-10.1). Empty when the driver is
+ * free; COMPLETED/CANCELLED trips never block.
  */
 export async function checkDriverOverlap(
   candidate: DriverOverlapCandidate,
 ): Promise<DriverOverlapResponse> {
-  await delay();
-
-  const conflicts = findDriverConflicts(trips, candidate);
-  return { hasOverlap: conflicts.length > 0, conflicts };
+  return requestOverlap({
+    driverId: candidate.driverId,
+    scheduledStart: candidate.scheduledStart,
+    scheduledEnd: candidate.scheduledEnd,
+    excludeTripId: candidate.excludeTripId,
+  });
 }
 
 /* ------------------------------------------------------------------ */
 /* Writes (CLIENT only — enforced in the UI now, on the API later)     */
 /* ------------------------------------------------------------------ */
 
-export async function createTrip(
-  dto: CreateTripDto,
-  actor: TripActor = SYSTEM_ACTOR,
-): Promise<TripResponse> {
-  await delay();
-
-  // Future: const res = await apiFetch("/trips", { method: "POST", body: JSON.stringify(dto) }); return res.json();
-
-  // Reject double-booking of the vehicle or driver (the real API enforces this
-  // server-side).
-  if (dto.vehicleId) {
-    const conflicts = findVehicleConflicts(trips, {
-      vehicleId: dto.vehicleId,
-      scheduledStart: dto.scheduledStart,
-      scheduledEnd: dto.scheduledEnd,
-    });
-    if (conflicts.length > 0) {
-      throw new Error("VEHICLE_OVERLAP");
-    }
+export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
+  // Addresses only — the server geocodes them (single source of truth) and
+  // persists coordinates for route/progress/deviation. The backend also derives
+  // the owning client, reference, status and audit actor.
+  const res = await apiFetch("/trips", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    // Surface the server's overlap code (VEHICLE_OVERLAP / DRIVER_OVERLAP) so the
+    // create modal shows the matching message; fall back to a generic error.
+    const err = await res.json().catch(() => null);
+    throw new Error(
+      typeof err?.message === "string" ? err.message : "Failed to create trip",
+    );
   }
-
-  if (dto.driverId) {
-    const conflicts = findDriverConflicts(trips, {
-      driverId: dto.driverId,
-      scheduledStart: dto.scheduledStart,
-      scheduledEnd: dto.scheduledEnd,
-    });
-    if (conflicts.length > 0) {
-      throw new Error("DRIVER_OVERLAP");
-    }
-  }
-
-  const now = new Date().toISOString();
-  const existingForClient = trips.filter((t) => t.clientId === dto.clientId);
-
-  // Resolve the nested vehicle from the real vehicles API (server does this for real).
-  let vehicle: TripVehicle | null = null;
-  if (dto.vehicleId) {
-    try {
-      const vehicles = await getVehicles();
-      vehicle = vehicles.find((v) => v.id === dto.vehicleId) ?? null;
-    } catch {
-      vehicle = null;
-    }
-  }
-
-  const trip: Trip = {
-    id: `trip-${crypto.randomUUID()}`,
-    reference: dto.reference ?? `TRIP-2026-${String(3000 + trips.length + 1)}`,
-    status: TripStatus.PLANNED,
-    clientId: dto.clientId,
-    client: {
-      id: dto.clientId,
-      // Reuse a known name for this client if we have one; API supplies it for real.
-      name: existingForClient[0]?.client.name ?? "Client",
-    },
-    vehicleId: dto.vehicleId ?? null,
-    vehicle,
-    driverId: dto.driverId ?? null,
-    driverName: dto.driverName ?? null,
-    origin: dto.origin,
-    originCoords: mockGeocode(dto.origin),
-    destination: dto.destination,
-    destinationCoords: mockGeocode(dto.destination),
-    stops: (dto.stops ?? []).slice(0, MAX_TRIP_STOPS).map((stop, i) => ({
-      id: `stop-${crypto.randomUUID()}`,
-      address: stop.address,
-      sequence: i + 1,
-      coords: mockGeocode(stop.address),
-    })),
-    distanceKm: dto.distanceKm ?? 0,
-    durationMins: dto.durationMins ?? 0,
-    notes: dto.notes ?? null,
-    scheduledStart: dto.scheduledStart,
-    scheduledEnd: dto.scheduledEnd,
-    startedAt: null,
-    completedAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  trips = [trip, ...trips];
-  timelines[trip.id] = [
-    statusEvent(trip.id, TripStatus.PLANNED, now, actor, "CREATED"),
-  ];
-  return { trip: clone(trip) };
+  const data = await res.json();
+  return { trip: data.trip };
 }
 
 /** Reference data for the trip creation form: real vehicles + (mock) drivers. */
@@ -341,72 +184,47 @@ export async function getTripFormOptions(): Promise<TripFormOptions> {
 export async function updateTrip(
   id: string,
   dto: UpdateTripDto,
-  actor: TripActor = SYSTEM_ACTOR,
 ): Promise<TripResponse> {
-  await delay();
+  // Forward only the fields the API's UpdateTripDto accepts — clientId is
+  // owner-derived and stops aren't editable here, and both are rejected by the
+  // backend's whitelist. The server re-geocodes origin/destination on change.
+  const payload: Record<string, unknown> = { ...dto };
+  delete payload.clientId;
+  delete payload.stops;
 
-  // Future: const res = await apiFetch(`/trips/${id}`, { method: "PATCH", body: JSON.stringify(dto) }); return res.json();
-  const current = findTrip(id);
-
-  const updated: Trip = {
-    ...current,
-    ...dto,
-    // Never let a partial DTO overwrite server-owned/derived fields.
-    id: current.id,
-    client: current.client,
-    clientId: dto.clientId ?? current.clientId,
-    vehicleId: dto.vehicleId ?? current.vehicleId,
-    driverId: dto.driverId ?? current.driverId,
-    driverName: dto.driverName ?? current.driverName,
-    // Stops are managed at creation time; preserve them across generic updates.
-    stops: current.stops,
-    updatedAt: new Date().toISOString(),
-  };
-
-  trips = trips.map((trip) => (trip.id === id ? updated : trip));
-  ensureTimeline(current).push(
-    makeEvent(id, "UPDATED", updated.updatedAt, {
-      note: "Trip details updated",
-      actor,
-    }),
-  );
-  return { trip: clone(updated) };
+  const res = await apiFetch(`/trips/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to update trip");
+  }
+  const data = await res.json();
+  return { trip: data.trip };
 }
 
 export async function updateTripStatus(
   id: string,
   status: TripStatus,
-  actor: TripActor = SYSTEM_ACTOR,
 ): Promise<TripResponse> {
-  await delay();
-
-  // Future: const res = await apiFetch(`/trips/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }); return res.json();
-  const current = findTrip(id);
-  const now = new Date().toISOString();
-
-  const startsNow =
-    status === TripStatus.STARTED || status === TripStatus.ONGOING;
-
-  const updated: Trip = {
-    ...current,
-    status,
-    startedAt: startsNow && !current.startedAt ? now : current.startedAt,
-    completedAt: status === TripStatus.COMPLETED ? now : current.completedAt,
-    updatedAt: now,
-  };
-
-  ensureTimeline(current).push(statusEvent(id, status, now, actor));
-
-  trips = trips.map((trip) => (trip.id === id ? updated : trip));
-  return { trip: clone(updated) };
+  // The server validates the transition against its lifecycle state machine and
+  // records the STATUS_CHANGED audit event.
+  const res = await apiFetch(`/trips/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to update trip status");
+  }
+  const data = await res.json();
+  return { trip: data.trip };
 }
 
 export async function deleteTrip(id: string): Promise<{ success: boolean }> {
-  await delay();
-
-  // Future: await apiFetch(`/trips/${id}`, { method: "DELETE" }); return { success: true };
-  trips = trips.filter((trip) => trip.id !== id);
-  delete timelines[id];
+  const res = await apiFetch(`/trips/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error("Failed to delete trip");
+  }
   return { success: true };
 }
 
@@ -414,24 +232,45 @@ export async function deleteTrip(id: string): Promise<{ success: boolean }> {
 export async function getTripTimeline(
   tripId: string,
 ): Promise<TripTimelineResponse> {
-  await delay();
-
-  // Future: const res = await apiFetch(`/trips/${tripId}/timeline`); return res.json();
-  const trip = findTrip(tripId);
-  const events = ensureTimeline(trip);
-  return { events: events.map((e) => ({ ...e })) };
+  const res = await apiFetch(`/trips/${tripId}/timeline`);
+  if (!res.ok) {
+    throw new Error(`Timeline not found: ${tripId}`);
+  }
+  const data = await res.json();
+  return { events: data.events ?? [] };
 }
 
 /* ------------------------------------------------------------------ */
-/* Geocoding & route (mock — swap for the Google Geocoding API later)  */
+/* Geocoding & route                                                   */
 /* ------------------------------------------------------------------ */
 
-export async function geocodeAddress(address: string): Promise<GeoPoint> {
-  await delay();
-  return mockGeocode(address);
+/**
+ * Batch-geocode addresses through the API's geocoder (the single source of truth).
+ * Preserves input order; entries that can't be resolved come back as null. Fails
+ * soft (all null) on a transient error so previews/optimization degrade gracefully.
+ *
+ *   API: POST /geocode { addresses } -> { points: (GeoPoint | null)[] }
+ */
+async function geocodeMany(addresses: string[]): Promise<(GeoPoint | null)[]> {
+  if (addresses.length === 0) return [];
+
+  const res = await apiFetch("/geocode", {
+    method: "POST",
+    body: JSON.stringify({ addresses }),
+  });
+  if (!res.ok) {
+    return addresses.map(() => null);
+  }
+  const data = await res.json();
+  const points: (GeoPoint | null)[] = data.points ?? [];
+  return addresses.map((_, i) => points[i] ?? null);
 }
 
-/** Build ordered route points (pickup → stops → destination), geocoding as needed. */
+/**
+ * Assemble ordered route points (pickup → stops → destination) from already
+ * resolved coordinates. Points whose coordinates are missing are skipped, so a
+ * partially geocoded route still renders.
+ */
 function toRoutePoints(input: {
   origin: string;
   originCoords?: GeoPoint;
@@ -439,38 +278,47 @@ function toRoutePoints(input: {
   destinationCoords?: GeoPoint;
   stops: { address: string; sequence: number; coords?: GeoPoint }[];
 }): RoutePoint[] {
-  const points: RoutePoint[] = [
-    {
+  const points: RoutePoint[] = [];
+
+  if (input.originCoords) {
+    points.push({
       type: "pickup",
       label: input.origin,
       sequence: null,
-      coords: input.originCoords ?? mockGeocode(input.origin),
-    },
-  ];
+      coords: input.originCoords,
+    });
+  }
 
   input.stops.forEach((stop) => {
-    points.push({
-      type: "stop",
-      label: stop.address,
-      sequence: stop.sequence,
-      coords: stop.coords ?? mockGeocode(stop.address),
-    });
+    if (stop.coords) {
+      points.push({
+        type: "stop",
+        label: stop.address,
+        sequence: stop.sequence,
+        coords: stop.coords,
+      });
+    }
   });
 
-  points.push({
-    type: "destination",
-    label: input.destination,
-    sequence: null,
-    coords: input.destinationCoords ?? mockGeocode(input.destination),
-  });
+  if (input.destinationCoords) {
+    points.push({
+      type: "destination",
+      label: input.destination,
+      sequence: null,
+      coords: input.destinationCoords,
+    });
+  }
 
   return points;
 }
 
-/** Geocoded, ordered route for a stored trip. */
+/**
+ * Geocoded, ordered route for a stored trip. Derived from the real trip (addresses
+ * geocoded client-side where coords are absent) so use-trip's detail map keeps
+ * working without a dedicated route endpoint.
+ */
 export async function getTripRoute(tripId: string): Promise<TripRouteResponse> {
-  await delay();
-  const trip = findTrip(tripId);
+  const { trip } = await getTrip(tripId);
 
   return {
     points: toRoutePoints({
@@ -488,58 +336,50 @@ export async function getTripRoute(tripId: string): Promise<TripRouteResponse> {
 }
 
 /**
- * GPS breadcrumb history for route playback (TM-21.1). Returned only for
- * COMPLETED trips (they have a fully travelled route); empty otherwise. Lazily
- * synthesized along the route and cached — the real API serves recorded points.
+ * GPS breadcrumb history for route playback (TM-21). Real breadcrumbs are recorded
+ * server-side from the vehicle GPS feed while a trip is active, so a completed trip
+ * replays its actual travelled route. Fails soft (empty) so playback degrades to
+ * the static route when none were recorded.
  *
- *   Future API: GET /trips/:id/breadcrumbs -> { breadcrumbs }
+ *   API: GET /trips/:id/breadcrumbs -> { breadcrumbs }
  */
 export async function getTripBreadcrumbs(
   tripId: string,
 ): Promise<TripBreadcrumbsResponse> {
-  await delay();
-
-  const trip = findTrip(tripId);
-
-  if (trip.status !== TripStatus.COMPLETED) {
+  const res = await apiFetch(`/trips/${tripId}/breadcrumbs`);
+  if (!res.ok) {
     return { breadcrumbs: [] };
   }
-
-  if (!breadcrumbTrails[tripId]) {
-    const coords = toRoutePoints({
-      origin: trip.origin,
-      originCoords: trip.originCoords,
-      destination: trip.destination,
-      destinationCoords: trip.destinationCoords,
-      stops: trip.stops.map((s) => ({
-        address: s.address,
-        sequence: s.sequence,
-        coords: s.coords,
-      })),
-    }).map((point) => point.coords);
-
-    const startMs = new Date(trip.startedAt ?? trip.scheduledStart).getTime();
-    const endMs = new Date(trip.completedAt ?? trip.scheduledEnd).getTime();
-
-    breadcrumbTrails[tripId] = buildBreadcrumbTrail(coords, startMs, endMs);
-  }
-
-  return { breadcrumbs: breadcrumbTrails[tripId].map((p) => ({ ...p })) };
+  const data = await res.json();
+  return { breadcrumbs: data.breadcrumbs ?? [] };
 }
 
-/** Geocode draft addresses for a live route preview in the creation modal. */
+/** Geocode draft addresses (via the API) for a live route preview in the modal. */
 export async function previewTripRoute(input: {
   origin: string;
   destination: string;
   stops: string[];
 }): Promise<TripRouteResponse> {
-  await delay();
+  const coords = await geocodeMany([
+    input.origin,
+    ...input.stops,
+    input.destination,
+  ]);
+  const originCoords = coords[0] ?? undefined;
+  const destinationCoords = coords[coords.length - 1] ?? undefined;
+  const stopCoords = coords.slice(1, -1);
 
   return {
     points: toRoutePoints({
       origin: input.origin,
+      originCoords,
       destination: input.destination,
-      stops: input.stops.map((address, i) => ({ address, sequence: i + 1 })),
+      destinationCoords,
+      stops: input.stops.map((address, i) => ({
+        address,
+        sequence: i + 1,
+        coords: stopCoords[i] ?? undefined,
+      })),
     }),
   };
 }
@@ -591,9 +431,10 @@ function estimateDurationMins(meters: number): number {
 }
 
 /**
- * Optimal multi-stop ordering (TM-06). Geocodes the addresses (reusing the mock
- * geocoder), then reorders the intermediate stops to minimise total distance with
- * the pickup/destination fixed, returning before/after distance & (estimated) time.
+ * Optimal multi-stop ordering (TM-06). Geocodes the addresses via the API, then
+ * reorders the intermediate stops to minimise total distance with the
+ * pickup/destination fixed, returning before/after distance & (estimated) time.
+ * Requires every address to resolve; throws otherwise (the hook shows no result).
  *
  *   Future (Google Routes API): POST directions/v2:computeRoutes with
  *   optimizeWaypointOrder=true → read optimizedIntermediateWaypointIndex + legs.
@@ -601,11 +442,18 @@ function estimateDurationMins(meters: number): number {
 export async function optimizeTripRoute(
   input: OptimizeStopsInput,
 ): Promise<RouteOptimizationResponse> {
-  await delay();
-
-  const originCoords = mockGeocode(input.origin);
-  const destinationCoords = mockGeocode(input.destination);
-  const stopCoords = input.stops.map((address) => mockGeocode(address));
+  const coords = await geocodeMany([
+    input.origin,
+    ...input.stops,
+    input.destination,
+  ]);
+  if (coords.some((c) => c === null)) {
+    throw new Error("Could not geocode all addresses for optimization");
+  }
+  const resolved = coords as GeoPoint[];
+  const originCoords = resolved[0];
+  const destinationCoords = resolved[resolved.length - 1];
+  const stopCoords = resolved.slice(1, -1);
 
   const originalDistanceMeters = routeTotalDistance([
     originCoords,
@@ -635,32 +483,17 @@ export async function optimizeTripRoute(
   };
 }
 
-/** Route progress + distance metrics from the assigned vehicle's live position. */
+/** Route progress + distance metrics, computed server-side from the live vehicle. */
 export async function getTripProgress(
   tripId: string,
 ): Promise<TripProgressResponse> {
-  const trip = findTrip(tripId);
-
-  const points = toRoutePoints({
-    origin: trip.origin,
-    originCoords: trip.originCoords,
-    destination: trip.destination,
-    destinationCoords: trip.destinationCoords,
-    stops: trip.stops.map((s) => ({
-      address: s.address,
-      sequence: s.sequence,
-      coords: s.coords,
-    })),
-  });
-
-  let vehiclePosition: GeoPoint | null = null;
-  if (trip.vehicleId) {
-    try {
-      vehiclePosition = await getVehiclePosition(trip.vehicleId);
-    } catch {
-      vehiclePosition = null;
-    }
+  const res = await apiFetch(`/trips/${tripId}/progress`);
+  if (!res.ok) {
+    throw new Error(`Progress not found: ${tripId}`);
   }
-
-  return buildTripProgress(points, vehiclePosition);
+  const data = await res.json();
+  return {
+    progress: data.progress,
+    vehiclePosition: data.vehiclePosition ?? null,
+  };
 }

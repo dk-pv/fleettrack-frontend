@@ -14,7 +14,6 @@ import { socket } from "@/lib/socket";
 import {
   GeoPoint,
   getTripPermissions,
-  toTripActor,
   RoutePoint,
   Trip,
   TripEvent,
@@ -33,12 +32,6 @@ export function useTrip(id: string) {
   const permissions = useMemo(
     () => getTripPermissions(user?.role),
     [user?.role],
-  );
-
-  // Actor for audit logging (the real API derives this from the JWT).
-  const actor = useMemo(
-    () => toTripActor(user?.role, user?.name),
-    [user?.role, user?.name],
   );
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -142,11 +135,11 @@ export function useTrip(id: string) {
 
   const changeStatus = useCallback(
     async (status: TripStatus) => {
-      const res = await updateTripStatus(id, status, actor);
+      const res = await updateTripStatus(id, status);
       await refetch();
       return res.trip;
     },
-    [id, refetch, actor],
+    [id, refetch],
   );
 
   return {

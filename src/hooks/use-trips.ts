@@ -13,7 +13,6 @@ import {
 import {
   CreateTripDto,
   getTripPermissions,
-  toTripActor,
   Trip,
   TripStatus,
   UpdateTripDto,
@@ -37,12 +36,6 @@ export function useTrips() {
   const permissions = useMemo(
     () => getTripPermissions(user?.role),
     [user?.role],
-  );
-
-  // Actor for audit logging (the real API derives this from the JWT).
-  const actor = useMemo(
-    () => toTripActor(user?.role, user?.name),
-    [user?.role, user?.name],
   );
 
   // A client is scoped to itself; an admin may narrow by the selected client.
@@ -91,29 +84,29 @@ export function useTrips() {
 
   const createTrip = useCallback(
     async (dto: CreateTripDto) => {
-      const res = await createTripApi(dto, actor);
+      const res = await createTripApi(dto);
       await refetch();
       return res.trip;
     },
-    [refetch, actor],
+    [refetch],
   );
 
   const updateTrip = useCallback(
     async (id: string, dto: UpdateTripDto) => {
-      const res = await updateTripApi(id, dto, actor);
+      const res = await updateTripApi(id, dto);
       await refetch();
       return res.trip;
     },
-    [refetch, actor],
+    [refetch],
   );
 
   const changeStatus = useCallback(
     async (id: string, status: TripStatus) => {
-      const res = await updateTripStatusApi(id, status, actor);
+      const res = await updateTripStatusApi(id, status);
       await refetch();
       return res.trip;
     },
-    [refetch, actor],
+    [refetch],
   );
 
   const removeTrip = useCallback(
