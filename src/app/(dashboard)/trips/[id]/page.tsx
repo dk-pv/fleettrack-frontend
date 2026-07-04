@@ -9,16 +9,27 @@ import TripDetailsCard from "@/components/trips/trip-details-card";
 import TripStatusControls from "@/components/trips/trip-status-controls";
 import TripTimeline from "@/components/trips/trip-timeline";
 import TripRouteMap from "@/components/trips/trip-route-map";
+import TripProgressCard from "@/components/trips/trip-progress";
 
 export default function TripDetailPage() {
   const params = useParams();
   const id = String(params.id);
 
-  const { trip, timeline, route, loading, error, permissions, changeStatus } =
-    useTrip(id);
+  const {
+    trip,
+    timeline,
+    route,
+    progress,
+    vehiclePosition,
+    live,
+    loading,
+    error,
+    permissions,
+    changeStatus,
+  } = useTrip(id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <Link
         href="/trips"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -42,7 +53,9 @@ export default function TripDetailPage() {
             </p>
           </div>
 
-          <TripRouteMap points={route} />
+          <TripRouteMap points={route} vehiclePosition={vehiclePosition} />
+
+          <TripProgressCard progress={progress} live={live} />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">

@@ -8,7 +8,7 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 
-import { RoutePoint, RoutePointType } from "@/types/trip";
+import { GeoPoint, RoutePoint, RoutePointType } from "@/types/trip";
 
 /* Same loader config as the tracking map so the Google JS API is shared. */
 const MAP_LIBRARIES: "marker"[] = ["marker"];
@@ -36,10 +36,15 @@ const WRAPPER_CLASS =
 
 interface Props {
   points: RoutePoint[];
+  vehiclePosition?: GeoPoint | null;
   loading?: boolean;
 }
 
-export default function TripRouteMap({ points, loading = false }: Props) {
+export default function TripRouteMap({
+  points,
+  vehiclePosition = null,
+  loading = false,
+}: Props) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
     id: "google-map-script",
@@ -48,18 +53,31 @@ export default function TripRouteMap({ points, loading = false }: Props) {
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
+  // Latest live position, read by fitToPoints without being a dependency — so the
+  // map frames the vehicle on load but does NOT refit on every live tick (the
+  // marker moves on its own; refitting each update would make the map jump around).
+  const vehiclePositionRef = useRef<GeoPoint | null>(vehiclePosition);
+  useEffect(() => {
+    vehiclePositionRef.current = vehiclePosition;
+  }, [vehiclePosition]);
+
   const fitToPoints = useCallback(() => {
     const map = mapRef.current;
-    if (!map || points.length === 0) return;
+    if (!map) return;
 
-    if (points.length === 1) {
-      map.setCenter(points[0].coords);
+    const coords = points.map((p) => p.coords);
+    const vp = vehiclePositionRef.current;
+    if (vp) coords.push(vp);
+    if (coords.length === 0) return;
+
+    if (coords.length === 1) {
+      map.setCenter(coords[0]);
       map.setZoom(13);
       return;
     }
 
     const bounds = new google.maps.LatLngBounds();
-    points.forEach((p) => bounds.extend(p.coords));
+    coords.forEach((c) => bounds.extend(c));
     map.fitBounds(bounds, 60);
   }, [points]);
 
@@ -71,7 +89,8 @@ export default function TripRouteMap({ points, loading = false }: Props) {
     [fitToPoints],
   );
 
-  // Refit when the route changes (e.g. live preview updates in the modal).
+  // Refit when the route changes (e.g. live preview updates in the modal) — not
+  // on live position ticks, which only move the marker (see fitToPoints).
   useEffect(() => {
     fitToPoints();
   }, [fitToPoints]);
@@ -140,6 +159,22 @@ export default function TripRouteMap({ points, loading = false }: Props) {
             }}
           />
         ))}
+
+        {vehiclePosition && (
+          <Marker
+            position={vehiclePosition}
+            title="Current vehicle position"
+            zIndex={1000}
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: "#7c3aed",
+              fillOpacity: 1,
+              strokeColor: "#ffffff",
+              strokeWeight: 3,
+            }}
+          />
+        )}
       </GoogleMap>
 
       {/* Legend */}
@@ -165,6 +200,15 @@ export default function TripRouteMap({ points, loading = false }: Props) {
           />
           Destination
         </span>
+        {vehiclePosition && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: "#7c3aed" }}
+            />
+            Vehicle
+          </span>
+        )}
       </div>
     </div>
   );

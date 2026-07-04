@@ -1,4 +1,4 @@
-import { Trip, TripDriver, TripStatus, TripVehicle } from "@/types/trip";
+import { Trip, TripDriver, TripStatus } from "@/types/trip";
 
 /**
  * Mock trip data — shaped exactly like the future REST responses.
@@ -22,22 +22,7 @@ const CLIENT_COASTAL: Trip["client"] = {
   name: "Coastal Movers",
 };
 
-/* Assignable reference data for the trip creation form. */
-export const mockVehicleOptions: TripVehicle[] = [
-  { id: "veh-kl85b1418", vehicleNumber: "KL85B1418", vehicleName: "Tata Ace" },
-  {
-    id: "veh-kl11a9090",
-    vehicleNumber: "KL11A9090",
-    vehicleName: "Ashok Leyland Dost",
-  },
-  { id: "veh-kl07cx2211", vehicleNumber: "KL07CX2211", vehicleName: "Eicher Pro" },
-  {
-    id: "veh-kl09d5533",
-    vehicleNumber: "KL09D5533",
-    vehicleName: "Mahindra Bolero",
-  },
-];
-
+/* Assignable drivers for the trip creation form (mock — no drivers API yet). */
 export const mockDrivers: TripDriver[] = [
   { id: "drv-101", name: "Rajesh Kumar" },
   { id: "drv-102", name: "Anil Thomas" },

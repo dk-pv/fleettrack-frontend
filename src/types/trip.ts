@@ -259,3 +259,22 @@ export interface RoutePoint {
 export interface TripRouteResponse {
   points: RoutePoint[];
 }
+
+/* ------------------------------------------------------------------ */
+/* Progress & distance metrics                                         */
+/* ------------------------------------------------------------------ */
+
+export interface TripProgress {
+  totalMeters: number;
+  coveredMeters: number;
+  remainingMeters: number;
+  /** 0–100, derived from covered / total. */
+  percentage: number;
+  /** False when the assigned vehicle has no usable live position. */
+  hasVehiclePosition: boolean;
+}
+
+export interface TripProgressResponse {
+  progress: TripProgress;
+  vehiclePosition: GeoPoint | null;
+}

@@ -9,16 +9,20 @@ import {
   TripResponse,
   TripRouteResponse,
   TripsResponse,
+  TripProgressResponse,
   TripStatus,
   TripTimelineResponse,
+  TripVehicle,
   UpdateTripDto,
 } from "@/types/trip";
-import {
-  mockDrivers,
-  mockTrips,
-  mockVehicleOptions,
-} from "@/lib/mock/trips.mock";
+import { mockDrivers, mockTrips } from "@/lib/mock/trips.mock";
 import { mockGeocode } from "@/lib/mock/geocode.mock";
+import {
+  getVehicles,
+  getVehiclePosition,
+  toVehiclePosition,
+} from "@/services/vehicle.service";
+import { computeRouteProgress } from "@/lib/route-progress";
 
 /**
  * Trip service — the ONLY module that touches trip data.
@@ -152,10 +156,16 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
   const now = new Date().toISOString();
   const existingForClient = trips.filter((t) => t.clientId === dto.clientId);
 
-  // Resolve the nested vehicle from the assignable options (API supplies this for real).
-  const vehicle = dto.vehicleId
-    ? (mockVehicleOptions.find((v) => v.id === dto.vehicleId) ?? null)
-    : null;
+  // Resolve the nested vehicle from the real vehicles API (server does this for real).
+  let vehicle: TripVehicle | null = null;
+  if (dto.vehicleId) {
+    try {
+      const vehicles = await getVehicles();
+      vehicle = vehicles.find((v) => v.id === dto.vehicleId) ?? null;
+    } catch {
+      vehicle = null;
+    }
+  }
 
   const trip: Trip = {
     id: `trip-${crypto.randomUUID()}`,
@@ -199,13 +209,14 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
   return { trip: clone(trip) };
 }
 
-/** Reference data (assignable vehicles + drivers) for the trip creation form. */
+/** Reference data for the trip creation form: real vehicles + (mock) drivers. */
 export async function getTripFormOptions(): Promise<TripFormOptions> {
-  await delay();
+  // Vehicles come from the real FleetTrack API (scoped to the client by the JWT).
+  // Drivers stay mock until a drivers endpoint exists.
+  const vehicles = await getVehicles();
 
-  // Future: fetch from `/vehicles` and a drivers endpoint.
   return {
-    vehicles: mockVehicleOptions.map((v) => ({ ...v })),
+    vehicles,
     drivers: mockDrivers.map((d) => ({ ...d })),
   };
 }
@@ -367,4 +378,65 @@ export async function previewTripRoute(input: {
       stops: input.stops.map((address, i) => ({ address, sequence: i + 1 })),
     }),
   };
+}
+
+/**
+ * Assemble progress metrics from an ordered route + a (possibly null) live
+ * position. Pure and synchronous so the live socket feed can recompute on each
+ * update without re-geocoding or re-fetching (see progressFromVehicle / use-trip).
+ */
+export function buildTripProgress(
+  points: RoutePoint[],
+  position: GeoPoint | null,
+): TripProgressResponse {
+  const progress = computeRouteProgress(
+    points.map((point) => point.coords),
+    position,
+  );
+
+  return {
+    progress: { ...progress, hasVehiclePosition: position !== null },
+    vehiclePosition: position,
+  };
+}
+
+/**
+ * Recompute progress from a raw live vehicle payload (the tracking socket feed).
+ * Reuses vehicle.service's coordinate extraction — no duplicated GPS logic.
+ */
+export function progressFromVehicle(
+  points: RoutePoint[],
+  vehicle: { latitude?: unknown; longitude?: unknown } | null,
+): TripProgressResponse {
+  return buildTripProgress(points, toVehiclePosition(vehicle));
+}
+
+/** Route progress + distance metrics from the assigned vehicle's live position. */
+export async function getTripProgress(
+  tripId: string,
+): Promise<TripProgressResponse> {
+  const trip = findTrip(tripId);
+
+  const points = toRoutePoints({
+    origin: trip.origin,
+    originCoords: trip.originCoords,
+    destination: trip.destination,
+    destinationCoords: trip.destinationCoords,
+    stops: trip.stops.map((s) => ({
+      address: s.address,
+      sequence: s.sequence,
+      coords: s.coords,
+    })),
+  });
+
+  let vehiclePosition: GeoPoint | null = null;
+  if (trip.vehicleId) {
+    try {
+      vehiclePosition = await getVehiclePosition(trip.vehicleId);
+    } catch {
+      vehiclePosition = null;
+    }
+  }
+
+  return buildTripProgress(points, vehiclePosition);
 }
