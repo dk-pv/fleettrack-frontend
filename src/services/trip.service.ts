@@ -3,6 +3,7 @@ import {
   GeoPoint,
   MAX_TRIP_STOPS,
   RoutePoint,
+  ROUTE_DEVIATION_THRESHOLD_M,
   Trip,
   TripEvent,
   TripFormOptions,
@@ -14,6 +15,8 @@ import {
   TripTimelineResponse,
   TripVehicle,
   UpdateTripDto,
+  VehicleOverlapResponse,
+  DriverOverlapResponse,
 } from "@/types/trip";
 import { mockDrivers, mockTrips } from "@/lib/mock/trips.mock";
 import { mockGeocode } from "@/lib/mock/geocode.mock";
@@ -23,6 +26,12 @@ import {
   toVehiclePosition,
 } from "@/services/vehicle.service";
 import { computeRouteProgress } from "@/lib/route-progress";
+import {
+  findVehicleConflicts,
+  findDriverConflicts,
+  OverlapCandidate,
+  DriverOverlapCandidate,
+} from "@/lib/trip-overlap";
 
 /**
  * Trip service — the ONLY module that touches trip data.
@@ -96,7 +105,10 @@ function buildInitialTimeline(trip: Trip): TripEvent[] {
   if (trip.startedAt) {
     events.push(makeEvent(trip.id, TripStatus.STARTED, trip.startedAt));
   }
-  if (trip.status === TripStatus.ONGOING || trip.status === TripStatus.DELAYED) {
+  if (
+    trip.status === TripStatus.ONGOING ||
+    trip.status === TripStatus.DELAYED
+  ) {
     events.push(
       makeEvent(trip.id, trip.status, trip.startedAt ?? trip.scheduledStart),
     );
@@ -145,6 +157,38 @@ export async function getTrip(id: string): Promise<TripResponse> {
   return { trip: clone(findTrip(id)) };
 }
 
+/**
+ * Vehicle availability check for double-booking (TM-09.1). Returns the existing
+ * trips that clash with a candidate vehicle + schedule; empty when the vehicle is
+ * free. COMPLETED/CANCELLED trips never block (see findVehicleConflicts).
+ *
+ *   Future API: GET /trips/overlap?vehicleId=&start=&end=&excludeTripId=
+ */
+export async function checkVehicleOverlap(
+  candidate: OverlapCandidate,
+): Promise<VehicleOverlapResponse> {
+  await delay();
+
+  const conflicts = findVehicleConflicts(trips, candidate);
+  return { hasOverlap: conflicts.length > 0, conflicts };
+}
+
+/**
+ * Driver availability check for double-booking (TM-10.1). Returns the existing
+ * trips that clash with a candidate driver + schedule; empty when the driver is
+ * free. COMPLETED/CANCELLED trips never block (see findDriverConflicts).
+ *
+ *   Future API: GET /trips/overlap?driverId=&start=&end=&excludeTripId=
+ */
+export async function checkDriverOverlap(
+  candidate: DriverOverlapCandidate,
+): Promise<DriverOverlapResponse> {
+  await delay();
+
+  const conflicts = findDriverConflicts(trips, candidate);
+  return { hasOverlap: conflicts.length > 0, conflicts };
+}
+
 /* ------------------------------------------------------------------ */
 /* Writes (CLIENT only — enforced in the UI now, on the API later)     */
 /* ------------------------------------------------------------------ */
@@ -153,6 +197,31 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
   await delay();
 
   // Future: const res = await apiFetch("/trips", { method: "POST", body: JSON.stringify(dto) }); return res.json();
+
+  // Reject double-booking of the vehicle or driver (the real API enforces this
+  // server-side).
+  if (dto.vehicleId) {
+    const conflicts = findVehicleConflicts(trips, {
+      vehicleId: dto.vehicleId,
+      scheduledStart: dto.scheduledStart,
+      scheduledEnd: dto.scheduledEnd,
+    });
+    if (conflicts.length > 0) {
+      throw new Error("VEHICLE_OVERLAP");
+    }
+  }
+
+  if (dto.driverId) {
+    const conflicts = findDriverConflicts(trips, {
+      driverId: dto.driverId,
+      scheduledStart: dto.scheduledStart,
+      scheduledEnd: dto.scheduledEnd,
+    });
+    if (conflicts.length > 0) {
+      throw new Error("DRIVER_OVERLAP");
+    }
+  }
+
   const now = new Date().toISOString();
   const existingForClient = trips.filter((t) => t.clientId === dto.clientId);
 
@@ -169,9 +238,7 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
 
   const trip: Trip = {
     id: `trip-${crypto.randomUUID()}`,
-    reference:
-      dto.reference ??
-      `TRIP-2026-${String(3000 + trips.length + 1)}`,
+    reference: dto.reference ?? `TRIP-2026-${String(3000 + trips.length + 1)}`,
     status: TripStatus.PLANNED,
     clientId: dto.clientId,
     client: {
@@ -266,8 +333,7 @@ export async function updateTripStatus(
     ...current,
     status,
     startedAt: startsNow && !current.startedAt ? now : current.startedAt,
-    completedAt:
-      status === TripStatus.COMPLETED ? now : current.completedAt,
+    completedAt: status === TripStatus.COMPLETED ? now : current.completedAt,
     updatedAt: now,
   };
 
@@ -394,8 +460,16 @@ export function buildTripProgress(
     position,
   );
 
+  const hasVehiclePosition = position !== null;
+
   return {
-    progress: { ...progress, hasVehiclePosition: position !== null },
+    progress: {
+      ...progress,
+      hasVehiclePosition,
+      isDeviating:
+        hasVehiclePosition &&
+        progress.deviationMeters > ROUTE_DEVIATION_THRESHOLD_M,
+    },
     vehiclePosition: position,
   };
 }

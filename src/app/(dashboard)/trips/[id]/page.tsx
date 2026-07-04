@@ -10,6 +10,7 @@ import TripStatusControls from "@/components/trips/trip-status-controls";
 import TripTimeline from "@/components/trips/trip-timeline";
 import TripRouteMap from "@/components/trips/trip-route-map";
 import TripProgressCard from "@/components/trips/trip-progress";
+import TripDeviationAlert from "@/components/trips/trip-deviation-alert";
 
 export default function TripDetailPage() {
   const params = useParams();
@@ -53,7 +54,13 @@ export default function TripDetailPage() {
             </p>
           </div>
 
-          <TripRouteMap points={route} vehiclePosition={vehiclePosition} />
+          <TripRouteMap
+            points={route}
+            vehiclePosition={vehiclePosition}
+            deviating={progress?.isDeviating}
+          />
+
+          <TripDeviationAlert progress={progress} />
 
           <TripProgressCard progress={progress} live={live} />
 

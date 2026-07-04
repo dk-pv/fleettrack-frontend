@@ -37,12 +37,15 @@ const WRAPPER_CLASS =
 interface Props {
   points: RoutePoint[];
   vehiclePosition?: GeoPoint | null;
+  /** Tints the vehicle marker amber when it has strayed off the planned route. */
+  deviating?: boolean;
   loading?: boolean;
 }
 
 export default function TripRouteMap({
   points,
   vehiclePosition = null,
+  deviating = false,
   loading = false,
 }: Props) {
   const { isLoaded } = useJsApiLoader({
@@ -50,6 +53,8 @@ export default function TripRouteMap({
     id: "google-map-script",
     libraries: MAP_LIBRARIES,
   });
+
+  const vehicleColor = deviating ? "#f59e0b" : "#7c3aed";
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -97,7 +102,9 @@ export default function TripRouteMap({
 
   if (loading || !isLoaded) {
     return (
-      <div className={`${WRAPPER_CLASS} flex items-center justify-center bg-muted`}>
+      <div
+        className={`${WRAPPER_CLASS} flex items-center justify-center bg-muted`}
+      >
         <span className="text-sm text-muted-foreground">Loading map…</span>
       </div>
     );
@@ -105,7 +112,9 @@ export default function TripRouteMap({
 
   if (points.length === 0) {
     return (
-      <div className={`${WRAPPER_CLASS} flex items-center justify-center bg-muted`}>
+      <div
+        className={`${WRAPPER_CLASS} flex items-center justify-center bg-muted`}
+      >
         <span className="text-sm text-muted-foreground">
           No route to preview
         </span>
@@ -163,12 +172,16 @@ export default function TripRouteMap({
         {vehiclePosition && (
           <Marker
             position={vehiclePosition}
-            title="Current vehicle position"
+            title={
+              deviating
+                ? "Vehicle off planned route"
+                : "Current vehicle position"
+            }
             zIndex={1000}
             icon={{
               path: google.maps.SymbolPath.CIRCLE,
               scale: 7,
-              fillColor: "#7c3aed",
+              fillColor: vehicleColor,
               fillOpacity: 1,
               strokeColor: "#ffffff",
               strokeWeight: 3,
@@ -204,9 +217,9 @@ export default function TripRouteMap({
           <span className="flex items-center gap-1.5">
             <span
               className="h-2 w-2 rounded-full"
-              style={{ background: "#7c3aed" }}
+              style={{ background: vehicleColor }}
             />
-            Vehicle
+            {deviating ? "Vehicle (off route)" : "Vehicle"}
           </span>
         )}
       </div>

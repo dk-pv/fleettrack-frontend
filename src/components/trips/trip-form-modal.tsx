@@ -15,7 +15,9 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { useTripOptions } from "@/hooks/use-trip-options";
 import { useRoutePreview } from "@/hooks/use-route-preview";
+import { useOverlapCheck } from "@/hooks/use-overlap-check";
 import TripRouteMap from "@/components/trips/trip-route-map";
+import OverlapNotice from "@/components/trips/overlap-notice";
 import { CreateTripDto, MAX_TRIP_STOPS } from "@/types/trip";
 import {
   addStop,
@@ -55,6 +57,20 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
   const [stops, setStops] = useState<StopDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Live double-booking checks (TM-09 / TM-10) — through the service, never the mock.
+  const vehicleOverlap = useOverlapCheck("vehicle", {
+    resourceId: vehicleId,
+    scheduledStart: start,
+    scheduledEnd: end,
+  });
+  const driverOverlap = useOverlapCheck("driver", {
+    resourceId: driverId,
+    scheduledStart: start,
+    scheduledEnd: end,
+  });
+
+  const scheduleValid = !!start && !!end && new Date(end) > new Date(start);
+
   const resetForm = () => {
     setReference("");
     setPickup("");
@@ -89,6 +105,16 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
       return;
     }
 
+    if (vehicleOverlap.hasOverlap) {
+      toast.error("This vehicle is already booked for an overlapping schedule");
+      return;
+    }
+
+    if (driverOverlap.hasOverlap) {
+      toast.error("This driver is already booked for an overlapping schedule");
+      return;
+    }
+
     const driver = drivers.find((d) => d.id === driverId);
 
     const dto: CreateTripDto = {
@@ -115,7 +141,17 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
       onClose();
     } catch (err) {
       console.log(err);
-      toast.error("Failed to create trip");
+      if (err instanceof Error && err.message === "VEHICLE_OVERLAP") {
+        toast.error(
+          "This vehicle is already booked for an overlapping schedule",
+        );
+      } else if (err instanceof Error && err.message === "DRIVER_OVERLAP") {
+        toast.error(
+          "This driver is already booked for an overlapping schedule",
+        );
+      } else {
+        toast.error("Failed to create trip");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -302,6 +338,22 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
             </div>
           </div>
 
+          {/* Vehicle & driver availability (overlap validation) */}
+          <OverlapNotice
+            label="Vehicle"
+            show={!!vehicleId && scheduleValid}
+            checking={vehicleOverlap.checking}
+            hasOverlap={vehicleOverlap.hasOverlap}
+            conflicts={vehicleOverlap.conflicts}
+          />
+          <OverlapNotice
+            label="Driver"
+            show={!!driverId && scheduleValid}
+            checking={driverOverlap.checking}
+            hasOverlap={driverOverlap.hasOverlap}
+            conflicts={driverOverlap.conflicts}
+          />
+
           <div>
             <label className="mb-1 block text-sm font-medium">
               Notes (optional)
@@ -352,7 +404,11 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={
+                submitting ||
+                vehicleOverlap.hasOverlap ||
+                driverOverlap.hasOverlap
+              }
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Creating..." : "Create Trip"}

@@ -28,7 +28,9 @@ export interface TripPermissions {
   canManageLifecycle: boolean;
 }
 
-export function getTripPermissions(role: UserRole | undefined): TripPermissions {
+export function getTripPermissions(
+  role: UserRole | undefined,
+): TripPermissions {
   const isClient = role === "CLIENT";
   const isAdmin = role === "ADMIN";
 
@@ -264,6 +266,9 @@ export interface TripRouteResponse {
 /* Progress & distance metrics                                         */
 /* ------------------------------------------------------------------ */
 
+/** Alert when the live position strays more than this from the route (metres). */
+export const ROUTE_DEVIATION_THRESHOLD_M = 2000;
+
 export interface TripProgress {
   totalMeters: number;
   coveredMeters: number;
@@ -272,9 +277,35 @@ export interface TripProgress {
   percentage: number;
   /** False when the assigned vehicle has no usable live position. */
   hasVehiclePosition: boolean;
+  /** Shortest distance from the live position to the planned route (metres). */
+  deviationMeters: number;
+  /** True when deviationMeters exceeds ROUTE_DEVIATION_THRESHOLD_M. */
+  isDeviating: boolean;
 }
 
 export interface TripProgressResponse {
   progress: TripProgress;
   vehiclePosition: GeoPoint | null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Resource overlap (double-booking) validation                        */
+/* ------------------------------------------------------------------ */
+
+/** An existing trip that clashes with a candidate schedule for the same resource. */
+export interface OverlapConflict {
+  tripId: string;
+  reference: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  status: TripStatus;
+}
+
+/** Result of a double-booking check (shared by vehicle & driver validation). */
+export interface OverlapResponse {
+  hasOverlap: boolean;
+  conflicts: OverlapConflict[];
+}
+
+export type VehicleOverlapResponse = OverlapResponse;
+export type DriverOverlapResponse = OverlapResponse;

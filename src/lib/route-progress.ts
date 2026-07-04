@@ -12,6 +12,8 @@ export interface RouteProgress {
   coveredMeters: number;
   remainingMeters: number;
   percentage: number;
+  /** Shortest distance from the position to the route polyline (metres). */
+  deviationMeters: number;
 }
 
 /** Total route length in metres (sum of great-circle hops between points). */
@@ -73,6 +75,7 @@ export function computeRouteProgress(
       coveredMeters: 0,
       remainingMeters: total,
       percentage: 0,
+      deviationMeters: 0,
     };
   }
 
@@ -109,5 +112,7 @@ export function computeRouteProgress(
     coveredMeters: covered,
     remainingMeters: remaining,
     percentage,
+    // bestDist is the min perpendicular distance to the route — i.e. the deviation.
+    deviationMeters: Number.isFinite(bestDist) ? bestDist : 0,
   };
 }
