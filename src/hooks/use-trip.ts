@@ -8,6 +8,7 @@ import {
   getTripRoute,
   getTripTimeline,
   progressFromVehicle,
+  updateTrip,
   updateTripStatus,
 } from "@/services/trip.service";
 import { socket } from "@/lib/socket";
@@ -142,6 +143,17 @@ export function useTrip(id: string) {
     [id, refetch],
   );
 
+  // Persist an edited stop list (TM-05.3). Full-list replace via the service;
+  // refetch so the route, map and progress re-derive from the new stops.
+  const saveStops = useCallback(
+    async (stops: { address: string }[]) => {
+      const res = await updateTrip(id, { stops });
+      await refetch();
+      return res.trip;
+    },
+    [id, refetch],
+  );
+
   return {
     trip,
     timeline,
@@ -153,6 +165,7 @@ export function useTrip(id: string) {
     error,
     permissions,
     changeStatus,
+    saveStops,
     refetch,
   };
 }

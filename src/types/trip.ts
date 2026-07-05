@@ -102,6 +102,17 @@ export function canTransition(from: TripStatus, to: TripStatus): boolean {
   return TRIP_STATUS_TRANSITIONS[from].includes(to);
 }
 
+/** Statuses in which a trip's stops may still be added / removed / reordered (TM-05). */
+export const STOP_EDITABLE_STATUSES: TripStatus[] = [
+  TripStatus.PLANNED,
+  TripStatus.ASSIGNED,
+];
+
+/** Whether stops can be edited for a trip in this status (before it starts). */
+export function canEditStops(status: TripStatus): boolean {
+  return STOP_EDITABLE_STATUSES.includes(status);
+}
+
 /* ------------------------------------------------------------------ */
 /* Entities (as embedded in a Trip response)                           */
 /* ------------------------------------------------------------------ */

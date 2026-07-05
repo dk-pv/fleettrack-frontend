@@ -186,18 +186,23 @@ export async function updateTrip(
   dto: UpdateTripDto,
 ): Promise<TripResponse> {
   // Forward only the fields the API's UpdateTripDto accepts — clientId is
-  // owner-derived and stops aren't editable here, and both are rejected by the
-  // backend's whitelist. The server re-geocodes origin/destination on change.
+  // owner-derived and rejected by the backend's whitelist. Stops (TM-05) ARE
+  // accepted: sent as an ordered address list; the server replaces them with a
+  // fresh sequence + geocoded coords. Origin/destination re-geocode on change.
   const payload: Record<string, unknown> = { ...dto };
   delete payload.clientId;
-  delete payload.stops;
 
   const res = await apiFetch(`/trips/${id}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error("Failed to update trip");
+    // Surface the server's error code (STOPS_LOCKED / VEHICLE_OVERLAP /
+    // DRIVER_OVERLAP) so the caller can show the matching message.
+    const err = await res.json().catch(() => null);
+    throw new Error(
+      typeof err?.message === "string" ? err.message : "Failed to update trip",
+    );
   }
   const data = await res.json();
   return { trip: data.trip };

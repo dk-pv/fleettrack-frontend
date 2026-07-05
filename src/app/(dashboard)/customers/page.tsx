@@ -1,0 +1,54 @@
+"use client";
+
+import { useState } from "react";
+import { Plus, Search } from "lucide-react";
+
+import CustomerTable from "@/components/customers/customer-table";
+import AddCustomerModal from "@/components/customers/add-customer-modal";
+import { useAuthStore } from "@/store/auth-store";
+
+export default function CustomersPage() {
+  const { user } = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">
+            Customer Management
+          </h1>
+
+          <p className="mt-2 text-muted-foreground">
+            Manage shippers, receivers and corporate customers
+          </p>
+        </div>
+
+        {user?.role === "ADMIN" && (
+          <AddCustomerModal>
+            <button className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground">
+              <Plus className="h-4 w-4" />
+              Add Customer
+            </button>
+          </AddCustomerModal>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+          <input
+            type="text"
+            placeholder="Search customers by name, email, type..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+      </div>
+
+      <CustomerTable searchQuery={searchQuery} />
+    </div>
+  );
+}

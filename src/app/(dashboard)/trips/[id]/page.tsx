@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, MapPin } from "lucide-react";
 
 import { useTrip } from "@/hooks/use-trip";
-import { TripStatus } from "@/types/trip";
+import { canEditStops, TripStatus } from "@/types/trip";
 import TripDetailsCard from "@/components/trips/trip-details-card";
 import TripStatusControls from "@/components/trips/trip-status-controls";
+import TripStopsModal from "@/components/trips/trip-stops-modal";
 import TripTimeline from "@/components/trips/trip-timeline";
 import TripRouteMap from "@/components/trips/trip-route-map";
 import TripProgressCard from "@/components/trips/trip-progress";
@@ -29,7 +31,10 @@ export default function TripDetailPage() {
     error,
     permissions,
     changeStatus,
+    saveStops,
   } = useTrip(id);
+
+  const [stopsOpen, setStopsOpen] = useState(false);
 
   return (
     <div className="space-y-6 p-6">
@@ -74,6 +79,18 @@ export default function TripDetailPage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
+              {permissions.canEdit && canEditStops(trip.status) && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setStopsOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Manage stops
+                  </button>
+                </div>
+              )}
               <TripDetailsCard trip={trip} />
               <TripStatusControls
                 trip={trip}
@@ -86,6 +103,15 @@ export default function TripDetailPage() {
               <TripTimeline events={timeline} />
             </div>
           </div>
+
+          {stopsOpen && (
+            <TripStopsModal
+              open
+              onClose={() => setStopsOpen(false)}
+              trip={trip}
+              onSave={saveStops}
+            />
+          )}
         </>
       )}
     </div>
