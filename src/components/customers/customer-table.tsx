@@ -8,6 +8,8 @@ import { Customer } from "@/types/customer";
 import AddCustomerModal from "./add-customer-modal";
 import DeleteCustomerDialog from "./DeleteCustomerDialog";
 import CustomerTypeBadge from "./customer-type-badge";
+import CustomerAddressesModal from "./customer-addresses-modal";
+import CustomerTripsModal from "./customer-trips-modal";
 
 interface Props {
   searchQuery?: string;
@@ -20,6 +22,8 @@ interface Props {
 export default function CustomerTable({ searchQuery = "" }: Props) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [addressesFor, setAddressesFor] = useState<Customer | null>(null);
+  const [tripsFor, setTripsFor] = useState<Customer | null>(null);
 
   const fetchCustomers = async () => {
     const res = await apiFetch("/customers");
@@ -132,6 +136,20 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
                       </AddCustomerModal>
 
                       <button
+                        onClick={() => setAddressesFor(customer)}
+                        className="text-sm font-medium text-foreground hover:underline"
+                      >
+                        Addresses
+                      </button>
+
+                      <button
+                        onClick={() => setTripsFor(customer)}
+                        className="text-sm font-medium text-foreground hover:underline"
+                      >
+                        Trips
+                      </button>
+
+                      <button
                         onClick={() => setDeleteId(customer.id)}
                         className="text-sm font-medium text-red-500 hover:underline"
                       >
@@ -151,6 +169,22 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}
       />
+
+      {addressesFor && (
+        <CustomerAddressesModal
+          open
+          onClose={() => setAddressesFor(null)}
+          customer={addressesFor}
+        />
+      )}
+
+      {tripsFor && (
+        <CustomerTripsModal
+          open
+          onClose={() => setTripsFor(null)}
+          customer={tripsFor}
+        />
+      )}
     </div>
   );
 }

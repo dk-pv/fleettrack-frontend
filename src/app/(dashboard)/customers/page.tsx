@@ -24,7 +24,7 @@ export default function CustomersPage() {
           </p>
         </div>
 
-        {user?.role === "ADMIN" && (
+        {user?.role === "CLIENT" && (
           <AddCustomerModal>
             <button className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground">
               <Plus className="h-4 w-4" />

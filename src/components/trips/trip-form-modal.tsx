@@ -14,6 +14,7 @@ import {
 
 import { useAuthStore } from "@/store/auth-store";
 import { useTripOptions } from "@/hooks/use-trip-options";
+import { useCustomerOptions } from "@/hooks/use-customer-options";
 import { useRoutePreview } from "@/hooks/use-route-preview";
 import { useOverlapCheck } from "@/hooks/use-overlap-check";
 import { useRouteOptimization } from "@/hooks/use-route-optimization";
@@ -42,6 +43,7 @@ const inputClass =
 export default function TripFormModal({ open, onClose, onCreate }: Props) {
   const { user } = useAuthStore();
   const { vehicles, drivers, loading: optionsLoading } = useTripOptions();
+  const { customers, loading: customersLoading } = useCustomerOptions();
   const {
     points: routePoints,
     loading: routeLoading,
@@ -56,6 +58,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
   const [end, setEnd] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [driverId, setDriverId] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [notes, setNotes] = useState("");
   const [stops, setStops] = useState<StopDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -133,6 +136,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     setEnd("");
     setVehicleId("");
     setDriverId("");
+    setCustomerId("");
     setNotes("");
     setStops([]);
     setPreOptimizeStops(null);
@@ -179,6 +183,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
       vehicleId,
       driverId,
       driverName: driver?.name ?? null,
+      customerId: customerId || undefined,
       origin: pickup,
       destination: delivery,
       stops: stops
@@ -412,6 +417,26 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Customer (optional) — links the trip to a customer (CUS-07.1) */}
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Customer (optional)
+            </label>
+            <select
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              disabled={customersLoading}
+              className={inputClass}
+            >
+              <option value="">No customer</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Vehicle & driver availability (overlap validation) */}

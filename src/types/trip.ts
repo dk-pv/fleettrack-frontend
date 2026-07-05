@@ -133,6 +133,12 @@ export interface TripDriver {
   name: string;
 }
 
+/** Customer a trip is placed for (CUS-07) — embedded in a Trip response. */
+export interface TripCustomer {
+  id: string;
+  name: string;
+}
+
 /** Reference data for the trip creation form (assignable vehicles & drivers). */
 export interface TripFormOptions {
   vehicles: TripVehicle[];
@@ -178,6 +184,10 @@ export interface Trip {
   driverId: string | null;
   driverName: string | null;
 
+  /* Customer this trip is for (CUS-07) — nullable */
+  customerId: string | null;
+  customer: TripCustomer | null;
+
   /* Route */
   origin: string;
   originCoords?: GeoPoint;
@@ -212,6 +222,7 @@ export interface CreateTripDto {
   vehicleId?: string | null;
   driverId?: string | null;
   driverName?: string | null;
+  customerId?: string | null;
   origin: string;
   destination: string;
   stops?: CreateTripStopInput[];

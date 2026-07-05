@@ -41,6 +41,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.ONGOING,
     clientId: CLIENT_KERALA.id,
     client: CLIENT_KERALA,
+    customerId: null,
+    customer: null,
     vehicleId: "veh-kl85b1418",
     vehicle: {
       id: "veh-kl85b1418",
@@ -68,6 +70,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.PLANNED,
     clientId: CLIENT_KERALA.id,
     client: CLIENT_KERALA,
+    customerId: null,
+    customer: null,
     vehicleId: null,
     vehicle: null,
     driverId: null,
@@ -91,6 +95,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.COMPLETED,
     clientId: CLIENT_KERALA.id,
     client: CLIENT_KERALA,
+    customerId: null,
+    customer: null,
     vehicleId: "veh-kl11a9090",
     vehicle: {
       id: "veh-kl11a9090",
@@ -118,6 +124,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.CANCELLED,
     clientId: CLIENT_KERALA.id,
     client: CLIENT_KERALA,
+    customerId: null,
+    customer: null,
     vehicleId: "veh-kl85b1418",
     vehicle: {
       id: "veh-kl85b1418",
@@ -145,6 +153,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.ONGOING,
     clientId: CLIENT_COASTAL.id,
     client: CLIENT_COASTAL,
+    customerId: null,
+    customer: null,
     vehicleId: "veh-kl07cx2211",
     vehicle: {
       id: "veh-kl07cx2211",
@@ -172,6 +182,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.PLANNED,
     clientId: CLIENT_COASTAL.id,
     client: CLIENT_COASTAL,
+    customerId: null,
+    customer: null,
     vehicleId: "veh-kl07cx2211",
     vehicle: {
       id: "veh-kl07cx2211",
@@ -199,6 +211,8 @@ export const mockTrips: Trip[] = [
     status: TripStatus.COMPLETED,
     clientId: CLIENT_COASTAL.id,
     client: CLIENT_COASTAL,
+    customerId: null,
+    customer: null,
     vehicleId: "veh-kl09d5533",
     vehicle: {
       id: "veh-kl09d5533",

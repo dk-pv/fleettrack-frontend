@@ -13,6 +13,32 @@ export const CUSTOMER_TYPES: CustomerType[] = [
   "CORPORATE",
 ];
 
+/** Minimal customer projection for the trip form's customer selector (CUS-07.1). */
+export interface CustomerOption {
+  id: string;
+  name: string;
+  type: CustomerType;
+}
+
+/** Address type for the reusable pickup/delivery address book (CUS-05 / CUS-06). */
+export type AddressKind = "PICKUP" | "DELIVERY";
+
+export const ADDRESS_KINDS: AddressKind[] = ["PICKUP", "DELIVERY"];
+
+export interface CustomerAddress {
+  id: string;
+  customerId: string;
+  kind: AddressKind;
+  label: string;
+  address: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Preferred address per kind (for future trip auto-selection). */
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;

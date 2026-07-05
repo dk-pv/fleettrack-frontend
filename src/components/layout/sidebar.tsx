@@ -41,7 +41,7 @@ export const sidebarMenu = [
     title: "Customers",
     icon: Building2,
     href: "/customers",
-    roles: ["ADMIN"],
+    roles: ["CLIENT"],
   },
    {
     title: "Users",
