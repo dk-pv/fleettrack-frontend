@@ -108,6 +108,44 @@ export const STOP_EDITABLE_STATUSES: TripStatus[] = [
   TripStatus.ASSIGNED,
 ];
 
+/* ------------------------------------------------------------------ */
+/* Dashboard trip summary buckets (DSH-01)                             */
+/* ------------------------------------------------------------------ */
+
+/** The four dashboard summary buckets; also the `?status=` drill-down keys. */
+export type TripSummaryBucket =
+  | "active"
+  | "upcoming"
+  | "delayed"
+  | "completed";
+
+/**
+ * Bucket → lifecycle statuses. Mirrors the backend dashboard summary so a card's
+ * count matches the drill-down list it links to. `delayed` is the DELAYED status
+ * (the drill-down filters on status, not the ETA-05.1 prediction).
+ */
+export const TRIP_SUMMARY_BUCKETS: Record<TripSummaryBucket, TripStatus[]> = {
+  active: [TripStatus.STARTED, TripStatus.ONGOING, TripStatus.DELAYED],
+  upcoming: [TripStatus.PLANNED, TripStatus.ASSIGNED],
+  delayed: [TripStatus.DELAYED],
+  completed: [TripStatus.COMPLETED],
+};
+
+export const TRIP_SUMMARY_BUCKET_LABELS: Record<TripSummaryBucket, string> = {
+  active: "Active",
+  upcoming: "Upcoming",
+  delayed: "Delayed",
+  completed: "Completed",
+};
+
+/** Dashboard trip summary counts (DSH-01.1) — one number per bucket. */
+export interface TripSummary {
+  active: number;
+  upcoming: number;
+  delayed: number;
+  completed: number;
+}
+
 /** Whether stops can be edited for a trip in this status (before it starts). */
 export function canEditStops(status: TripStatus): boolean {
   return STOP_EDITABLE_STATUSES.includes(status);

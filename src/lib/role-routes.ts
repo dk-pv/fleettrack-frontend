@@ -4,6 +4,7 @@ export const roleRoutes = {
     "/tracking",
     "/vehicles",
     "/trips",
+    "/delays",
     "/clients",
     "/users",
     "/settings",
@@ -14,6 +15,7 @@ export const roleRoutes = {
     "/tracking",
     "/vehicles",
     "/trips",
+    "/delays",
     "/customers",
   ],
 

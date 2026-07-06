@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, Truck } from "lucide-react";
-import { LayoutDashboard, Map, Users, Settings ,UserCog, Route, Building2} from "lucide-react";
+import { LayoutDashboard, Map, Users, Settings ,UserCog, Route, Building2, Clock} from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 
 export const sidebarMenu = [
@@ -29,6 +29,12 @@ export const sidebarMenu = [
     title: "Trips",
     icon: Route,
     href: "/trips",
+    roles: ["ADMIN", "CLIENT"],
+  },
+  {
+    title: "Delays",
+    icon: Clock,
+    href: "/delays",
     roles: ["ADMIN", "CLIENT"],
   },
   {

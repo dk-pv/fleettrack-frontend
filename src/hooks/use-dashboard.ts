@@ -8,8 +8,10 @@ import {
 import {
   getDashboardStats,
   getActiveVehicles,
+  getTripSummary,
 } from "@/services/dashboard.service";
 
+import { TripSummary } from "@/types/trip";
 import { useClientStore } from "@/store/client-store";
 
 export function useDashboard() {
@@ -21,6 +23,9 @@ export function useDashboard() {
 
   const [vehicles, setVehicles] =
     useState<any[]>([]);
+
+  const [tripSummary, setTripSummary] =
+    useState<TripSummary | null>(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -48,6 +53,15 @@ export function useDashboard() {
         setVehicles(
           vehicleData.data || [],
         );
+
+        const summaryData =
+          await getTripSummary(
+            clientId,
+          );
+
+        setTripSummary(
+          summaryData.data,
+        );
       } catch (error) {
         console.log(error);
       } finally {
@@ -61,6 +75,7 @@ export function useDashboard() {
   return {
     stats,
     vehicles,
+    tripSummary,
     loading,
   };
 }

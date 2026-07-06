@@ -1,11 +1,16 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Truck, Activity, AlertTriangle } from "lucide-react";
+import { Truck, Activity, AlertTriangle, type LucideIcon } from "lucide-react";
 
 interface StatsCardProps {
   title: string;
   value: string | number;
   description: string;
   color?: "default" | "green" | "red";
+  /** Overrides the color-derived icon (e.g. a trip icon on the dashboard). */
+  icon?: LucideIcon;
+  /** When set, the whole card links here — used for dashboard drill-down. */
+  href?: string;
 }
 
 export default function StatsCard({
@@ -13,12 +18,16 @@ export default function StatsCard({
   value,
   description,
   color = "default",
+  icon,
+  href,
 }: StatsCardProps) {
-  const Icon = color === "green"
-    ? Activity
-    : color === "red"
-      ? AlertTriangle
-      : Truck;
+  const Icon = icon
+    ? icon
+    : color === "green"
+      ? Activity
+      : color === "red"
+        ? AlertTriangle
+        : Truck;
 
   const badgeColors = color === "green"
     ? "bg-success/10 text-success border-success/10"
@@ -26,7 +35,7 @@ export default function StatsCard({
       ? "bg-destructive/10 text-destructive border-destructive/10"
       : "bg-muted text-muted-foreground border-border";
 
-  return (
+  const card = (
     <Card
       className={`rounded-2xl border p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${
         color === "green"
@@ -56,5 +65,13 @@ export default function StatsCard({
         </p>
       </div>
     </Card>
+  );
+
+  return href ? (
+    <Link href={href} className="block">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  Navigation,
+  CalendarClock,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
+
 import ActiveVehicles from "@/components/dashboard/active-vehicles";
 import FleetStatusChart from "@/components/dashboard/fleet-status-chart";
 import StatsCard from "@/components/dashboard/stats-card";
@@ -8,7 +15,7 @@ import WeeklyActivityChart from "@/components/dashboard/weekly-activity-chart";
 import { useDashboard } from "@/hooks/use-dashboard";
 
 export default function DashboardPage() {
-  const { stats, vehicles, loading } = useDashboard();
+  const { stats, vehicles, tripSummary, loading } = useDashboard();
 
   if (loading) {
     return <div>Loading...</div>;
@@ -26,6 +33,44 @@ export default function DashboardPage() {
         <p className="mt-2 text-muted-foreground">
           Monitor your fleet performance and activity
         </p>
+      </div>
+
+      {/* Trip summary (DSH-01) — each card drills down to the filtered trip list */}
+
+      <div className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatsCard
+          title="Active Trips"
+          value={tripSummary?.active ?? 0}
+          description="In transit now"
+          color="green"
+          icon={Navigation}
+          href="/trips?status=active"
+        />
+
+        <StatsCard
+          title="Upcoming Trips"
+          value={tripSummary?.upcoming ?? 0}
+          description="Planned & assigned"
+          icon={CalendarClock}
+          href="/trips?status=upcoming"
+        />
+
+        <StatsCard
+          title="Delayed Trips"
+          value={tripSummary?.delayed ?? 0}
+          description="Behind schedule"
+          color="red"
+          icon={AlertTriangle}
+          href="/trips?status=delayed"
+        />
+
+        <StatsCard
+          title="Completed Trips"
+          value={tripSummary?.completed ?? 0}
+          description="Finished"
+          icon={CheckCircle2}
+          href="/trips?status=completed"
+        />
       </div>
 
       {/* Stats */}
