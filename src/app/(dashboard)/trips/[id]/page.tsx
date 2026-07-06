@@ -13,6 +13,7 @@ import TripStopsModal from "@/components/trips/trip-stops-modal";
 import TripTimeline from "@/components/trips/trip-timeline";
 import TripRouteMap from "@/components/trips/trip-route-map";
 import TripProgressCard from "@/components/trips/trip-progress";
+import TripEtaCard from "@/components/trips/trip-eta";
 import TripDeviationAlert from "@/components/trips/trip-deviation-alert";
 import TripPlayback from "@/components/trips/trip-playback";
 
@@ -25,6 +26,7 @@ export default function TripDetailPage() {
     timeline,
     route,
     progress,
+    eta,
     vehiclePosition,
     live,
     loading,
@@ -73,7 +75,16 @@ export default function TripDetailPage() {
 
               <TripDeviationAlert progress={progress} />
 
-              <TripProgressCard progress={progress} live={live} />
+              {/* No ETA card for terminal trips (CANCELLED here; COMPLETED uses
+                  the playback branch above). */}
+              {trip.status === TripStatus.CANCELLED ? (
+                <TripProgressCard progress={progress} live={live} />
+              ) : (
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <TripProgressCard progress={progress} live={live} />
+                  <TripEtaCard eta={eta} live={live} />
+                </div>
+              )}
             </>
           )}
 

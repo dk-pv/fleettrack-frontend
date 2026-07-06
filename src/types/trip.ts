@@ -113,6 +113,22 @@ export function canEditStops(status: TripStatus): boolean {
   return STOP_EDITABLE_STATUSES.includes(status);
 }
 
+/**
+ * Statuses for which a destination ETA is meaningful — the trip is in transit.
+ * Mirrors the API's `ETA_ACTIVE_STATUSES` so the live recompute and the endpoint
+ * apply the exact same rule (ETA-01 / ETA-02).
+ */
+export const ETA_ACTIVE_STATUSES: TripStatus[] = [
+  TripStatus.STARTED,
+  TripStatus.ONGOING,
+  TripStatus.DELAYED,
+];
+
+/** Whether a live destination ETA applies to a trip in this status. */
+export function isEtaActive(status: TripStatus): boolean {
+  return ETA_ACTIVE_STATUSES.includes(status);
+}
+
 /* ------------------------------------------------------------------ */
 /* Entities (as embedded in a Trip response)                           */
 /* ------------------------------------------------------------------ */
@@ -335,6 +351,29 @@ export interface TripProgress {
 export interface TripProgressResponse {
   progress: TripProgress;
   vehiclePosition: GeoPoint | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* ETA (destination arrival estimate — ETA-01 / ETA-02)                */
+/* ------------------------------------------------------------------ */
+
+/** Destination ETA, derived from remaining distance + effective speed. */
+export interface TripEta {
+  /** Absolute estimated arrival time (ISO 8601). */
+  etaTimestamp: string;
+  /** Seconds until arrival, from when the estimate was made. */
+  etaSeconds: number;
+  /** Speed the estimate was based on (km/h) — live speed or the average fallback. */
+  basisSpeedKmh: number;
+  /** Distance still to cover (metres). */
+  remainingMeters: number;
+  /** False when the assigned vehicle has no usable live position. */
+  hasVehiclePosition: boolean;
+}
+
+export interface TripEtaResponse {
+  /** Null when the trip isn't in transit / has no live position / has arrived. */
+  eta: TripEta | null;
 }
 
 /* ------------------------------------------------------------------ */

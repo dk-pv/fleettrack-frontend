@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getTrip,
+  getTripEta,
   getTripProgress,
   getTripRoute,
   getTripTimeline,
@@ -12,11 +13,14 @@ import {
   updateTripStatus,
 } from "@/services/trip.service";
 import { socket } from "@/lib/socket";
+import { computeEta } from "@/lib/trip-eta";
 import {
   GeoPoint,
   getTripPermissions,
+  isEtaActive,
   RoutePoint,
   Trip,
+  TripEta,
   TripEvent,
   TripProgress,
   TripStatus,
@@ -39,6 +43,7 @@ export function useTrip(id: string) {
   const [timeline, setTimeline] = useState<TripEvent[]>([]);
   const [route, setRoute] = useState<RoutePoint[]>([]);
   const [progress, setProgress] = useState<TripProgress | null>(null);
+  const [eta, setEta] = useState<TripEta | null>(null);
   const [vehiclePosition, setVehiclePosition] = useState<GeoPoint | null>(null);
   const [live, setLive] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,20 +56,30 @@ export function useTrip(id: string) {
     routeRef.current = route;
   }, [route]);
 
+  // Current status in a ref so the live socket handler applies the ETA status gate
+  // without re-subscribing on every transition (mirrors routeRef).
+  const statusRef = useRef<TripStatus | undefined>(trip?.status);
+  useEffect(() => {
+    statusRef.current = trip?.status;
+  }, [trip?.status]);
+
   const refetch = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [tripRes, timelineRes, routeRes, progressRes] = await Promise.all([
-        getTrip(id),
-        getTripTimeline(id),
-        getTripRoute(id),
-        getTripProgress(id),
-      ]);
+      const [tripRes, timelineRes, routeRes, progressRes, etaRes] =
+        await Promise.all([
+          getTrip(id),
+          getTripTimeline(id),
+          getTripRoute(id),
+          getTripProgress(id),
+          getTripEta(id),
+        ]);
       setTrip(tripRes.trip);
       setTimeline(timelineRes.events);
       setRoute(routeRes.points);
       setProgress(progressRes.progress);
+      setEta(etaRes.eta);
       setVehiclePosition(progressRes.vehiclePosition);
     } catch (err) {
       console.log(err);
@@ -82,18 +97,19 @@ export function useTrip(id: string) {
         setLoading(true);
         setError(null);
         setLive(false);
-        const [tripRes, timelineRes, routeRes, progressRes] = await Promise.all(
-          [
+        const [tripRes, timelineRes, routeRes, progressRes, etaRes] =
+          await Promise.all([
             getTrip(id),
             getTripTimeline(id),
             getTripRoute(id),
             getTripProgress(id),
-          ],
-        );
+            getTripEta(id),
+          ]);
         setTrip(tripRes.trip);
         setTimeline(timelineRes.events);
         setRoute(routeRes.points);
         setProgress(progressRes.progress);
+        setEta(etaRes.eta);
         setVehiclePosition(progressRes.vehiclePosition);
       } catch (err) {
         console.log(err);
@@ -117,6 +133,7 @@ export function useTrip(id: string) {
       id: string;
       latitude?: number;
       longitude?: number;
+      speed?: number;
     }) => {
       if (!payload || payload.id !== vehicleId) return;
 
@@ -126,6 +143,19 @@ export function useTrip(id: string) {
       setProgress(next.progress);
       setVehiclePosition(next.vehiclePosition);
       setLive(true);
+
+      // Recompute the destination ETA from the live remaining distance + speed
+      // (ETA-02.1) — same feed, pure maths, no refetch. Gated on the same active
+      // statuses as the API's getEta, so socket updates never create or update an
+      // ETA for a PLANNED / ASSIGNED / CANCELLED / COMPLETED trip.
+      const status = statusRef.current;
+      if (status && isEtaActive(status)) {
+        setEta(
+          next.progress.remainingMeters > 0
+            ? computeEta(next.progress.remainingMeters, payload.speed, Date.now())
+            : null,
+        );
+      }
     };
 
     socket.on("vehicleLocationUpdate", handler);
@@ -159,6 +189,7 @@ export function useTrip(id: string) {
     timeline,
     route,
     progress,
+    eta,
     vehiclePosition,
     live,
     loading,

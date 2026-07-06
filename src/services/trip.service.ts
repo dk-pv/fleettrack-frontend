@@ -8,6 +8,7 @@ import {
   TripRouteResponse,
   TripsResponse,
   TripProgressResponse,
+  TripEtaResponse,
   TripStatus,
   TripTimelineResponse,
   UpdateTripDto,
@@ -501,4 +502,20 @@ export async function getTripProgress(
     progress: data.progress,
     vehiclePosition: data.vehiclePosition ?? null,
   };
+}
+
+/**
+ * Destination ETA (ETA-01.2), derived server-side from remaining distance + the
+ * vehicle's live speed. Fails soft (null) so a transient error never blocks the
+ * detail page; the live socket recompute keeps it fresh thereafter.
+ *
+ *   API: GET /trips/:id/eta -> { eta }
+ */
+export async function getTripEta(tripId: string): Promise<TripEtaResponse> {
+  const res = await apiFetch(`/trips/${tripId}/eta`);
+  if (!res.ok) {
+    return { eta: null };
+  }
+  const data = await res.json();
+  return { eta: data.eta ?? null };
 }
