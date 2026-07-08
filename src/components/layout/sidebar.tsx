@@ -2,11 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { X, Truck } from "lucide-react";
-import { LayoutDashboard, Map, Users, Settings ,UserCog, Route, Building2, Clock} from "lucide-react";
+import {
+  LayoutDashboard,
+  Map,
+  Users,
+  Settings,
+  UserCog,
+  Route,
+  Building2,
+  Clock,
+  FileBarChart,
+  Bell,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 
-export const sidebarMenu = [
+/** A leaf navigation link. */
+type NavChild = {
+  title: string;
+  icon: LucideIcon;
+  href: string;
+  roles: string[];
+};
+
+/**
+ * A sidebar entry — either a leaf (has `href`) or a collapsible group (has
+ * `children`). Reports is the only group today; every report keeps its own icon
+ * and roles so role-based visibility is unchanged.
+ */
+type NavItem = {
+  title: string;
+  icon: LucideIcon;
+  href?: string;
+  roles?: string[];
+  children?: NavChild[];
+};
+
+export const sidebarMenu: NavItem[] = [
   {
     title: "Dashboard",
     icon: LayoutDashboard,
@@ -38,6 +73,56 @@ export const sidebarMenu = [
     roles: ["ADMIN", "CLIENT"],
   },
   {
+    title: "Notifications",
+    icon: Bell,
+    href: "/notifications",
+    roles: ["ADMIN", "CLIENT"],
+  },
+  {
+    // Collapsible parent — groups the six report pages. Visibility is derived from
+    // its children's roles, so it appears only when the role can see ≥1 report.
+    title: "Reports",
+    icon: FileBarChart,
+    children: [
+      {
+        title: "Trip Report",
+        icon: FileBarChart,
+        href: "/reports/trips",
+        roles: ["ADMIN", "CLIENT"],
+      },
+      {
+        title: "Delay Report",
+        icon: FileBarChart,
+        href: "/reports/delays",
+        roles: ["ADMIN", "CLIENT"],
+      },
+      {
+        title: "Cost Report",
+        icon: FileBarChart,
+        href: "/reports/cost",
+        roles: ["ADMIN", "CLIENT"],
+      },
+      {
+        title: "Driver Report",
+        icon: UserCog,
+        href: "/reports/drivers",
+        roles: ["ADMIN", "CLIENT"],
+      },
+      {
+        title: "Vehicle Report",
+        icon: Truck,
+        href: "/reports/vehicles",
+        roles: ["ADMIN", "CLIENT"],
+      },
+      {
+        title: "Customer Report",
+        icon: Building2,
+        href: "/reports/customers",
+        roles: ["CLIENT"],
+      },
+    ],
+  },
+  {
     title: "clients",
     icon: Users,
     href: "/clients",
@@ -49,7 +134,7 @@ export const sidebarMenu = [
     href: "/customers",
     roles: ["CLIENT"],
   },
-   {
+  {
     title: "Users",
     icon: UserCog,
     href: "/users",
@@ -70,6 +155,67 @@ interface SidebarProps {
   setExpanded: (value: boolean) => void;
 }
 
+/**
+ * A single navigation row (icon + label + active pill). Shared by top-level leaves
+ * and report children so the styling, hover, active state and collapse transitions
+ * are defined once — `indent` nudges children in to read as a sub-item.
+ */
+function NavLink({
+  href,
+  title,
+  Icon,
+  active,
+  expanded,
+  indent,
+  onNavigate,
+}: {
+  href: string;
+  title: string;
+  Icon: LucideIcon;
+  active: boolean;
+  expanded: boolean;
+  indent?: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`
+        relative flex h-10 items-center gap-3.5 rounded-lg px-3.5
+        transition-all duration-200 group/navlink
+
+        ${indent ? "lg:pl-11" : ""}
+
+        ${
+          active
+            ? "bg-primary/10 text-primary font-medium"
+            : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+        }
+      `}
+    >
+      {/* Left border active indicator */}
+      {active && (
+        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
+      )}
+
+      <Icon className={`h-4.5 w-4.5 min-w-[18px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
+
+      <span
+        className={`
+          text-xs font-medium whitespace-nowrap transition-all duration-300
+
+          ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
+
+          block
+        `}
+      >
+        {title}
+      </span>
+    </Link>
+  );
+}
+
 export default function Sidebar({
   expanded,
   sidebarOpen,
@@ -79,6 +225,14 @@ export default function Sidebar({
   const pathname = usePathname();
 
   const { user } = useAuthStore();
+
+  const role = user?.role || "VIEWER";
+
+  // Accordion state for the Reports group. It auto-stays-open on any report route
+  // (derived, not stored) so requirement 6 holds even on a hard refresh.
+  const onReportsRoute = pathname.startsWith("/reports");
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const reportsExpanded = reportsOpen || onReportsRoute;
 
   return (
     <>
@@ -136,8 +290,8 @@ export default function Sidebar({
           </div>
 
           {/* Mobile Close */}
-          <button 
-            className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" 
+          <button
+            className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -147,39 +301,44 @@ export default function Sidebar({
         {/* Menu */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto no-scrollbar">
           <ul className="space-y-1">
-            {sidebarMenu
-              .filter((item) => item.roles.includes(user?.role || "VIEWER"))
-              .map((item) => {
-                const Icon = item.icon;
+            {sidebarMenu.map((item) => {
+              const Icon = item.icon;
 
-                const active = pathname === item.href;
+              // Collapsible group (Reports). Shown only when the role can see a child.
+              if (item.children) {
+                const visibleChildren = item.children.filter((child) =>
+                  child.roles.includes(role),
+                );
+
+                if (visibleChildren.length === 0) return null;
 
                 return (
                   <li key={item.title}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
+                    <button
+                      type="button"
+                      onClick={() => setReportsOpen((open) => !open)}
+                      aria-expanded={reportsExpanded}
                       className={`
-                        relative flex h-10 items-center gap-3.5 rounded-lg px-3.5
+                        relative flex h-10 w-full items-center gap-3.5 rounded-lg px-3.5
                         transition-all duration-200 group/navlink
 
                         ${
-                          active
+                          onReportsRoute
                             ? "bg-primary/10 text-primary font-medium"
                             : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                         }
                       `}
                     >
                       {/* Left border active indicator */}
-                      {active && (
+                      {onReportsRoute && (
                         <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
                       )}
 
-                      <Icon className={`h-4.5 w-4.5 min-w-[18px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
+                      <Icon className={`h-4.5 w-4.5 min-w-[18px] transition-transform duration-200 group-hover/navlink:scale-105 ${onReportsRoute ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
 
                       <span
                         className={`
-                          text-xs font-medium whitespace-nowrap transition-all duration-300
+                          flex-1 text-left text-xs font-medium whitespace-nowrap transition-all duration-300
 
                           ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
 
@@ -188,10 +347,57 @@ export default function Sidebar({
                       >
                         {item.title}
                       </span>
-                    </Link>
+
+                      <ChevronDown
+                        className={`
+                          h-4 w-4 shrink-0 transition-transform duration-300
+
+                          ${reportsExpanded ? "" : "-rotate-90"}
+
+                          ${expanded ? "opacity-100 lg:block" : "opacity-0 lg:hidden"}
+
+                          block
+                        `}
+                      />
+                    </button>
+
+                    {reportsExpanded && (
+                      <ul className={`mt-1 space-y-1 ${expanded ? "" : "lg:hidden"}`}>
+                        {visibleChildren.map((child) => (
+                          <li key={child.title}>
+                            <NavLink
+                              href={child.href}
+                              title={child.title}
+                              Icon={child.icon}
+                              active={pathname === child.href}
+                              expanded={expanded}
+                              indent
+                              onNavigate={() => setSidebarOpen(false)}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 );
-              })}
+              }
+
+              // Leaf link.
+              if (!item.href || !item.roles?.includes(role)) return null;
+
+              return (
+                <li key={item.title}>
+                  <NavLink
+                    href={item.href}
+                    title={item.title}
+                    Icon={Icon}
+                    active={pathname === item.href}
+                    expanded={expanded}
+                    onNavigate={() => setSidebarOpen(false)}
+                  />
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

@@ -146,6 +146,21 @@ export interface TripSummary {
   completed: number;
 }
 
+/**
+ * Delivery performance metrics (DSH-04.1). Counts plus rates (0–100). On-time vs
+ * delayed is measured from each completed trip's actual arrival (completedAt) vs
+ * scheduledEnd, so onTime + delayed === completed.
+ */
+export interface DeliveryMetrics {
+  total: number;
+  completed: number;
+  onTime: number;
+  delayed: number;
+  completionRate: number;
+  onTimeRate: number;
+  delayedRate: number;
+}
+
 /** Whether stops can be edited for a trip in this status (before it starts). */
 export function canEditStops(status: TripStatus): boolean {
   return STOP_EDITABLE_STATUSES.includes(status);

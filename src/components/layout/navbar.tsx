@@ -146,7 +146,6 @@
 "use client";
 
 import {
-  Bell,
   ChevronDown,
   LogOut,
   Menu,
@@ -158,6 +157,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { useClientStore } from "@/store/client-store";
 import ThemeToggle from "./theme-toggle";
+import NotificationBell from "@/components/notifications/notification-bell";
 import { apiFetch } from "@/lib/fetcher";
 
 import {
@@ -293,9 +293,9 @@ export default function Navbar({
 
         <ThemeToggle />
 
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border">
-          <Bell className="h-4 w-4" />
-        </button>
+        {(user?.role === "ADMIN" || user?.role === "CLIENT") && (
+          <NotificationBell />
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

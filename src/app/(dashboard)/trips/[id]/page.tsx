@@ -7,6 +7,8 @@ import { ArrowLeft, MapPin } from "lucide-react";
 
 import { useTrip } from "@/hooks/use-trip";
 import { canEditStops, TripStatus } from "@/types/trip";
+import TripCostCard from "@/components/trips/trip-cost-card";
+import TripPodCard from "@/components/trips/trip-pod-card";
 import TripDetailsCard from "@/components/trips/trip-details-card";
 import TripStatusControls from "@/components/trips/trip-status-controls";
 import TripStopsModal from "@/components/trips/trip-stops-modal";
@@ -93,6 +95,8 @@ export default function TripDetailPage() {
                 permissions={permissions}
                 onChange={changeStatus}
               />
+              <TripCostCard tripId={id} canEdit={permissions.canEdit} />
+              <TripPodCard tripId={id} canEdit={permissions.canEdit} />
             </div>
 
             <div className="lg:col-span-1">

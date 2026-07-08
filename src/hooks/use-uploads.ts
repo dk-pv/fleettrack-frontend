@@ -1,0 +1,55 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { listFiles, deleteFile } from "@/services/upload.service";
+import { FileAsset, FileCategory } from "@/types/upload";
+
+/**
+ * Loads a trip's files for one category (e.g. RECEIPT) through the shared upload
+ * service, and exposes reload + optimistic delete. Reloads when trip/category change.
+ */
+export function useUploads(tripId: string, category: FileCategory) {
+  const [files, setFiles] = useState<FileAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Inlined async load (no-setState-in-effect lint rule); reload on trip/category change.
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        const data = await listFiles(tripId, category);
+        if (active) setFiles(data);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      active = false;
+    };
+  }, [tripId, category]);
+
+  const reload = async () => {
+    try {
+      const data = await listFiles(tripId, category);
+      setFiles(data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const remove = async (id: string) => {
+    const res = await deleteFile(id);
+    if (res.ok) setFiles((prev) => prev.filter((f) => f.id !== id));
+    return res.ok;
+  };
+
+  return { files, loading, reload, remove };
+}

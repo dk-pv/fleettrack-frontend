@@ -38,3 +38,16 @@ export async function getTripSummary(clientId?: string) {
 
   return response.json();
 }
+
+/* DELIVERY METRICS (DSH-04.1) */
+export async function getDeliveryMetrics(clientId?: string) {
+  const query = clientId
+    ? `?clientId=${clientId}`
+    : "";
+
+  const response = await apiFetch(
+    `/dashboard/delivery-metrics${query}`
+  );
+
+  return response.json();
+}

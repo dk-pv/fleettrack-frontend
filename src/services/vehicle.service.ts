@@ -30,6 +30,49 @@ export async function getVehicles(): Promise<TripVehicle[]> {
 }
 
 /**
+ * Live operational status for a vehicle + its driver (DSH-02). Same shape the
+ * tracking socket's `vehicleLocationUpdate` broadcasts, so the live-ops board can
+ * seed from this snapshot and then patch it from the socket with no reshaping.
+ */
+export interface LiveVehicle {
+  id: string;
+  vehicleNumber: string;
+  driverName: string;
+  status: string;
+  speed: number;
+  isOnline: boolean;
+}
+
+interface ApiLiveVehicle {
+  id: string;
+  vehicleNumber: string;
+  driverName: string;
+  status: string;
+  speed: number;
+  isOnline: boolean;
+}
+
+/**
+ * Snapshot of every vehicle's live status/driver (DSH-02.1 needs no new endpoint —
+ * this reuses the existing GET /vehicles, just projecting the operational fields
+ * getVehicles() drops). The tracking socket keeps it current thereafter.
+ */
+export async function getLiveVehicles(): Promise<LiveVehicle[]> {
+  const response = await apiFetch("/vehicles");
+  const data = await response.json();
+  const vehicles: ApiLiveVehicle[] = data.vehicles ?? [];
+
+  return vehicles.map((vehicle) => ({
+    id: vehicle.id,
+    vehicleNumber: vehicle.vehicleNumber,
+    driverName: vehicle.driverName,
+    status: vehicle.status,
+    speed: vehicle.speed,
+    isOnline: vehicle.isOnline,
+  }));
+}
+
+/**
  * Normalise a raw vehicle record's coordinates to a GeoPoint, or null if the
  * position is missing/invalid. Pure and synchronous so it is reused for both the
  * REST snapshot below and the live socket feed (see trip.service).
