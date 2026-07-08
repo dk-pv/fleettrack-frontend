@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Navbar from "@/components/layout/navbar";
 import Sidebar from "@/components/layout/sidebar";
+import FullScreenLoader from "@/components/ui/full-screen-loader";
 import { useAuthStore } from "@/store/auth-store";
 import { roleRoutes } from "@/lib/role-routes";
 
@@ -36,12 +37,20 @@ export default function DashboardLayout({
     }
   }, [pathname, hydrated, user, router]);
 
+  // Until the auth store has hydrated (and the token is confirmed), show the branded
+  // loader instead of a blank screen — this is also the tail end of the login
+  // transition, so the hand-off from /login reads as one continuous loading state.
   if (!hydrated || !token) {
-    return null;
+    return (
+      <FullScreenLoader
+        title="Loading FleetTrack"
+        subtitle="Preparing your dashboard..."
+      />
+    );
   }
 
   return (
-    <main className="relative  min-h-screen overflow-hidden bg-[#f5f7fb] text-foreground transition-colors duration-300 dark:bg-[#0b1120]">
+    <main className="relative  min-h-screen overflow-hidden bg-[#f5f7fb] text-foreground transition-colors duration-300 animate-in fade-in duration-500 dark:bg-[#0b1120]">
       {/* Sidebar */}
       <Sidebar
         expanded={expanded}
