@@ -107,6 +107,8 @@
   --chart-3: #F59E0B;
   --chart-4: #6366F1;
   --chart-5: #EC4899;
+
+  color-scheme: light;
 }
 
 .dark {
@@ -158,6 +160,8 @@
   --chart-3: #FBBF24;
   --chart-4: #818CF8;
   --chart-5: #F472B6;
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -169,6 +173,9 @@
   }
   html {
     @apply font-sans;
+  }
+  option {
+    @apply bg-background text-foreground;
   }
 }
 
