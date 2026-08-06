@@ -71,21 +71,21 @@ export default function ClientForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Client Name"
-        className="h-10 w-full rounded-lg border px-3"
+        className="h-10 w-full rounded-lg border px-3 text-[16px]"
       />
 
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="h-10 w-full rounded-lg border px-3"
+        className="h-10 w-full rounded-lg border px-3 text-[16px]"
       />
 
       <input
         value={apiUrl}
         onChange={(e) => setApiUrl(e.target.value)}
         placeholder="API URL"
-        className="h-10 w-full rounded-lg border px-3"
+        className="h-10 w-full rounded-lg border px-3 text-[16px]"
       />
 
       {!isEdit && (
@@ -94,13 +94,13 @@ export default function ClientForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="h-10 w-full rounded-lg border px-3"
+          className="h-10 w-full rounded-lg border px-3 text-[16px]"
         />
       )}
 
       <button
         disabled={loading}
-        className="w-full h-10 rounded-lg bg-primary text-white"
+        className="w-full h-11 rounded-lg bg-primary text-white text-[15px] font-medium"
       >
         {loading ? "Saving..." : buttonText}
       </button>

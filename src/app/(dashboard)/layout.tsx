@@ -15,18 +15,24 @@ export default function DashboardLayout({
 }) {
   const [expanded, setExpanded] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { token, hydrated, user } = useAuthStore();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (hydrated && !token) {
       router.replace("/login");
     }
-  }, [hydrated, token, router]);
+  }, [mounted, hydrated, token, router]);
 
   useEffect(() => {
-    if (!hydrated || !user) return;
+    if (!mounted || !hydrated || !user) return;
 
     const allowedRoutes = roleRoutes[user.role] ?? ["/dashboard"];
 
@@ -35,7 +41,7 @@ export default function DashboardLayout({
     if (!hasAccess) {
       router.replace("/dashboard");
     }
-  }, [pathname, hydrated, user, router]);
+  }, [mounted, pathname, hydrated, user, router]);
 
   // Until the auth store has hydrated (and the token is confirmed), show the branded
   // loader instead of a blank screen — this is also the tail end of the login

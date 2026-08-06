@@ -255,7 +255,7 @@ export default function Navbar({
             <input
               type="text"
               placeholder="Search dashboard..."
-              className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-4 text-xs"
+              className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-[16px]"
             />
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function Navbar({
         {user?.role === "ADMIN" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="px-3 py-2 border rounded-lg text-xs font-semibold">
+              <button className="px-4 py-2 border rounded-lg text-[15px] font-semibold">
                 {selectedClient?.name || "All Clients"}
               </button>
             </DropdownMenuTrigger>
@@ -300,16 +300,16 @@ export default function Navbar({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2.5 rounded-lg border border-border px-2.5 py-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-[14px] font-bold text-primary">
                 {getInitials()}
               </div>
 
               <div className="hidden lg:block text-left">
-                <h4 className="text-xs font-semibold">
+                <h4 className="text-[15px] font-semibold">
                   {user?.name || "Unknown"}
                 </h4>
 
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[14px] text-muted-foreground">
                   {formatRole(user?.role)}
                 </p>
               </div>

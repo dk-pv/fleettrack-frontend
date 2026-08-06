@@ -8,6 +8,11 @@ export type FileCategory = "RECEIPT" | "POD_PHOTO" | "POD_SIGNATURE";
 export interface FileAsset {
   id: string;
   category: FileCategory;
+  /**
+   * TCM-03.2 — for a RECEIPT, the cost component it's attached to (UPPERCASE enum value,
+   * e.g. "FUEL"); null for POD media and general/trip-level receipts.
+   */
+  costComponent: string | null;
   originalName: string;
   mimeType: string;
   size: number;

@@ -19,23 +19,23 @@ export default function UserTable({
         <table className="w-full min-w-[700px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
                 Name
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
                 Email
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
                 Role
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
                 Created
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
                 Actions
               </th>
             </tr>
@@ -61,18 +61,18 @@ export default function UserTable({
                     hover:bg-muted/40
                   "
                 >
-                  <td className="px-6 py-4 font-medium text-foreground">
+                  <td className="px-6 py-5 text-[16px] font-semibold text-foreground">
                     {user.name}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {user.email}
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-5">
                     <span
                       className={`
-                        inline-flex rounded-full px-3 py-1 text-xs font-medium
+                        inline-flex rounded-full px-3 py-1 text-[14px] font-semibold
                         ${
                           user.role === "ADMIN"
                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
@@ -84,18 +84,18 @@ export default function UserTable({
                     </span>
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {new Date(
                       user.createdAt
                     ).toLocaleDateString()}
                   </td>
 
-                  <td className="px-6 py-4">
-                    <div className="flex gap-3">
+                  <td className="px-6 py-5">
+                    <div className="flex gap-4">
                       <button
                         onClick={() => onEdit(user)}
                         className="
-                          text-sm font-medium text-primary
+                          text-[15px] font-medium text-primary
                           hover:underline
                         "
                       >
@@ -105,7 +105,7 @@ export default function UserTable({
                       <button
                         onClick={() => onDelete(user)}
                         className="
-                          text-sm font-medium text-red-500
+                          text-[15px] font-medium text-red-500
                           hover:underline
                         "
                       >

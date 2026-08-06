@@ -10,6 +10,10 @@ export interface ProofOfDelivery {
   recipientName: string | null;
   notes: string | null;
   deliveredAt: string | null;
+  // POD-04.1/04.2 — delivery geolocation captured on confirmation (null when unavailable).
+  deliveredLat: number | null;
+  deliveredLng: number | null;
+  deliveredLocationAccuracy: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,4 +23,8 @@ export interface PodInput {
   recipientName?: string;
   notes?: string;
   deliveredAt?: string;
+  // POD-04.1 — sent alongside the confirmation when the browser could get a fix.
+  deliveredLat?: number;
+  deliveredLng?: number;
+  deliveredLocationAccuracy?: number;
 }

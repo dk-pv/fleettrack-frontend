@@ -3,6 +3,7 @@ import {
   GeoPoint,
   RoutePoint,
   ROUTE_DEVIATION_THRESHOLD_M,
+  TripDriver,
   TripFormOptions,
   TripResponse,
   TripRouteResponse,
@@ -18,7 +19,6 @@ import {
   OptimizeStopsInput,
   RouteOptimizationResponse,
 } from "@/types/trip";
-import { mockDrivers } from "@/lib/mock/trips.mock";
 import { getVehicles, toVehiclePosition } from "@/services/vehicle.service";
 import { computeRouteProgress, routeTotalDistance } from "@/lib/route-progress";
 import { optimizeStopOrder } from "@/lib/route-optimize";
@@ -35,12 +35,13 @@ import { apiFetch } from "@/lib/fetcher";
  * owns the reference, owning client, lifecycle validation and audit actor (all
  * from the JWT). Route preview + optimization geocode via the API's /geocode.
  *
- * Still mock: the assignable driver list (no drivers endpoint yet). Everything
- * else — CRUD, overlap, geocoding, and breadcrumb playback — is served by the API.
+ * The full surface — CRUD, the assignable vehicle + driver lookups, overlap,
+ * geocoding, and breadcrumb playback — is served by the API. No mock data remains.
  *
  *   API (NestJS):
  *     GET    /trips                 -> { trips }
  *     GET    /trips/overlap         -> { hasOverlap, conflicts }
+ *     GET    /trips/drivers         -> { drivers }
  *     GET    /trips/:id             -> { trip }
  *     GET    /trips/:id/timeline    -> { events }
  *     GET    /trips/:id/progress    -> { progress, vehiclePosition }
@@ -170,16 +171,29 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
   return { trip: data.trip };
 }
 
-/** Reference data for the trip creation form: real vehicles + (mock) drivers. */
-export async function getTripFormOptions(): Promise<TripFormOptions> {
-  // Vehicles come from the real FleetTrack API (scoped to the client by the JWT).
-  // Drivers stay mock until a drivers endpoint exists.
-  const vehicles = await getVehicles();
+/**
+ * Assignable drivers for the trip create form (TM-10.1). Real + tenant-scoped: the API
+ * derives the distinct driver list from the caller's own vehicles, so a CLIENT never
+ * sees another client's drivers. Each driver's `id` is the server's stable, name-derived
+ * identifier — sent back verbatim as the trip's driverId so the DRIVER_OVERLAP guard
+ * matches. Fails soft (empty) on a transient error so the form still opens.
+ *
+ *   API: GET /trips/drivers -> { drivers }
+ */
+export async function getDrivers(): Promise<TripDriver[]> {
+  const res = await apiFetch("/trips/drivers");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.drivers ?? [];
+}
 
-  return {
-    vehicles,
-    drivers: mockDrivers.map((d) => ({ ...d })),
-  };
+/** Reference data for the trip creation form: real vehicles + real drivers. */
+export async function getTripFormOptions(): Promise<TripFormOptions> {
+  // Both are scoped to the client by the JWT; fetched together so the form opens in a
+  // single round-trip.
+  const [vehicles, drivers] = await Promise.all([getVehicles(), getDrivers()]);
+
+  return { vehicles, drivers };
 }
 
 export async function updateTrip(
@@ -221,6 +235,28 @@ export async function updateTripStatus(
   });
   if (!res.ok) {
     throw new Error("Failed to update trip status");
+  }
+  const data = await res.json();
+  return { trip: data.trip };
+}
+
+export async function completeTripStop(
+  tripId: string,
+  stopId: string,
+): Promise<TripResponse> {
+  // TM-02.2 — mark a stop reached. The server enforces order, lifecycle and
+  // ownership, and records the completion plus a timeline event.
+  const res = await apiFetch(`/trips/${tripId}/stops/${stopId}/complete`, {
+    method: "PATCH",
+  });
+  if (!res.ok) {
+    // Surface the server's code (STOP_OUT_OF_ORDER / STOP_NOT_COMPLETABLE / …).
+    const err = await res.json().catch(() => null);
+    throw new Error(
+      typeof err?.message === "string"
+        ? err.message
+        : "Failed to complete stop",
+    );
   }
   const data = await res.json();
   return { trip: data.trip };

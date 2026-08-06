@@ -5,6 +5,7 @@ import { PackageCheck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePod } from "@/hooks/use-pod";
+import { captureLocation, CapturedLocation } from "@/lib/geolocation";
 import FileGallery from "@/components/upload/file-gallery";
 import PodSignature from "./pod-signature";
 
@@ -42,15 +43,39 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
   const handleSave = async (confirm: boolean) => {
     try {
       setSaving(true);
+      const firstConfirm = confirm && !confirmed;
+
+      // POD-04.1 — capture the delivery location ONLY at the confirmation moment (never
+      // on plain edits, so we don't re-prompt). Optional + non-blocking: a null fix
+      // (denied / unavailable / timeout / unsupported) still confirms the delivery.
+      let location: CapturedLocation | null = null;
+      if (firstConfirm) {
+        location = await captureLocation();
+      }
+
       await savePod({
         recipientName: recipientName || undefined,
         notes: notes || undefined,
         // First confirmation stamps the delivery time (drives the timeline event).
-        ...(confirm && !confirmed
-          ? { deliveredAt: new Date().toISOString() }
+        ...(firstConfirm ? { deliveredAt: new Date().toISOString() } : {}),
+        ...(location
+          ? {
+              deliveredLat: location.lat,
+              deliveredLng: location.lng,
+              deliveredLocationAccuracy: location.accuracy,
+            }
           : {}),
       });
-      toast.success(confirm && !confirmed ? "Delivery confirmed" : "Saved");
+
+      if (firstConfirm) {
+        toast.success(
+          location
+            ? "Delivery confirmed — location captured"
+            : "Delivery confirmed (location unavailable)",
+        );
+      } else {
+        toast.success("Saved");
+      }
       setEditing(false);
     } catch (err) {
       console.log(err);
@@ -148,6 +173,21 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
                 <dt className="text-xs text-muted-foreground">Delivered at</dt>
                 <dd className="font-medium">
                   {formatDateTime(pod?.deliveredAt ?? null)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Location</dt>
+                <dd className="font-medium">
+                  {pod?.deliveredLat != null && pod?.deliveredLng != null ? (
+                    <span>
+                      {pod.deliveredLat.toFixed(5)}, {pod.deliveredLng.toFixed(5)}
+                      {pod.deliveredLocationAccuracy != null
+                        ? ` (±${Math.round(pod.deliveredLocationAccuracy)} m)`
+                        : ""}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Not captured</span>
+                  )}
                 </dd>
               </div>
               {pod?.notes && (

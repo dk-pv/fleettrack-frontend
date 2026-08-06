@@ -15,9 +15,11 @@ import { FileAsset, FileCategory } from "@/types/upload";
 export async function listFiles(
   tripId: string,
   category?: FileCategory,
+  costComponent?: string,
 ): Promise<FileAsset[]> {
   const params = new URLSearchParams({ tripId });
   if (category) params.set("category", category);
+  if (costComponent) params.set("costComponent", costComponent); // TCM-03.2
   const res = await apiFetch(`/uploads?${params.toString()}`);
   if (!res.ok) return [];
   const data = await res.json();
@@ -27,12 +29,15 @@ export async function listFiles(
 export async function uploadFile(params: {
   tripId: string;
   category: FileCategory;
+  /** TCM-03.2 — cost component for a per-line receipt (UPPERCASE enum value). */
+  costComponent?: string;
   file: File;
 }): Promise<Response> {
   const form = new FormData();
   form.append("file", params.file);
   form.append("tripId", params.tripId);
   form.append("category", params.category);
+  if (params.costComponent) form.append("costComponent", params.costComponent);
   return apiFetch(`/uploads`, { method: "POST", body: form });
 }
 

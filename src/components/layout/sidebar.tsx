@@ -199,11 +199,11 @@ function NavLink({
         <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
       )}
 
-      <Icon className={`h-4.5 w-4.5 min-w-[18px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
+      <Icon className={`h-5 w-5 min-w-[20px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
 
       <span
         className={`
-          text-xs font-medium whitespace-nowrap transition-all duration-300
+          text-[15px] font-medium whitespace-nowrap transition-all duration-300
 
           ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
 
@@ -274,8 +274,8 @@ export default function Sidebar({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-5 h-16">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform duration-300 hover:scale-105">
-              <Truck className="h-4.5 w-4.5" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform duration-300 hover:scale-105">
+              <Truck className="h-5 w-5" />
             </div>
 
             <div
@@ -283,9 +283,9 @@ export default function Sidebar({
                 expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-4 lg:hidden"
               } block`}
             >
-              <h1 className="text-sm font-semibold tracking-tight leading-none text-foreground">FleetTrack</h1>
+              <h1 className="text-[18px] font-semibold tracking-tight leading-none text-foreground">FleetTrack</h1>
 
-              <p className="text-[10px] text-muted-foreground mt-0.5 font-medium tracking-wider uppercase">GPS Portal</p>
+              <p className="text-[14px] text-muted-foreground mt-0.5 font-medium tracking-wider uppercase">GPS Portal</p>
             </div>
           </div>
 
@@ -334,11 +334,11 @@ export default function Sidebar({
                         <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
                       )}
 
-                      <Icon className={`h-4.5 w-4.5 min-w-[18px] transition-transform duration-200 group-hover/navlink:scale-105 ${onReportsRoute ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
+                      <Icon className={`h-5 w-5 min-w-[20px] transition-transform duration-200 group-hover/navlink:scale-105 ${onReportsRoute ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
 
                       <span
                         className={`
-                          flex-1 text-left text-xs font-medium whitespace-nowrap transition-all duration-300
+                          flex-1 text-left text-[15px] font-medium whitespace-nowrap transition-all duration-300
 
                           ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
 
@@ -405,7 +405,7 @@ export default function Sidebar({
         <div className="border-t border-border px-5 py-4 flex items-center justify-between">
           <p
             className={`
-              text-[10px] text-muted-foreground font-semibold uppercase tracking-wider
+              text-[14px] text-muted-foreground font-semibold uppercase tracking-wider
 
               ${expanded ? "lg:block" : "lg:hidden"}
 

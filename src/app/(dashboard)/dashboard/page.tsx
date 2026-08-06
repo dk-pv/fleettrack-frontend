@@ -31,7 +31,7 @@ export default function DashboardPage() {
       {/* Header */}
 
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-[32px] font-bold tracking-tight">
           Dashboard Overview
         </h1>
 
@@ -133,20 +133,20 @@ export default function DashboardPage() {
       <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-3">
         <StatsCard
           title="Total Vehicles"
-          value={stats?.totalVehicles || 0}
+          value={Number(stats?.totalVehicles) || 0}
           description="Fleet size"
         />
 
         <StatsCard
           title="Active Vehicles"
-          value={stats?.activeVehicles || 0}
+          value={Number(stats?.activeVehicles) || 0}
           description="Currently moving"
           color="green"
         />
 
         <StatsCard
           title="Offline Vehicles"
-          value={stats?.offlineVehicles || 0}
+          value={Number(stats?.offlineVehicles) || 0}
           description="No signal"
           color="red"
         />
@@ -156,9 +156,9 @@ export default function DashboardPage() {
 
       <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-3">
         <FleetStatusChart
-          activeVehicles={stats?.activeVehicles || 0}
-          offlineVehicles={stats?.offlineVehicles || 0}
-          idleVehicles={stats?.idleVehicles || 0}
+          activeVehicles={Number(stats?.activeVehicles) || 0}
+          offlineVehicles={Number(stats?.offlineVehicles) || 0}
+          idleVehicles={Number(stats?.idleVehicles) || 0}
         />
 
         <div className="min-w-0 xl:col-span-2">

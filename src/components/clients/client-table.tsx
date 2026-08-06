@@ -72,23 +72,23 @@ export default function ClientTable({ searchQuery = "" }: Props) {
         <table className="w-full min-w-[950px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold">
                 Name
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold">
                 Email
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold">
                 API URL
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold">
                 Created
               </th>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-6 py-5 text-left text-[15px] font-semibold">
                 Actions
               </th>
             </tr>
@@ -114,36 +114,36 @@ export default function ClientTable({ searchQuery = "" }: Props) {
                     transition-colors
                   "
                 >
-                  <td className="px-6 py-4 font-medium">{client.name}</td>
+                  <td className="px-6 py-5 font-semibold text-[16px]">{client.name}</td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {client.email}
                   </td>
 
-                  <td className="px-6 py-4 max-w-[420px]">
+                  <td className="px-6 py-5 max-w-[420px]">
                     <div
-                      className="truncate text-muted-foreground"
+                      className="truncate text-[15px] text-muted-foreground"
                       title={client.apiUrl}
                     >
                       {client.apiUrl}
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {new Date(client.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="px-6 py-4">
-                    <div className="flex gap-3">
+                  <td className="px-6 py-5">
+                    <div className="flex gap-4">
                       <AddClientModal editUser={client}>
-                        <button className="text-primary text-sm font-medium hover:underline">
+                        <button className="text-primary text-[15px] font-medium hover:underline">
                           Edit
                         </button>
                       </AddClientModal>
 
                       <button
                         onClick={() => setDeleteId(client.id)}
-                        className="text-red-500 text-sm font-medium hover:underline"
+                        className="text-red-500 text-[15px] font-medium hover:underline"
                       >
                         Delete
                       </button>

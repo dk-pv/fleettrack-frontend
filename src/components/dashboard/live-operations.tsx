@@ -14,7 +14,7 @@ function vehicleStatusClasses(status?: string): string {
 }
 
 const th =
-  "px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+  "px-6 py-4 text-[15px] font-semibold text-muted-foreground";
 
 /**
  * Live operations monitor (DSH-02.2 / DSH-02.3). Ongoing trips with their driver
@@ -27,9 +27,9 @@ export default function LiveOperations() {
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-sm">
-      <div className="border-b border-border px-6 py-4">
-        <h3 className="text-sm font-semibold">Live operations</h3>
-        <p className="text-xs text-muted-foreground">
+      <div className="border-b border-border px-6 py-5">
+        <h3 className="text-[18px] font-semibold">Live operations</h3>
+        <p className="text-[15px] text-muted-foreground mt-1">
           Ongoing trips with live driver &amp; vehicle status
         </p>
       </div>
@@ -77,7 +77,7 @@ export default function LiveOperations() {
                     key={trip.id}
                     className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
                   >
-                    <td className="px-6 py-4 font-medium">
+                    <td className="px-6 py-5 font-medium text-[15px]">
                       <Link
                         href={`/trips/${trip.id}`}
                         className="text-primary hover:underline"
@@ -86,46 +86,46 @@ export default function LiveOperations() {
                       </Link>
                     </td>
 
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium">{trip.origin}</div>
-                      <div className="text-xs text-muted-foreground">
+                    <td className="px-6 py-5">
+                      <div className="text-[16px] font-medium">{trip.origin}</div>
+                      <div className="text-[15px] text-muted-foreground">
                         to {trip.destination}
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                    <td className="px-6 py-5 text-[15px] text-muted-foreground">
                       {trip.driverName ?? live?.driverName ?? "—"}
                     </td>
 
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                    <td className="px-6 py-5 text-[15px] text-muted-foreground">
                       {trip.vehicle?.vehicleNumber ??
                         live?.vehicleNumber ??
                         "—"}
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       {live ? (
                         <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${vehicleStatusClasses(
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[14px] font-bold uppercase tracking-wide ${vehicleStatusClasses(
                               live.status,
                             )}`}
                           >
-                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                            <span className="h-2 w-2 rounded-full bg-current" />
                             {live.status}
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[15px] text-muted-foreground">
                             {live.speed} km/h
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[15px] text-muted-foreground">
                           No live signal
                         </span>
                       )}
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       <TripStatusBadge status={trip.status} />
                     </td>
                   </tr>

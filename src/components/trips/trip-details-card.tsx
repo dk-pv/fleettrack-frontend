@@ -1,9 +1,19 @@
 "use client";
 
+import { useState } from "react";
+import { Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Trip } from "@/types/trip";
 
 interface Props {
   trip: Trip;
+  /**
+   * TM-02.2 — when true (CLIENT + trip in transit), the next incomplete stop shows a
+   * "Mark reached" control. UX gating only; the server remains the source of truth.
+   */
+  canComplete?: boolean;
+  onCompleteStop?: (stopId: string) => Promise<unknown> | void;
 }
 
 function formatDateTime(iso: string | null) {
@@ -19,7 +29,32 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default function TripDetailsCard({ trip }: Props) {
+export default function TripDetailsCard({
+  trip,
+  canComplete = false,
+  onCompleteStop,
+}: Props) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  // Stops complete strictly in order, so the only eligible stop is the first one
+  // not yet reached (mirrors the server's order rule — UX only).
+  const nextStopId = trip.stops.find((s) => !s.completedAt)?.id ?? null;
+
+  const handleComplete = async (stopId: string) => {
+    if (!onCompleteStop || pendingId) return;
+    setPendingId(stopId);
+    try {
+      await onCompleteStop(stopId);
+      toast.success("Stop marked as reached");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to complete stop",
+      );
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div>
@@ -48,15 +83,58 @@ export default function TripDetailsCard({ trip }: Props) {
           <span className="text-sm text-muted-foreground">
             Stops ({trip.stops.length})
           </span>
-          <ol className="space-y-1">
-            {trip.stops.map((stop) => (
-              <li key={stop.id} className="text-sm">
-                <span className="mr-2 text-muted-foreground">
-                  {stop.sequence}.
-                </span>
-                {stop.address}
-              </li>
-            ))}
+          <ol className="space-y-2">
+            {trip.stops.map((stop) => {
+              const done = !!stop.completedAt;
+              const isNext = canComplete && !done && stop.id === nextStopId;
+              return (
+                <li
+                  key={stop.id}
+                  className="flex items-start justify-between gap-3 text-sm"
+                >
+                  <span className="flex items-start gap-2">
+                    <span className="text-muted-foreground">
+                      {stop.sequence}.
+                    </span>
+                    <span
+                      className={
+                        done ? "text-muted-foreground line-through" : ""
+                      }
+                    >
+                      {stop.address}
+                    </span>
+                  </span>
+
+                  {done ? (
+                    <span
+                      title={
+                        stop.completedBy
+                          ? `Reached — ${stop.completedBy}`
+                          : "Reached"
+                      }
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400"
+                    >
+                      <Check className="h-3 w-3" />
+                      Reached
+                    </span>
+                  ) : isNext ? (
+                    <button
+                      type="button"
+                      onClick={() => handleComplete(stop.id)}
+                      disabled={pendingId !== null}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium hover:bg-muted disabled:opacity-60"
+                    >
+                      {pendingId === stop.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Check className="h-3 w-3" />
+                      )}
+                      Mark reached
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}

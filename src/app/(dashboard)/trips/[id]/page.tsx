@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ArrowLeft, MapPin } from "lucide-react";
 
 import { useTrip } from "@/hooks/use-trip";
-import { canEditStops, TripStatus } from "@/types/trip";
+import { canEditStops, isEtaActive, TripStatus } from "@/types/trip";
 import TripCostCard from "@/components/trips/trip-cost-card";
 import TripPodCard from "@/components/trips/trip-pod-card";
 import TripDetailsCard from "@/components/trips/trip-details-card";
@@ -33,6 +33,7 @@ export default function TripDetailPage() {
     permissions,
     changeStatus,
     saveStops,
+    completeStop,
   } = useTrip(id);
 
   const [stopsOpen, setStopsOpen] = useState(false);
@@ -89,7 +90,13 @@ export default function TripDetailPage() {
                   </button>
                 </div>
               )}
-              <TripDetailsCard trip={trip} />
+              <TripDetailsCard
+                trip={trip}
+                canComplete={
+                  permissions.canManageLifecycle && isEtaActive(trip.status)
+                }
+                onCompleteStop={completeStop}
+              />
               <TripStatusControls
                 trip={trip}
                 permissions={permissions}

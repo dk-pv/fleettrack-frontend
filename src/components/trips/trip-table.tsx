@@ -21,12 +21,12 @@ export default function TripTable({ trips, loading = false }: Props) {
         <table className="w-full min-w-[900px]">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-left">
-              <th className="px-6 py-4 text-sm font-semibold">Reference</th>
-              <th className="px-6 py-4 text-sm font-semibold">Route</th>
-              <th className="px-6 py-4 text-sm font-semibold">Vehicle</th>
-              <th className="px-6 py-4 text-sm font-semibold">Driver</th>
-              <th className="px-6 py-4 text-sm font-semibold">Planned start</th>
-              <th className="px-6 py-4 text-sm font-semibold">Status</th>
+              <th className="px-6 py-5 text-[15px] font-semibold">Reference</th>
+              <th className="px-6 py-5 text-[15px] font-semibold">Route</th>
+              <th className="px-6 py-5 text-[15px] font-semibold">Vehicle</th>
+              <th className="px-6 py-5 text-[15px] font-semibold">Driver</th>
+              <th className="px-6 py-5 text-[15px] font-semibold">Planned start</th>
+              <th className="px-6 py-5 text-[15px] font-semibold">Status</th>
             </tr>
           </thead>
 
@@ -55,7 +55,7 @@ export default function TripTable({ trips, loading = false }: Props) {
                   key={trip.id}
                   className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-6 py-4 font-medium">
+                  <td className="px-6 py-5 font-medium text-[15px]">
                     <Link
                       href={`/trips/${trip.id}`}
                       className="text-primary hover:underline"
@@ -64,9 +64,9 @@ export default function TripTable({ trips, loading = false }: Props) {
                     </Link>
                   </td>
 
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium">{trip.origin}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <td className="px-6 py-5">
+                    <div className="text-[16px] font-medium">{trip.origin}</div>
+                    <div className="text-[15px] text-muted-foreground mt-0.5">
                       to {trip.destination}
                       {trip.stops.length > 0 &&
                         ` · ${trip.stops.length} stop${
@@ -75,19 +75,19 @@ export default function TripTable({ trips, loading = false }: Props) {
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {trip.vehicle?.vehicleNumber ?? "—"}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {trip.driverName ?? "—"}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
                     {formatDateTime(trip.scheduledStart)}
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-5">
                     <TripStatusBadge status={trip.status} />
                   </td>
                 </tr>

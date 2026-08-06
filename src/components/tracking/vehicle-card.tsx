@@ -25,7 +25,6 @@ export default function VehicleCard({
   active = false,
   onClick,
 }: VehicleCardProps) {
-  const isMoving = vehicle.status === "MOVING";
   const isIdle = vehicle.status === "IDLE";
 
   return (

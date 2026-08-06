@@ -21,15 +21,21 @@ export const weeklyActivity = [
   { day: "Sun", value: 38 },
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: { day: string }; value: number }>;
+}) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+        <p className="text-[14px] font-bold text-muted-foreground">
           {payload[0].payload.day}
         </p>
 
-        <p className="mt-1 text-sm font-extrabold text-foreground">
+        <p className="mt-1 text-[16px] font-extrabold text-foreground">
           {payload[0].value} Active Trips
         </p>
       </div>
@@ -49,11 +55,11 @@ export default function WeeklyActivityChart() {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between">
       <div>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <h3 className="text-[18px] font-semibold text-muted-foreground">
           Weekly Activity
         </h3>
 
-        <p className="text-xs text-muted-foreground mt-1">Fleet utilization trends over the past week</p>
+        <p className="text-[15px] text-muted-foreground mt-1">Fleet utilization trends over the past week</p>
       </div>
 
       <div className="h-[240px] w-full mt-6 min-h-0 min-w-0">
@@ -84,7 +90,7 @@ export default function WeeklyActivityChart() {
                 tickLine={false}
                 axisLine={false}
                 dy={10}
-                style={{ fontSize: "11px", fill: "var(--muted-foreground)", fontWeight: 500 }}
+                style={{ fontSize: "14px", fill: "var(--muted-foreground)", fontWeight: 500 }}
               />
 
               <Tooltip content={<CustomTooltip />} />

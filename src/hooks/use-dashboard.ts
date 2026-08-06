@@ -20,10 +20,10 @@ export function useDashboard() {
     useClientStore();
 
   const [stats, setStats] =
-    useState<any>(null);
+    useState<Record<string, unknown> | null>(null);
 
   const [vehicles, setVehicles] =
-    useState<any[]>([]);
+    useState<Record<string, unknown>[]>([]);
 
   const [tripSummary, setTripSummary] =
     useState<TripSummary | null>(null);

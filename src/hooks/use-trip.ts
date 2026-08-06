@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  completeTripStop,
   getTrip,
   getTripEta,
   getTripProgress,
@@ -184,6 +185,17 @@ export function useTrip(id: string) {
     [id, refetch],
   );
 
+  // Mark a stop reached (TM-02.2). The server enforces order/lifecycle/ownership;
+  // refetch so the stop's completed state and the unlocked completion reflect at once.
+  const completeStop = useCallback(
+    async (stopId: string) => {
+      const res = await completeTripStop(id, stopId);
+      await refetch();
+      return res.trip;
+    },
+    [id, refetch],
+  );
+
   return {
     trip,
     timeline,
@@ -197,6 +209,7 @@ export function useTrip(id: string) {
     permissions,
     changeStatus,
     saveStops,
+    completeStop,
     refetch,
   };
 }

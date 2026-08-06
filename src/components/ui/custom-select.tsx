@@ -38,6 +38,7 @@ export default function CustomSelect({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Safe in hydration effect
     setMounted(true);
   }, []);
 
@@ -89,6 +90,7 @@ export default function CustomSelect({
     if (isOpen) {
       updateCoords();
       // Reset search and highlight
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Expected behavior to reset dropdown state on open
       setSearch("");
       setHighlightedIndex(-1);
       
@@ -251,7 +253,7 @@ export default function CustomSelect({
             setHighlightedIndex(0);
           }}
           placeholder="Search items..."
-          className="h-8.5 w-full rounded-lg border border-border bg-background pl-9 pr-8 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-8 text-[16px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
         {search && (
           <button
@@ -266,7 +268,7 @@ export default function CustomSelect({
       {/* Options List */}
       <div className="options-list max-h-52 overflow-y-auto p-1.5 space-y-0.5 no-scrollbar">
         {filteredOptions.length === 0 ? (
-          <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+          <div className="px-3 py-4 text-center text-[15px] text-muted-foreground">
             No items found.
           </div>
         ) : (
@@ -284,7 +286,7 @@ export default function CustomSelect({
                   triggerRef.current?.focus();
                 }}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs transition-colors outline-none",
+                  "flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-[15px] transition-colors outline-none",
                   isHighlighted || isSelected
                     ? "bg-accent text-accent-foreground font-semibold"
                     : "hover:bg-muted/50 text-foreground"
@@ -299,7 +301,7 @@ export default function CustomSelect({
                 
                 <div className="flex items-center gap-2">
                   {option.sublabel && (
-                    <span className="text-[10px] text-muted-foreground font-medium">
+                    <span className="text-[14px] text-muted-foreground font-medium">
                       {option.sublabel}
                     </span>
                   )}
@@ -323,7 +325,7 @@ export default function CustomSelect({
         onClick={() => setIsOpen((prev) => !prev)}
         onKeyDown={handleKeyDown}
         className={cn(
-          "flex h-11 w-full items-center justify-between rounded-xl border border-border bg-card px-4 text-sm font-medium shadow-xs outline-none transition-all hover:bg-muted/40 cursor-pointer select-none",
+          "flex h-11 w-full items-center justify-between rounded-xl border border-border bg-card px-4 text-[16px] font-medium shadow-xs outline-none transition-all hover:bg-muted/40 cursor-pointer select-none",
           isOpen && "border-primary ring-2 ring-primary/20",
           className
         )}

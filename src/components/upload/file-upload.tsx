@@ -14,6 +14,8 @@ const ALLOWED = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 interface Props {
   tripId: string;
   category: FileCategory;
+  /** TCM-03.2 — optional cost component for a per-line receipt (UPPERCASE enum value). */
+  costComponent?: string;
   /** Called after a successful upload so the gallery can refresh. */
   onUploaded: () => void;
 }
@@ -22,7 +24,12 @@ interface Props {
  * Generic upload button (domain-agnostic). Picks a file, validates type + size on the
  * client (the server re-validates), posts it via the shared upload service.
  */
-export default function FileUpload({ tripId, category, onUploaded }: Props) {
+export default function FileUpload({
+  tripId,
+  category,
+  costComponent,
+  onUploaded,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -42,7 +49,7 @@ export default function FileUpload({ tripId, category, onUploaded }: Props) {
 
     try {
       setBusy(true);
-      const res = await uploadFile({ tripId, category, file });
+      const res = await uploadFile({ tripId, category, costComponent, file });
       if (!res.ok) throw new Error("Upload failed");
       toast.success("Uploaded");
       onUploaded();

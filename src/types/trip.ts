@@ -225,6 +225,10 @@ export interface TripStop {
   sequence: number;
   /** Resolved via geocoding at creation (optional for legacy/mock trips). */
   coords?: GeoPoint;
+  /** TM-02.2 — set (ISO) when the stop was marked reached; null until then. */
+  completedAt?: string | null;
+  /** Who marked the stop reached (actor name), when available. */
+  completedBy?: string | null;
 }
 
 /** Stop input on create (order = array order; the API assigns id + sequence). */

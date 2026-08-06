@@ -653,6 +653,7 @@ export default function TrackingMap({
         {/* VEHICLE MARKERS */}
         {map &&
           visibleVehicles.map((vehicle) => {
+            // eslint-disable-next-line react-hooks/refs -- Reading ref in render is used here for animation performance optimization without triggering re-renders
             const heading = headingsRef.current[vehicle.id] ?? 0;
 
             return (

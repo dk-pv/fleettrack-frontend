@@ -53,6 +53,7 @@ export default function VehicleTable({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetching on mount is a standard pattern, state is set asynchronously
     fetchVehicles();
   }, []);
 
@@ -91,8 +92,8 @@ export default function VehicleTable({
   return (
     <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border px-5 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+      <div className="border-b border-border px-6 py-5">
+        <h3 className="text-[18px] font-semibold text-muted-foreground">
           All Vehicles ({filteredVehicles.length})
         </h3>
       </div>
@@ -102,25 +103,25 @@ export default function VehicleTable({
         <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b border-border z-10">
             <tr>
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
                 Vehicle
               </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
                 Driver
               </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
                 GPS Device
               </th>
 
               {user?.role === "ADMIN" && (
-                <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
                   Client
                 </th>
               )}
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer outline-none select-none">
@@ -169,11 +170,11 @@ export default function VehicleTable({
                 </DropdownMenu>
               </th>
 
-              <th className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
                 Created
               </th>
 
-              <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="px-6 py-4 text-right text-[15px] font-semibold text-muted-foreground">
                 Actions
               </th>
             </tr>
@@ -199,45 +200,45 @@ export default function VehicleTable({
                   key={vehicle.id}
                   className="group hover:bg-muted/30 transition-colors"
                 >
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-5">
                     <div>
-                      <h4 className="text-sm font-bold text-foreground">
+                      <h4 className="text-[16px] font-bold text-foreground">
                         {vehicle.vehicleNumber}
                       </h4>
 
-                      <p className="mt-1 text-xs text-muted-foreground font-medium">
+                      <p className="mt-1 text-[15px] text-muted-foreground font-medium">
                         {vehicle.vehicleName}
                       </p>
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-xs font-semibold text-foreground">
+                  <td className="px-6 py-5 text-[15px] font-medium text-foreground">
                     {vehicle.driverName}
                   </td>
 
-                  <td className="px-5 py-4 text-xs font-mono text-muted-foreground">
+                  <td className="px-6 py-5 text-[15px] font-mono text-muted-foreground">
                     {vehicle.gpsDeviceId}
                   </td>
 
                   {user?.role === "ADMIN" && (
-                    <td className="px-5 py-4 text-xs font-medium text-foreground">
+                    <td className="px-6 py-5 text-[15px] font-medium text-foreground">
                       {vehicle.client?.name || "-"}
                     </td>
                   )}
 
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-5">
                     <VehicleStatusBadge
                       status={vehicle.status}
                     />
                   </td>
 
-                  <td className="px-5 py-4 text-xs text-muted-foreground font-medium">
+                  <td className="px-6 py-5 text-[15px] text-muted-foreground font-medium">
                     {new Date(
                       vehicle.createdAt,
                     ).toLocaleDateString()}
                   </td>
 
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-5">
                     <div className="flex justify-end">
                       <button
                         onClick={() =>
@@ -245,7 +246,7 @@ export default function VehicleTable({
                             `/vehicles/${vehicle.id}`,
                           )
                         }
-                        className="flex h-7 px-2.5 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 text-xs font-bold text-primary transition-all cursor-pointer"
+                        className="flex h-8 px-3 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 text-[14px] font-bold text-primary transition-all cursor-pointer"
                       >
                         View
                       </button>
