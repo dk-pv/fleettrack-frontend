@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 import {
   getNextStatuses,
@@ -70,20 +71,15 @@ export default function TripStatusControls({
             const isSuccess = status === TripStatus.COMPLETED;
 
             return (
-              <button
+              <Button
                 key={status}
+                variant={status === TripStatus.COMPLETED ? "default" : status === TripStatus.CANCELLED ? "destructive" : "secondary"}
                 onClick={() => handle(status)}
+                isLoading={pending === status}
                 disabled={pending !== null}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${
-                  isDestructive
-                    ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                    : isSuccess
-                      ? "bg-success/10 text-success hover:bg-success/20"
-                      : "bg-primary text-white hover:opacity-90"
-                }`}
               >
-                {pending === status ? "Updating..." : ACTION_LABEL[status]}
-              </button>
+                {ACTION_LABEL[status]}
+              </Button>
             );
           })}
         </div>

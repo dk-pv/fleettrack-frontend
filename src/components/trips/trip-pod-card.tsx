@@ -8,6 +8,8 @@ import { usePod } from "@/hooks/use-pod";
 import { captureLocation, CapturedLocation } from "@/lib/geolocation";
 import FileGallery from "@/components/upload/file-gallery";
 import PodSignature from "./pod-signature";
+import { Button } from "@/components/ui/button";
+import { CardSkeleton } from "@/components/ui/skeletons/card-skeleton";
 
 interface Props {
   tripId: string;
@@ -110,7 +112,7 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
       </div>
 
       {loading ? (
-        <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
+        <div className="mt-4"><CardSkeleton /></div>
       ) : (
         <div className="mt-4 space-y-6">
           {/* Confirmation details / form */}
@@ -141,18 +143,14 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={() => handleSave(!confirmed)}
-                  disabled={saving}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+                  isLoading={saving}
+                  className="px-4"
                 >
-                  {saving
-                    ? "Saving..."
-                    : confirmed
-                      ? "Save"
-                      : "Confirm delivery"}
-                </button>
+                  {confirmed ? "Save" : "Confirm delivery"}
+                </Button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}

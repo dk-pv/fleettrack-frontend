@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/hooks/use-notifications";
 import NotificationItem from "./notification-item";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PREVIEW_COUNT = 6;
 
@@ -58,9 +59,11 @@ export default function NotificationBell() {
 
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Loading...
-            </p>
+            <div className="space-y-3 p-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
           ) : preview.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">
               No notifications yet

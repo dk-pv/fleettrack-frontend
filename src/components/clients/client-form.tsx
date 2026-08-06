@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface Client {
   id: string;
@@ -98,12 +99,13 @@ export default function ClientForm({
         />
       )}
 
-      <button
-        disabled={loading}
-        className="w-full h-11 rounded-lg bg-primary text-white text-[15px] font-medium"
+      <Button
+        type="submit"
+        isLoading={loading}
+        className="w-full h-11"
       >
-        {loading ? "Saving..." : buttonText}
-      </button>
+        {buttonText}
+      </Button>
     </form>
   );
 }

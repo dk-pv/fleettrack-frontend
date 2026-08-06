@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createUser, updateUser } from "@/lib/user-api";
 import { User } from "./TypeUser";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   open: boolean;
@@ -140,17 +141,9 @@ export default function UserModal({
             Cancel
           </button>
 
-          <button
-            className="rounded-xl bg-primary px-5 py-2.5 text-white text-[15px] font-medium"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading
-              ? "Saving..."
-              : isEdit
-              ? "Update User"
-              : "Create User"}
-          </button>
+          <Button type="submit" isLoading={loading} onClick={handleSubmit}>
+            {isEdit ? "Update User" : "Create User"}
+          </Button>
         </div>
       </div>
     </div>

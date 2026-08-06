@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { apiFetch } from "@/lib/fetcher";
 import { ADDRESS_KINDS, AddressKind, CustomerAddress } from "@/types/customer";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   customerId: string;
@@ -148,12 +149,12 @@ export default function AddressForm({
         >
           Cancel
         </button>
-        <button
-          disabled={loading}
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        <Button
+          type="submit"
+          isLoading={loading}
         >
-          {loading ? "Saving..." : isEdit ? "Update" : "Add"}
-        </button>
+          {isEdit ? "Update" : "Add"}
+        </Button>
       </div>
     </form>
   );

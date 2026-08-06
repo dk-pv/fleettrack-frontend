@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-
 import { API_URL } from "@/lib/api";
 import { Customer, CUSTOMER_TYPES, CustomerType } from "@/types/customer";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   buttonText?: string;
@@ -180,12 +180,13 @@ export default function CustomerForm({
         className="w-full rounded-lg border px-3 py-2 text-sm"
       />
 
-      <button
-        disabled={loading}
-        className="h-10 w-full rounded-lg bg-primary text-white"
+      <Button
+        type="submit"
+        isLoading={loading}
+        className="w-full"
       >
-        {loading ? "Saving..." : buttonText}
-      </button>
+        {buttonText}
+      </Button>
     </form>
   );
 }

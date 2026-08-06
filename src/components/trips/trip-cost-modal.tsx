@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   COST_COMPONENT_META,
   costAmount,
@@ -146,13 +147,12 @@ export default function TripCostModal({ open, onClose, cost, onSave }: Props) {
             >
               Cancel
             </button>
-            <button
+            <Button
               type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+              isLoading={submitting}
             >
-              {submitting ? "Saving..." : "Save Costs"}
-            </button>
+              Save Costs
+            </Button>
           </div>
         </form>
       </DialogContent>

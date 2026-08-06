@@ -4,6 +4,7 @@ import { useUploads } from "@/hooks/use-uploads";
 import { FileCategory } from "@/types/upload";
 import FileUpload from "./file-upload";
 import FileThumb from "./file-thumb";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   tripId: string;
@@ -42,7 +43,9 @@ export default function FileGallery({
       </div>
 
       {loading ? (
-        <p className="mt-3 text-sm text-muted-foreground">Loading...</p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </div>
       ) : files.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">{emptyLabel}</p>
       ) : (

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, Plus, Sparkles, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import {
   Dialog,
@@ -218,15 +219,17 @@ export default function TripStopsModal({ open, onClose, trip, onSave }: Props) {
                 Add stop
               </button>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={handleOptimize}
-                disabled={!canOptimize || optimizing}
-                className="inline-flex items-center gap-1 rounded-lg border border-primary/40 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                disabled={!canOptimize}
+                isLoading={optimizing}
+                className="text-primary hover:bg-primary/10 border-primary/40"
               >
-                <Sparkles className="h-4 w-4" />
-                {optimizing ? "Optimizing…" : "Optimize route"}
-              </button>
+                <Sparkles className="mr-1 h-4 w-4" />
+                Optimize route
+              </Button>
             </div>
 
             {optimization && preOptimizeStops && (
@@ -264,13 +267,12 @@ export default function TripStopsModal({ open, onClose, trip, onSave }: Props) {
             >
               Cancel
             </button>
-            <button
+            <Button
               type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+              isLoading={submitting}
             >
-              {submitting ? "Saving..." : "Save Stops"}
-            </button>
+              Save Stops
+            </Button>
           </div>
         </form>
       </DialogContent>

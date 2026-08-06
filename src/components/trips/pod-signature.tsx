@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useUploads } from "@/hooks/use-uploads";
 import { uploadFile } from "@/services/upload.service";
 import FileThumb from "@/components/upload/file-thumb";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   tripId: string;
@@ -104,7 +106,9 @@ export default function PodSignature({ tripId, canEdit }: Props) {
       <h4 className="text-sm font-semibold">Signature</h4>
 
       {loading ? (
-        <p className="mt-3 text-sm text-muted-foreground">Loading...</p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </div>
       ) : files.length === 0 ? (
         !canEdit && (
           <p className="mt-3 text-sm text-muted-foreground">
@@ -137,15 +141,16 @@ export default function PodSignature({ tripId, canEdit }: Props) {
             className="w-full max-w-md touch-none rounded-lg border border-dashed border-border bg-muted/30"
           />
           <div className="mt-2 flex items-center gap-2">
-            <button
+            <Button
               type="button"
               onClick={save}
-              disabled={!dirty || saving}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+              disabled={!dirty}
+              isLoading={saving}
+              className="px-3 text-xs h-8"
             >
-              <Check className="h-3.5 w-3.5" />
-              {saving ? "Saving..." : "Save signature"}
-            </button>
+              <Check className="mr-1.5 h-3.5 w-3.5" />
+              Save signature
+            </Button>
             <button
               type="button"
               onClick={clear}

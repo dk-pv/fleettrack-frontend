@@ -17,13 +17,14 @@ import StatsCard from "@/components/dashboard/stats-card";
 import WeeklyActivityChart from "@/components/dashboard/weekly-activity-chart";
 
 import { useDashboard } from "@/hooks/use-dashboard";
+import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 
 export default function DashboardPage() {
   const { stats, vehicles, tripSummary, deliveryMetrics, loading } =
     useDashboard();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <DashboardSkeleton />;
   }
 
   return (

@@ -4,6 +4,7 @@ import { Bell, CheckCheck } from "lucide-react";
 
 import { useNotifications } from "@/hooks/use-notifications";
 import NotificationItem from "@/components/notifications/notification-item";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Notifications page (NOT-04.2 / NOT-04.3). Full list of the caller's scoped notifications
@@ -43,9 +44,13 @@ export default function NotificationsPage() {
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         {loading ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            Loading...
-          </p>
+          <div className="space-y-4 p-6">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
         ) : notifications.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">
             No notifications yet
