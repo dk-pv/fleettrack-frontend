@@ -256,6 +256,17 @@ function VehicleMarker({
   useEffect(() => {
     if (!map || !google.maps.marker?.AdvancedMarkerElement) return;
 
+    // TEMP DIAG — remove after production diagnosis. Captures the map's capability at
+    // the exact instant before AdvancedMarkerElement construction. If
+    // `advancedAvailable` is false here, the map did NOT authorize as a vector map
+    // (RefererNotAllowedMapError) and constructing the marker against it is what throws
+    // "Cannot read properties of undefined (reading 'keys')".
+    console.warn("[FT-DIAG] marker pre-construct", {
+      isMap: map instanceof google.maps.Map,
+      hasMarkerLib: !!google.maps.marker?.AdvancedMarkerElement,
+      advancedAvailable: map.getMapCapabilities().isAdvancedMarkersAvailable,
+    });
+
     const container = document.createElement("div");
     container.style.position = "relative";
     container.style.width = "40px";
@@ -632,10 +643,22 @@ export default function TrackingMap({
       mapRef.current = mapInstance;
       setMap(mapInstance);
 
+      // TEMP DIAG — remove after production diagnosis. Proves whether the map
+      // authorized as an advanced-markers-capable vector map at onLoad time.
+      console.warn("[FT-DIAG] map onLoad", {
+        hasMarkerLib: !!google.maps.marker?.AdvancedMarkerElement,
+        capabilities: mapInstance.getMapCapabilities(),
+      });
+
       // Mark the map ready only after tiles actually render — proof that auth
       // succeeded. This gates marker creation (see the markers block below), so a
       // map left dead by an auth failure never gets AdvancedMarkerElements attached.
       google.maps.event.addListenerOnce(mapInstance, "tilesloaded", () => {
+        // TEMP DIAG — proves whether `tilesloaded` fires at all when auth fails,
+        // i.e. whether the mapReady gate actually holds in production.
+        console.warn("[FT-DIAG] tilesloaded", {
+          capabilities: mapInstance.getMapCapabilities(),
+        });
         setMapReady(true);
       });
 
