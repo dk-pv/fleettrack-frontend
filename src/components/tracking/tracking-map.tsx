@@ -57,6 +57,9 @@ const MAP_CONTAINER_STYLE: React.CSSProperties = {
   width: "100%",
 };
 
+// AdvancedMarkerElement requires a mapId. With a mapId present Google ignores the
+// inline `styles` array (and warns) — POI/transit hiding must be done via Cloud
+// styling on the mapId, so `styles` is intentionally omitted here.
 const MAP_OPTIONS: google.maps.MapOptions = {
   disableDefaultUI: true,
   gestureHandling: "greedy",
@@ -66,10 +69,6 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   zoomControl: false,
   clickableIcons: false,
   mapId: "DEMO_MAP_ID",
-  styles: [
-    { featureType: "poi", stylers: [{ visibility: "off" }] },
-    { featureType: "transit", stylers: [{ visibility: "off" }] },
-  ],
 };
 
 /* -------------------------------------------------- */
@@ -248,36 +247,52 @@ function VehicleMarker({
     [],
   );
 
-  // Initialize marker imperatively on map load
+  // Initialize marker imperatively on map load. Wrapped in try/catch: when Google
+  // Maps auth fails (e.g. RefererNotAllowedMapError) the map instance is left in a
+  // broken state, and attaching an AdvancedMarkerElement to it throws internally
+  // ("Cannot read properties of undefined (reading 'getRootNode')"). Guarding here
+  // stops that from crashing the React tree — the map fallback UI shows instead.
   useEffect(() => {
     if (!map) return;
 
-    const container = document.createElement("div");
-    container.style.position = "relative";
-    container.style.width = "40px";
-    container.style.height = "40px";
-    container.style.cursor = "pointer";
-    elementRef.current = container;
+    let marker: google.maps.marker.AdvancedMarkerElement | null = null;
+    let listener: google.maps.MapsEventListener | null = null;
 
-    const marker = new google.maps.marker.AdvancedMarkerElement({
-      map,
-      position: { lat: vehicle.latitude, lng: vehicle.longitude },
-      content: container,
-      title: vehicle.vehicleNumber,
-    });
+    try {
+      const container = document.createElement("div");
+      container.style.position = "relative";
+      container.style.width = "40px";
+      container.style.height = "40px";
+      container.style.cursor = "pointer";
+      elementRef.current = container;
 
-    markerRef.current = marker;
+      marker = new google.maps.marker.AdvancedMarkerElement({
+        map,
+        position: { lat: vehicle.latitude, lng: vehicle.longitude },
+        content: container,
+        title: vehicle.vehicleNumber,
+      });
 
-    const listener = marker.addListener("click", () => {
-      onClickRef.current();
-    });
+      markerRef.current = marker;
+
+      listener = marker.addListener("click", () => {
+        onClickRef.current();
+      });
+    } catch (err) {
+      console.error("Vehicle marker init failed", err);
+      return;
+    }
 
     return () => {
-      listener.remove();
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      try {
+        listener?.remove();
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (marker) marker.map = null;
+      } catch (err) {
+        console.error("Vehicle marker cleanup failed", err);
       }
-      marker.map = null;
     };
   }, [map]);
 
@@ -553,6 +568,19 @@ export default function TrackingMap({
   const [localCenterTrigger, setLocalCenterTrigger] = useState(0);
   const followMode = externalFollowMode || internalFollowMode;
 
+  // useJsApiLoader's `loadError` only covers SCRIPT-load failures. An invalid key or a
+  // referrer that isn't authorized (RefererNotAllowedMapError) loads the script fine
+  // but fails auth AFTER — Google signals that via the global `window.gm_authFailure`.
+  // Catch it so the map degrades to the fallback UI instead of rendering a dead map.
+  const [authFailed, setAuthFailed] = useState(false);
+  useEffect(() => {
+    const w = window as unknown as { gm_authFailure?: () => void };
+    w.gm_authFailure = () => setAuthFailed(true);
+    return () => {
+      w.gm_authFailure = undefined;
+    };
+  }, []);
+
   // Google Maps instance ref
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -765,14 +793,16 @@ export default function TrackingMap({
   const handleDragStart = useCallback(() => {
     setInternalFollowMode(false);
   }, []);
-  if (loadError) {
+  if (loadError || authFailed) {
     return (
       <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden flex flex-col items-center justify-center gap-3 bg-muted px-6 text-center">
         <p className="text-sm font-medium text-foreground">
           Unable to load the map
         </p>
         <p className="text-xs text-muted-foreground">
-          Check your internet connection and try again.
+          {authFailed
+            ? "The map could not be authorized for this site."
+            : "Check your internet connection and try again."}
         </p>
         <button
           onClick={() => window.location.reload()}
