@@ -247,52 +247,41 @@ function VehicleMarker({
     [],
   );
 
-  // Initialize marker imperatively on map load. Wrapped in try/catch: when Google
-  // Maps auth fails (e.g. RefererNotAllowedMapError) the map instance is left in a
-  // broken state, and attaching an AdvancedMarkerElement to it throws internally
-  // ("Cannot read properties of undefined (reading 'getRootNode')"). Guarding here
-  // stops that from crashing the React tree — the map fallback UI shows instead.
+  // Create the AdvancedMarkerElement. This component is only mounted once the parent
+  // confirms the map is authorized and rendered (the `tilesloaded` gate), so `map` is
+  // always a live, authorized instance here — the marker-library precondition below is
+  // a final belt-and-suspenders check. This is a real readiness gate, NOT a try/catch:
+  // markers never construct against a dead map, so the internal marker.js crashes
+  // ("reading 'keys'" / IntersectionObserver.observe on undefined) can't occur.
   useEffect(() => {
-    if (!map) return;
+    if (!map || !google.maps.marker?.AdvancedMarkerElement) return;
 
-    let marker: google.maps.marker.AdvancedMarkerElement | null = null;
-    let listener: google.maps.MapsEventListener | null = null;
+    const container = document.createElement("div");
+    container.style.position = "relative";
+    container.style.width = "40px";
+    container.style.height = "40px";
+    container.style.cursor = "pointer";
+    elementRef.current = container;
 
-    try {
-      const container = document.createElement("div");
-      container.style.position = "relative";
-      container.style.width = "40px";
-      container.style.height = "40px";
-      container.style.cursor = "pointer";
-      elementRef.current = container;
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      map,
+      position: { lat: vehicle.latitude, lng: vehicle.longitude },
+      content: container,
+      title: vehicle.vehicleNumber,
+    });
 
-      marker = new google.maps.marker.AdvancedMarkerElement({
-        map,
-        position: { lat: vehicle.latitude, lng: vehicle.longitude },
-        content: container,
-        title: vehicle.vehicleNumber,
-      });
+    markerRef.current = marker;
 
-      markerRef.current = marker;
-
-      listener = marker.addListener("click", () => {
-        onClickRef.current();
-      });
-    } catch (err) {
-      console.error("Vehicle marker init failed", err);
-      return;
-    }
+    const listener = marker.addListener("click", () => {
+      onClickRef.current();
+    });
 
     return () => {
-      try {
-        listener?.remove();
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-        if (marker) marker.map = null;
-      } catch (err) {
-        console.error("Vehicle marker cleanup failed", err);
+      listener.remove();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
+      marker.map = null;
     };
   }, [map]);
 
@@ -564,6 +553,13 @@ export default function TrackingMap({
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  // Map READINESS gate. `onLoad` fires with a map instance even when authorization
+  // later fails, so it is NOT a safe signal to attach AdvancedMarkerElements. The
+  // map's `tilesloaded` event fires only once the map is authorized AND has actually
+  // rendered — the definitive "safe to create markers" signal. On a
+  // RefererNotAllowedMapError the tiles never render, so this stays false and markers
+  // are never constructed against a dead map (which is what throws inside marker.js).
+  const [mapReady, setMapReady] = useState(false);
   const [internalFollowMode, setInternalFollowMode] = useState(false);
   const [localCenterTrigger, setLocalCenterTrigger] = useState(0);
   const followMode = externalFollowMode || internalFollowMode;
@@ -605,6 +601,7 @@ export default function TrackingMap({
   const handleMapUnmount = useCallback(() => {
     mapRef.current = null;
     setMap(null);
+    setMapReady(false);
   }, []);
 
   const fitAllVehicles = useCallback(() => {
@@ -634,6 +631,13 @@ export default function TrackingMap({
     (mapInstance: google.maps.Map) => {
       mapRef.current = mapInstance;
       setMap(mapInstance);
+
+      // Mark the map ready only after tiles actually render — proof that auth
+      // succeeded. This gates marker creation (see the markers block below), so a
+      // map left dead by an auth failure never gets AdvancedMarkerElements attached.
+      google.maps.event.addListenerOnce(mapInstance, "tilesloaded", () => {
+        setMapReady(true);
+      });
 
       setTimeout(() => {
         if (!selectedVehicle) {
@@ -860,8 +864,10 @@ export default function TrackingMap({
         onUnmount={handleMapUnmount}
         onDragStart={handleDragStart}
       >
-        {/* VEHICLE MARKERS */}
+        {/* VEHICLE MARKERS — gated on mapReady (tilesloaded) so they are only ever
+            created against an authorized, fully-rendered map. */}
         {map &&
+          mapReady &&
           visibleVehicles.map((vehicle) => {
             const heading = headings[vehicle.id] ?? 0;
 
