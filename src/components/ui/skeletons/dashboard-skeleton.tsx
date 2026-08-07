@@ -44,8 +44,9 @@ export function DashboardSkeleton() {
         <div className="min-w-0 xl:col-span-2 rounded-xl border border-border bg-card p-6 shadow-xs h-[300px]">
           <Skeleton className="h-6 w-48 mb-6" />
           <div className="flex items-end justify-between h-48 gap-2">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="w-full h-full" style={{ height: `${Math.max(20, Math.random() * 100)}%` }} />
+            {/* Static heights — deterministic so SSR and client match (no hydration mismatch). */}
+            {[55, 80, 45, 90, 60, 40, 75].map((h, i) => (
+              <Skeleton key={i} className="w-full" style={{ height: `${h}%` }} />
             ))}
           </div>
         </div>
@@ -56,7 +57,7 @@ export function DashboardSkeleton() {
         <div className="rounded-xl border border-border bg-card shadow-xs h-[400px]">
           <div className="border-b border-border p-6"><Skeleton className="h-6 w-48" /></div>
           <div className="p-6 space-y-4">
-             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         </div>
         <MapSkeleton />

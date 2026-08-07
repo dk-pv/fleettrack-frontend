@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { roundSpeed } from "@/lib/utils/format-speed";
 import { LocateFixed, Route, X } from "lucide-react";
 interface Vehicle {
   id: string;
@@ -95,7 +97,7 @@ export default function VehicleDetails({
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Speed</p>
 
           <p className="mt-2 text-lg font-extrabold text-foreground tracking-tight">
-            {Number(vehicle.speed).toFixed(1)} <span className="text-xs font-semibold text-muted-foreground">km/h</span>
+            {roundSpeed(vehicle.speed)} <span className="text-xs font-semibold text-muted-foreground">km/h</span>
           </p>
         </div>
 

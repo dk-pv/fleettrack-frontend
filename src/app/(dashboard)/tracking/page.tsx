@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
+import { acceptVehiclePacket, mergeVehicleUpdate } from "@/lib/vehicle-update";
+import { useClientStore } from "@/store/client-store";
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
@@ -19,22 +21,44 @@ interface Vehicle {
   longitude: number;
   speed: number;
   updatedAt: string;
+  client?: { id: string; name: string };
 }
 
 export default function TrackingPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<null | "api" | "network">(null);
   const [centerTrigger, setCenterTrigger] = useState(0);
 
+  // Fleet Owner (ADMIN) client filter — reuses the global navbar client selector.
+  // ADMIN's /vehicles returns every client's vehicles; selecting a client narrows
+  // the map + list. CLIENT already only receives its own vehicles, so this is a no-op.
+  const { selectedClient } = useClientStore();
+
+  // RC11–RC13: per-vehicle high-water timestamp so duplicate / out-of-order /
+  // timestamp-invalid packets are ignored. A ref — never triggers a re-render.
+  const lastTimestampsRef = useRef<Record<string, number>>({});
+
   const fetchVehicles = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiFetch("/vehicles");
 
+      // apiFetch resolves for HTTP errors too — an unchecked response would let a
+      // 500 fall through as "no vehicles". Treat a non-ok status as an API failure.
+      if (!response.ok) {
+        setError("api");
+        return;
+      }
+
       const data = await response.json();
       setVehicles(data.vehicles || []);
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      // fetch itself rejected → the server was unreachable.
+      console.log(err);
+      setError("network");
     } finally {
       setLoading(false);
     }
@@ -45,24 +69,43 @@ export default function TrackingPage() {
   }, []);
 
   useEffect(() => {
-    socket.on("vehicleLocationUpdate", (updatedVehicle) => {
+    // RC10: named handler so cleanup removes only THIS listener. `socket.off` with no
+    // handler drops every other component's vehicleLocationUpdate listener too.
+    const handleLocationUpdate = (
+      updatedVehicle: Vehicle & { timestamp?: number },
+    ) => {
+      // RC11–RC13: drop duplicate / out-of-order / invalid-timestamp packets.
+      if (
+        !acceptVehiclePacket(
+          lastTimestampsRef.current,
+          updatedVehicle?.id,
+          updatedVehicle?.timestamp,
+        )
+      ) {
+        return;
+      }
+
       setVehicles((prev) =>
         prev.map((vehicle) =>
-          vehicle.id === updatedVehicle.id ? updatedVehicle : vehicle,
+          vehicle.id === updatedVehicle.id
+            ? mergeVehicleUpdate(vehicle, updatedVehicle)
+            : vehicle,
         ),
       );
 
       setSelected((prev) => {
         if (prev && prev.id === updatedVehicle.id) {
-          return updatedVehicle;
+          return mergeVehicleUpdate(prev, updatedVehicle);
         }
 
         return prev;
       });
-    });
+    };
+
+    socket.on("vehicleLocationUpdate", handleLocationUpdate);
 
     return () => {
-      socket.off("vehicleLocationUpdate");
+      socket.off("vehicleLocationUpdate", handleLocationUpdate);
     };
   }, []);
 
@@ -70,22 +113,48 @@ export default function TrackingPage() {
     setCenterTrigger((prev) => prev + 1);
   };
 
+  const visibleVehicles = useMemo(
+    () =>
+      selectedClient
+        ? vehicles.filter((v) => v.client?.id === selectedClient.id)
+        : vehicles,
+    [vehicles, selectedClient],
+  );
+
   const selectOptions = useMemo(() => {
     return [
       { value: "", label: "All Vehicles" },
-      ...vehicles.map((v) => ({
+      ...visibleVehicles.map((v) => ({
         value: v.id,
         label: v.vehicleNumber,
         sublabel: v.driverName,
         status: v.status,
       })),
     ];
-  }, [vehicles]);
+  }, [visibleVehicles]);
 
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         Loading tracking...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[80vh] flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-sm font-medium text-foreground">
+          {error === "network"
+            ? "Can't reach the server. Check your connection."
+            : "Something went wrong loading vehicles."}
+        </p>
+        <button
+          onClick={fetchVehicles}
+          className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/80 transition-all cursor-pointer shadow-sm outline-none"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -110,9 +179,12 @@ export default function TrackingPage() {
         {/* Map Area */}
         <div className="relative flex-1 overflow-hidden min-h-[300px]">
           <TrackingMap
-            vehicles={vehicles}
+            vehicles={visibleVehicles}
             selectedVehicle={selected}
             centerTrigger={centerTrigger}
+            onVehicleSelect={(v) =>
+              setSelected(vehicles.find((item) => item.id === v.id) ?? null)
+            }
           />
         </div>
 
@@ -140,7 +212,7 @@ export default function TrackingPage() {
         {/* Left Side Vehicle List */}
         <div className="w-[260px] flex-shrink-0 border-r border-border bg-card">
           <VehicleList
-            vehicles={vehicles}
+            vehicles={visibleVehicles}
             selected={selected}
             onSelect={setSelected}
           />
@@ -149,9 +221,12 @@ export default function TrackingPage() {
         {/* Map with floating overlay details */}
         <div className="relative flex-1 overflow-hidden">
           <TrackingMap
-            vehicles={vehicles}
+            vehicles={visibleVehicles}
             selectedVehicle={selected}
             centerTrigger={centerTrigger}
+            onVehicleSelect={(v) =>
+              setSelected(vehicles.find((item) => item.id === v.id) ?? null)
+            }
           />
 
           {/* Floating Tablet Vehicle Details */}
@@ -176,7 +251,7 @@ export default function TrackingPage() {
         {/* Vehicle List */}
         <div className="w-[280px] flex-shrink-0 border-r border-border bg-card">
           <VehicleList
-            vehicles={vehicles}
+            vehicles={visibleVehicles}
             selected={selected}
             onSelect={setSelected}
           />
@@ -185,9 +260,12 @@ export default function TrackingPage() {
         {/* Map */}
         <div className="min-w-0 flex-1 overflow-hidden">
           <TrackingMap
-            vehicles={vehicles}
+            vehicles={visibleVehicles}
             selectedVehicle={selected}
             centerTrigger={centerTrigger}
+            onVehicleSelect={(v) =>
+              setSelected(vehicles.find((item) => item.id === v.id) ?? null)
+            }
           />
         </div>
 

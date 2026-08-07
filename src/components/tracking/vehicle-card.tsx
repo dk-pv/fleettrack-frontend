@@ -1,5 +1,7 @@
 import { Clock3, Gauge } from "lucide-react";
 
+import { formatSpeed } from "@/lib/utils/format-speed";
+
 interface Vehicle {
   id: string;
   vehicleName: string;
@@ -72,7 +74,7 @@ export default function VehicleCard({
       <div className="mt-3 flex items-center gap-3.5 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
         <div className="flex items-center gap-1">
           <Gauge className="h-3.5 w-3.5" />
-          <span>{Number(vehicle.speed).toFixed(1)} km/h</span>
+          <span>{formatSpeed(vehicle.speed)}</span>
         </div>
 
         <div className="flex items-center gap-1">

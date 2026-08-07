@@ -16,6 +16,7 @@ interface Vehicle {
   longitude: number;
   speed: number;
   updatedAt: string;
+  client?: { id: string; name: string };
 }
 
 interface VehicleListProps {
@@ -42,6 +43,21 @@ export default function VehicleList({
   const movingCount = vehicles.filter(
     (vehicle) => vehicle.status === "MOVING",
   ).length;
+
+  // Group the (filtered) list by owning client — the Fleet Owner (ADMIN) sees
+  // vehicles from every client, so they're bucketed under each client's name. A
+  // single-client list (a CLIENT login, or a client filter) collapses to one group
+  // and is rendered flat (no header).
+  const groups = (() => {
+    const map = new Map<string, Vehicle[]>();
+    for (const vehicle of filtered) {
+      const key = vehicle.client?.name ?? vehicle.clientName ?? "Unassigned";
+      const bucket = map.get(key);
+      if (bucket) bucket.push(vehicle);
+      else map.set(key, [vehicle]);
+    }
+    return [...map.entries()];
+  })();
 
   return (
     <div className="flex h-full flex-col border-r border-border bg-card">
@@ -110,7 +126,7 @@ export default function VehicleList({
           <p className="mt-6 text-center text-xs text-muted-foreground font-medium">
             No vehicles found.
           </p>
-        ) : (
+        ) : groups.length <= 1 ? (
           filtered.map((vehicle) => (
             <VehicleCard
               key={vehicle.id}
@@ -118,6 +134,23 @@ export default function VehicleList({
               active={selected?.id === vehicle.id}
               onClick={() => onSelect(vehicle)}
             />
+          ))
+        ) : (
+          groups.map(([clientName, list]) => (
+            <div key={clientName} className="space-y-2.5">
+              <p className="px-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {clientName} ({list.length})
+              </p>
+
+              {list.map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  active={selected?.id === vehicle.id}
+                  onClick={() => onSelect(vehicle)}
+                />
+              ))}
+            </div>
           ))
         )}
       </div>

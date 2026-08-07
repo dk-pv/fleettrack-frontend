@@ -12,6 +12,8 @@ import {
   Wifi,
   FileDown,
 } from "lucide-react";
+
+import { roundSpeed } from "@/lib/utils/format-speed";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -311,7 +313,7 @@ export default function VehicleDetailPage() {
             <p className="text-sm text-muted-foreground">Current Speed</p>
 
             <h2 className="mt-2 text-4xl font-bold md:text-5xl">
-              {vehicle.speed}
+              {roundSpeed(vehicle.speed)}
               <span className="ml-2 text-xl">km/h</span>
             </h2>
           </div>

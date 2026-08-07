@@ -39,6 +39,7 @@ interface TrackingMapProps {
   selectedVehicle: Vehicle | null;
   centerTrigger: number;
   followMode?: boolean;
+  onVehicleSelect?: (vehicle: Vehicle) => void;
 }
 
 /* -------------------------------------------------- */
@@ -47,6 +48,9 @@ interface TrackingMapProps {
 
 const DEFAULT_LOCATION = { lat: 11.2588, lng: 75.7804 };
 const DEFAULT_ZOOM = 8;
+
+// Stable reference — an inline array would make useJsApiLoader reload the script.
+const MAP_LIBRARIES: "marker"[] = ["marker"];
 
 const MAP_CONTAINER_STYLE: React.CSSProperties = {
   height: "100%",
@@ -67,6 +71,52 @@ const MAP_OPTIONS: google.maps.MapOptions = {
     { featureType: "transit", stylers: [{ visibility: "off" }] },
   ],
 };
+
+/* -------------------------------------------------- */
+/* HEADING (RC3 / RC4)                                */
+/* -------------------------------------------------- */
+
+/** Below this the vehicle is treated as stationary/slow → keep its last heading. */
+const MIN_MOVING_SPEED_KMH = 3;
+/** Minimum displacement before a bearing is trusted (ignores GPS jitter). */
+const MIN_HEADING_DISTANCE_M = 10;
+
+/** Shortest signed angular difference from → to, normalised to (-180, 180]. */
+function shortestAngleDelta(from: number, to: number): number {
+  let d = (to - from) % 360;
+  if (d > 180) d -= 360;
+  else if (d < -180) d += 360;
+  return d;
+}
+
+/* -------------------------------------------------- */
+/* MARKER MOVEMENT (RC6 / RC7 / RC15)                 */
+/* -------------------------------------------------- */
+
+/** Below this a position change is snapped directly (no animation). */
+const MOVE_THRESHOLD_M = 1;
+/** RC6: a single move beyond this is treated as a GPS spike and ignored… */
+const MAX_JUMP_DISTANCE_M = 5000;
+/** …unless it persists this many samples, then it's accepted as the new reality
+ *  (so a genuine relocation can never leave the marker stuck forever). */
+const MAX_CONSECUTIVE_REJECTS = 2;
+/** RC7: animation duration scales with distance, then clamped to [min, max] ms. */
+const ANIM_MS_PER_METER = 3;
+const ANIM_MIN_MS = 400;
+const ANIM_MAX_MS = 4000;
+
+/* -------------------------------------------------- */
+/* MARKER STACKING (RC14)                             */
+/* -------------------------------------------------- */
+
+/** Selected marker always renders above every base marker. */
+const SELECTED_Z_INDEX = 1_000_000;
+/** RC14: deterministic z from latitude so overlapping markers stack the same way on
+ *  every render (further south → higher z → drawn on top), instead of all sharing
+ *  z=1 and flickering when the DOM/insertion order changes. */
+function baseZIndex(latitude: number): number {
+  return Math.round((90 - latitude) * 1000);
+}
 
 /* -------------------------------------------------- */
 /* INJECT PULSE KEYFRAMES                             */
@@ -116,6 +166,20 @@ function VehicleMarker({
     lat: vehicle.latitude,
     lng: vehicle.longitude,
   });
+  // RC7: arrival time of the last accepted position (for interval-based duration).
+  const prevUpdateTimeRef = useRef<number | null>(null);
+  // RC6: consecutive rejected-jump counter (recovery guard).
+  const rejectCountRef = useRef(0);
+  // RC5: the persistent rotate wrapper (built once) + the latest heading, so a heading
+  // change only mutates the wrapper's transform instead of rebuilding the whole marker.
+  const wrapperRef = useRef<HTMLElement | null>(null);
+  const headingRef = useRef(heading);
+  // RC8: keep the latest onClick in a ref so the click listener (bound once) never
+  // fires a stale closure — without re-subscribing on every render.
+  const onClickRef = useRef(onClick);
+  useEffect(() => {
+    onClickRef.current = onClick;
+  });
 
   useEffect(() => {
     return () => {
@@ -124,11 +188,21 @@ function VehicleMarker({
       }
     };
   }, []);
+  // RC15: stop any in-flight animation so a running frame can't overwrite a
+  // subsequent direct position set (animation fighting).
+  const stopAnimation = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
   // Smooth animated move toward new position
   const animateMarkerTo = useCallback(
     (
       marker: google.maps.marker.AdvancedMarkerElement,
       destination: { lat: number; lng: number },
+      duration: number,
     ) => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -150,7 +224,6 @@ function VehicleMarker({
       const destLat = destination.lat;
       const destLng = destination.lng;
 
-      const duration = vehicle.status === "MOVING" ? 700 : 300;
       const startTime = performance.now();
 
       const step = (now: number) => {
@@ -196,7 +269,7 @@ function VehicleMarker({
     markerRef.current = marker;
 
     const listener = marker.addListener("click", () => {
-      onClick();
+      onClickRef.current();
     });
 
     return () => {
@@ -213,27 +286,65 @@ function VehicleMarker({
     const marker = markerRef.current;
     if (!marker) return;
 
-    const { lat: prevLat, lng: prevLng } = prevPos.current;
     const newLat = vehicle.latitude;
     const newLng = vehicle.longitude;
 
     if (!isValidCoordinate(newLat, newLng)) return;
 
+    const { lat: prevLat, lng: prevLng } = prevPos.current;
     const dist = haversineDistance(prevLat, prevLng, newLat, newLng);
-    if (dist > 1) {
-      animateMarkerTo(marker, { lat: newLat, lng: newLng });
+
+    // RC6: ignore a physically impossible jump (GPS spike) and keep the last valid
+    // position. A lone spike is skipped; if it persists past MAX_CONSECUTIVE_REJECTS
+    // it is accepted as the new reality, so the marker can never get stuck forever.
+    if (dist > MAX_JUMP_DISTANCE_M) {
+      if (rejectCountRef.current < MAX_CONSECUTIVE_REJECTS) {
+        rejectCountRef.current += 1;
+        return;
+      }
+    }
+    rejectCountRef.current = 0;
+
+    // RC7: real gap since the last accepted position.
+    const now = performance.now();
+    const intervalMs =
+      prevUpdateTimeRef.current !== null ? now - prevUpdateTimeRef.current : null;
+    prevUpdateTimeRef.current = now;
+
+    if (dist > MOVE_THRESHOLD_M) {
+      // RC7: duration scales with distance (consistent visual speed), clamped, and
+      // capped by the update interval so the next update doesn't cut it short.
+      let duration = Math.min(
+        Math.max(dist * ANIM_MS_PER_METER, ANIM_MIN_MS),
+        ANIM_MAX_MS,
+      );
+      // Cap to the interval but keep a small non-zero floor (avoids a 0ms/NaN step).
+      if (intervalMs !== null) duration = Math.min(duration, Math.max(intervalMs, 50));
+
+      animateMarkerTo(marker, { lat: newLat, lng: newLng }, duration);
       prevPos.current = { lat: newLat, lng: newLng };
     } else {
+      // RC15: a tiny move snaps directly — cancel any in-flight animation first so a
+      // running frame can't overwrite this position (animation fighting).
+      stopAnimation();
       marker.position = { lat: newLat, lng: newLng };
+      prevPos.current = { lat: newLat, lng: newLng };
     }
-  }, [vehicle.latitude, vehicle.longitude, animateMarkerTo]);
+  }, [vehicle.latitude, vehicle.longitude, animateMarkerTo, stopAnimation]);
 
-  // Rebuild/update HTML content imperatively on heading / status change
+  // RC14: deterministic stacking — selected always on top, otherwise ordered by
+  // latitude so overlapping markers keep a stable draw order (no z=1 flicker).
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker || !elementRef.current) return;
+    if (!marker) return;
+    marker.zIndex = isSelected ? SELECTED_Z_INDEX : baseZIndex(vehicle.latitude);
+  }, [isSelected, vehicle.latitude]);
 
-    marker.zIndex = isSelected ? 1000 : 1;
+  // RC5: rebuild the marker's DOM only when status changes (color / pulse). Heading
+  // ticks no longer trigger this innerHTML rebuild — they only mutate the transform.
+  useEffect(() => {
+    const el = elementRef.current;
+    if (!el) return;
 
     const color =
       vehicle.status === "MOVING"
@@ -251,12 +362,12 @@ function VehicleMarker({
         "></span>`
         : "";
 
-    elementRef.current.innerHTML = `
+    el.innerHTML = `
       <div style="
         position:relative;
         width:40px;height:40px;
         display:flex;align-items:center;justify-content:center;
-        transform:rotate(${heading}deg);
+        transform:rotate(${headingRef.current}deg);
         transition:transform 0.6s ease;
       ">
         ${pulseHtml}
@@ -271,7 +382,18 @@ function VehicleMarker({
         </div>
       </div>
     `;
-  }, [vehicle.status, heading, isSelected]);
+
+    // RC5: cache the rotate wrapper so heading updates only touch its transform.
+    wrapperRef.current = el.firstElementChild as HTMLElement | null;
+  }, [vehicle.status]);
+
+  // RC5: a heading change only rotates the persistent wrapper — no DOM rebuild.
+  useEffect(() => {
+    headingRef.current = heading;
+    if (wrapperRef.current) {
+      wrapperRef.current.style.transform = `rotate(${heading}deg)`;
+    }
+  }, [heading]);
 
   return null;
 }
@@ -418,11 +540,12 @@ export default function TrackingMap({
   selectedVehicle,
   centerTrigger,
   followMode: externalFollowMode = false,
+  onVehicleSelect,
 }: TrackingMapProps) {
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
     id: "google-map-script",
-    libraries: ["marker"],
+    libraries: MAP_LIBRARIES,
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -557,11 +680,22 @@ export default function TrackingMap({
     selectedVehicle?.longitude,
   ]);
 
-  useEffect(() => {
-    const vehicleIds = new Set(vehicles.map((v) => v.id));
+  // RC9: derive headings DURING render (was a post-commit effect that left the value
+  // one socket-tick stale) so a marker's rotation matches the same positions it's
+  // rendered at. The bearing / shortest-delta math (RC3/RC4) is unchanged — only the
+  // timing is. Previous positions + the accumulated angle are advanced post-commit in
+  // the effect below, keeping ref writes out of render.
+  /* eslint-disable react-hooks/refs -- render-time read of prev-render refs; advanced post-commit below */
+  const headings = useMemo(() => {
+    const next: Record<string, number> = {};
 
     for (const vehicle of vehicles) {
-      if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) continue;
+      const current = headingsRef.current[vehicle.id];
+
+      if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) {
+        if (current !== undefined) next[vehicle.id] = current;
+        continue;
+      }
 
       const prev = prevPositionsRef.current[vehicle.id];
 
@@ -573,29 +707,56 @@ export default function TrackingMap({
           vehicle.longitude,
         );
 
-        if (dist >= 10) {
-          headingsRef.current[vehicle.id] = calculateBearing(
+        // RC3: only update heading when genuinely moving (not idle / GPS jitter),
+        // so a stationary truck keeps its last heading.
+        if (
+          vehicle.speed > MIN_MOVING_SPEED_KMH &&
+          dist >= MIN_HEADING_DISTANCE_M
+        ) {
+          const bearing = calculateBearing(
             prev.lat,
             prev.lng,
             vehicle.latitude,
             vehicle.longitude,
           );
+
+          // RC4: accumulate a continuous (unwrapped) angle via the shortest signed
+          // delta, so the rotate transition always turns the short way.
+          next[vehicle.id] =
+            current === undefined
+              ? bearing
+              : current + shortestAngleDelta(current, bearing);
+          continue;
         }
       }
 
-      prevPositionsRef.current[vehicle.id] = {
-        lat: vehicle.latitude,
-        lng: vehicle.longitude,
-      };
+      // Not moving / no previous fix → keep the last heading.
+      if (current !== undefined) next[vehicle.id] = current;
     }
 
-    for (const id of Object.keys(headingsRef.current)) {
-      if (!vehicleIds.has(id)) {
-        delete headingsRef.current[id];
-        delete prevPositionsRef.current[id];
+    return next;
+  }, [vehicles]);
+  /* eslint-enable react-hooks/refs */
+
+  // Advance the accumulator + previous positions AFTER commit, so the next render's
+  // derive above sees this tick's values. Vehicles that vanished drop out naturally.
+  useEffect(() => {
+    headingsRef.current = headings;
+
+    const nextPrev: Record<string, { lat: number; lng: number }> = {};
+    for (const vehicle of vehicles) {
+      if (isValidCoordinate(vehicle.latitude, vehicle.longitude)) {
+        nextPrev[vehicle.id] = {
+          lat: vehicle.latitude,
+          lng: vehicle.longitude,
+        };
+      } else {
+        const kept = prevPositionsRef.current[vehicle.id];
+        if (kept) nextPrev[vehicle.id] = kept;
       }
     }
-  }, [vehicles]);
+    prevPositionsRef.current = nextPrev;
+  }, [vehicles, headings]);
 
   const visibleVehicles = selectedVehicle
     ? validVehicles.filter((v) => v.id === selectedVehicle.id)
@@ -604,6 +765,25 @@ export default function TrackingMap({
   const handleDragStart = useCallback(() => {
     setInternalFollowMode(false);
   }, []);
+  if (loadError) {
+    return (
+      <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden flex flex-col items-center justify-center gap-3 bg-muted px-6 text-center">
+        <p className="text-sm font-medium text-foreground">
+          Unable to load the map
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Check your internet connection and try again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-1 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/80 transition-all cursor-pointer shadow-sm outline-none"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (!isLoaded) {
     return (
       <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden flex items-center justify-center bg-muted">
@@ -653,8 +833,7 @@ export default function TrackingMap({
         {/* VEHICLE MARKERS */}
         {map &&
           visibleVehicles.map((vehicle) => {
-            // eslint-disable-next-line react-hooks/refs -- Reading ref in render is used here for animation performance optimization without triggering re-renders
-            const heading = headingsRef.current[vehicle.id] ?? 0;
+            const heading = headings[vehicle.id] ?? 0;
 
             return (
               <VehicleMarker
@@ -663,7 +842,7 @@ export default function TrackingMap({
                 vehicle={vehicle}
                 heading={heading}
                 isSelected={selectedVehicle?.id === vehicle.id}
-                onClick={() => {}}
+                onClick={() => onVehicleSelect?.(vehicle)}
               />
             );
           })}

@@ -1,10 +1,32 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
+// Validate NEXT_PUBLIC_SOCKET_URL at load so a missing/invalid value fails loudly
+// instead of silently connecting socket.io to the page origin.
+const rawUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
 
-export const socket = io(SOCKET_URL, {
+let socketUrl = "";
+try {
+  if (rawUrl) {
+    new URL(rawUrl); // throws on an invalid URL
+    socketUrl = rawUrl;
+  }
+} catch {
+  // leave socketUrl empty → treated as unconfigured below
+}
+
+const configured = socketUrl !== "";
+
+if (!configured) {
+  console.error(
+    "[FleetTrack] NEXT_PUBLIC_SOCKET_URL is missing or invalid — live vehicle updates are disabled. Set it to your API's socket URL (e.g. http://localhost:5000) and rebuild.",
+  );
+}
+
+// When unconfigured we still export a socket so the app stays stable, but with
+// autoConnect off it never dials the wrong origin — listeners simply never fire.
+export const socket = io(socketUrl, {
   transports: ["websocket"],
-  autoConnect: true,
+  autoConnect: configured,
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 2000,

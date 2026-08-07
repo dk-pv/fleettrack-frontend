@@ -293,9 +293,7 @@ export default function Navbar({
 
         <ThemeToggle />
 
-        {(user?.role === "ADMIN" || user?.role === "CLIENT") && (
-          <NotificationBell />
-        )}
+        {user?.role === "CLIENT" && <NotificationBell />}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

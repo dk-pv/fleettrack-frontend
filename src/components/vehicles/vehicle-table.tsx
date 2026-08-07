@@ -239,7 +239,7 @@ export default function VehicleTable({
                   </td>
 
                   <td className="px-6 py-5">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
                       <button
                         onClick={() =>
                           router.push(

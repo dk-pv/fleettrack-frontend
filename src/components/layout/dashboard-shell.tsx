@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Sidebar from "./sidebar";
 import Navbar from "./navbar";
+import RoleGuard from "./role-guard";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -34,19 +35,12 @@ export default function DashboardShell({
 
       {/* Main Content */}
       <main
-        className={`
-          transition-all duration-300
-          pt-16
-
-          lg:${
-            expanded
-              ? "ml-[250px]"
-              : "ml-[88px]"
-          }
-        `}
+        className={`transition-all duration-300 pt-16 ${
+          expanded ? "lg:ml-[250px]" : "lg:ml-[88px]"
+        }`}
       >
         <div className="min-h-[calc(100vh-64px)] p-4 sm:p-6 lg:p-8">
-          {children}
+          <RoleGuard>{children}</RoleGuard>
         </div>
       </main>
     </div>

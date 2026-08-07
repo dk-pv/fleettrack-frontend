@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { useLiveOps } from "@/hooks/use-live-ops";
 import TripStatusBadge from "@/components/trips/trip-status-badge";
+import { formatSpeed } from "@/lib/utils/format-speed";
 
 /** Live vehicle status pill classes (mirrors the ActiveVehicles widget). */
 function vehicleStatusClasses(status?: string): string {
@@ -115,7 +116,7 @@ export default function LiveOperations() {
                             {live.status}
                           </span>
                           <span className="text-[15px] text-muted-foreground">
-                            {live.speed} km/h
+                            {formatSpeed(live.speed)}
                           </span>
                         </div>
                       ) : (

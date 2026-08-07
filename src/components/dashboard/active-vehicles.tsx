@@ -1,5 +1,7 @@
 import { Truck } from "lucide-react";
 
+import { formatSpeed } from "@/lib/utils/format-speed";
+
 interface ActiveVehiclesProps {
   vehicles: any[];
 }
@@ -65,7 +67,7 @@ export default function ActiveVehicles({
               </div>
 
               <p className="mt-1.5 text-[15px] text-foreground font-semibold">
-                {vehicle.speed} km/h
+                {formatSpeed(vehicle.speed)}
               </p>
             </div>
           </div>

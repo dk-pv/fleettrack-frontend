@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { API_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/fetcher";
 import { Customer, CUSTOMER_TYPES, CustomerType } from "@/types/customer";
 import { Button } from "@/components/ui/button";
 
@@ -55,16 +55,15 @@ export default function CustomerForm({
     setLoading(true);
 
     try {
-      const url = isEdit
-        ? `${API_URL}/customers/${editCustomer.id}`
-        : `${API_URL}/customers`;
+      // Use the shared apiFetch (like the rest of the customer module) so auth headers
+      // and 401 handling (redirect to login on an expired token) are centralised —
+      // instead of a raw fetch that dead-ends on an expired session.
+      const endpoint = isEdit
+        ? `/customers/${editCustomer.id}`
+        : `/customers`;
 
-      const response = await fetch(url, {
+      const response = await apiFetch(endpoint, {
         method: isEdit ? "PATCH" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({
           name: name.trim(),
           type,
@@ -87,6 +86,10 @@ export default function CustomerForm({
       } else {
         toast.error(data.message || "Something went wrong");
       }
+    } catch (error) {
+      // A thrown fetch/parse error used to be swallowed (no catch) → silent failure.
+      console.error(error);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

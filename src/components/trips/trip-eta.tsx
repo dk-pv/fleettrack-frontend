@@ -2,6 +2,7 @@
 
 import { TripEta } from "@/types/trip";
 import { formatEtaDuration } from "@/lib/trip-eta";
+import { formatSpeed } from "@/lib/utils/format-speed";
 
 interface Props {
   eta: TripEta | null;
@@ -51,7 +52,7 @@ export default function TripEtaCard({ eta, live = false }: Props) {
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {(eta.remainingMeters / 1000).toFixed(1)} km remaining · based on{" "}
-            {Math.round(eta.basisSpeedKmh)} km/h
+            {formatSpeed(eta.basisSpeedKmh)}
           </p>
         </>
       ) : (
