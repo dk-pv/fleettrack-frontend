@@ -16,14 +16,14 @@ export default function NotificationsPage() {
     useNotifications();
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-3">
             <Bell className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Notifications</h1>
+            <h1 className="page-title">Notifications</h1>
             <p className="mt-1 text-muted-foreground">
               Trip and delivery activity
             </p>

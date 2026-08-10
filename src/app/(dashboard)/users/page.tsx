@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import UserTable from "@/components/users/UserTable";
 import UserModal from "@/components/users/UserModal";
 import DeleteConfirmModal from "@/components/users/DeleteConfirmModal";
+import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 
 import { getUsers, deleteUser } from "@/lib/user-api";
 import { User } from "@/components/users/TypeUser";
@@ -19,30 +21,45 @@ export default function UsersPage() {
   const [deleteUserState, setDeleteUserState] =
     useState<User | null>(null);
 
-  async function loadUsers() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const mounted = useRef(false);
+
+  // Only the first load shows the skeleton; mutations refetch silently in place.
+  async function loadUsers(silent = false) {
+    if (!silent) setLoading(true);
+    setError(false);
     try {
       const data = await getUsers();
       setUsers(data);
-    } catch (error) {
-      toast.error("Failed to load users");
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError(true);
+      else toast.error("Failed to refresh users");
+    } finally {
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadUsers();
+    loadUsers(mounted.current);
+    mounted.current = true;
   }, []);
 
   async function handleDeleteConfirm() {
     if (!deleteUserState) return;
 
+    setDeleting(true);
     try {
       await deleteUser(deleteUserState.id);
       toast.success("User deleted successfully");
-      loadUsers();
+      setDeleteUserState(null);
+      await loadUsers(true);
     } catch {
       toast.error("Failed to delete user");
     } finally {
-      setDeleteUserState(null);
+      setDeleting(false);
     }
   }
 
@@ -52,7 +69,7 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-5xl font-bold tracking-tight">
+            <h1 className="page-title">
               User Management
             </h1>
 
@@ -66,28 +83,32 @@ export default function UsersPage() {
               setSelectedUser(null);
               setModalOpen(true);
             }}
-            className="
-              inline-flex items-center gap-2
-              rounded-2xl bg-primary px-5 py-3
-              text-sm font-medium text-white
-              shadow-sm transition hover:opacity-90
-            "
+            className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             + Add User
           </button>
         </div>
 
         {/* Table */}
-        <UserTable
-          users={users}
-          onEdit={(user) => {
-            setSelectedUser(user);
-            setModalOpen(true);
-          }}
-          onDelete={(user) => {
-            setDeleteUserState(user);
-          }}
-        />
+        {loading ? (
+          <TableSkeleton columns={5} rows={8} />
+        ) : error ? (
+          <ErrorState
+            message="Couldn't load users."
+            onRetry={() => loadUsers()}
+          />
+        ) : (
+          <UserTable
+            users={users}
+            onEdit={(user) => {
+              setSelectedUser(user);
+              setModalOpen(true);
+            }}
+            onDelete={(user) => {
+              setDeleteUserState(user);
+            }}
+          />
+        )}
       </div>
 
       {/* Add / Edit Modal */}
@@ -96,7 +117,7 @@ export default function UsersPage() {
         onClose={() => setModalOpen(false)}
         user={selectedUser}
         onSuccess={() => {
-          loadUsers();
+          loadUsers(true);
 
           if (selectedUser) {
             toast.success("User updated successfully");
@@ -109,6 +130,7 @@ export default function UsersPage() {
       {/* Delete Modal */}
       <DeleteConfirmModal
         open={!!deleteUserState}
+        loading={deleting}
         userName={deleteUserState?.name}
         onClose={() => setDeleteUserState(null)}
         onConfirm={handleDeleteConfirm}

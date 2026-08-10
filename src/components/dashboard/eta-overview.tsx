@@ -6,6 +6,7 @@ import { useEtaOverview } from "@/hooks/use-eta-overview";
 import TripStatusBadge from "@/components/trips/trip-status-badge";
 import { formatEtaDuration } from "@/lib/trip-eta";
 import { TripEta, TripProgress } from "@/types/trip";
+import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 
 function arrivalTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], {
@@ -20,7 +21,7 @@ function remainingKm(eta: TripEta | null, progress: TripProgress | null): string
 }
 
 const th =
-  "px-6 py-4 text-[15px] font-semibold text-muted-foreground";
+  "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 
 /**
  * ETA overview across active trips (DSH-03.1 / DSH-03.2). Data comes from
@@ -33,10 +34,10 @@ export default function EtaOverview() {
   const { rows, loading, error } = useEtaOverview();
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm">
-      <div className="border-b border-border px-6 py-5">
-        <h3 className="text-[18px] font-semibold">Active trip ETAs</h3>
-        <p className="text-[15px] text-muted-foreground mt-1">
+    <div className="rounded-lg border border-border bg-card">
+      <div className="border-b border-border px-4 py-3.5">
+        <h3 className="text-base font-semibold">Active trip ETAs</h3>
+        <p className="text-sm text-muted-foreground mt-1">
           Destination ETA, distance and progress across in-transit trips
         </p>
       </div>
@@ -56,14 +57,7 @@ export default function EtaOverview() {
 
           <tbody>
             {loading ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="py-10 text-center text-muted-foreground"
-                >
-                  Loading ETAs...
-                </td>
-              </tr>
+              <TableSkeletonRows columns={6} rows={4} />
             ) : error ? (
               <tr>
                 <td colSpan={6} className="py-10 text-center text-destructive">
@@ -85,7 +79,7 @@ export default function EtaOverview() {
                   key={trip.id}
                   className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
                 >
-                  <td className="px-6 py-5 font-medium text-[15px]">
+                  <td className="px-4 py-3.5 font-medium text-sm">
                     <Link
                       href={`/trips/${trip.id}`}
                       className="text-primary hover:underline"
@@ -94,18 +88,18 @@ export default function EtaOverview() {
                     </Link>
                   </td>
 
-                  <td className="px-6 py-5">
-                    <div className="text-[16px] font-medium">{trip.origin}</div>
-                    <div className="text-[15px] text-muted-foreground">
+                  <td className="px-4 py-3.5">
+                    <div className="text-sm font-medium">{trip.origin}</div>
+                    <div className="text-sm text-muted-foreground">
                       to {trip.destination}
                     </div>
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <TripStatusBadge status={trip.status} />
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
                         <div
@@ -113,28 +107,28 @@ export default function EtaOverview() {
                           style={{ width: `${progress?.percentage ?? 0}%` }}
                         />
                       </div>
-                      <span className="text-[15px] font-medium text-muted-foreground">
+                      <span className="text-sm font-medium text-muted-foreground">
                         {Math.round(progress?.percentage ?? 0)}%
                       </span>
                     </div>
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
                     {remainingKm(eta, progress)}
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     {eta ? (
                       <div>
-                        <div className="text-[16px] font-semibold">
+                        <div className="text-sm font-semibold">
                           {arrivalTime(eta.etaTimestamp)}
                         </div>
-                        <div className="text-[15px] text-muted-foreground">
+                        <div className="text-sm text-muted-foreground">
                           in {formatEtaDuration(eta.etaSeconds)}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-[15px] text-muted-foreground">
+                      <span className="text-sm text-muted-foreground">
                         Awaiting position
                       </span>
                     )}

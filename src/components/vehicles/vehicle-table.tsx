@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/fetcher";
 import { useAuthStore } from "@/store/auth-store";
 import VehicleStatusBadge from "./vehicle-status-badge";
 import { useRouter } from "next/navigation";
+import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 
 import {
   DropdownMenu,
@@ -38,17 +40,26 @@ export default function VehicleTable({
 }: VehicleTableProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const { user } = useAuthStore();
   const router = useRouter();
 
   const fetchVehicles = async () => {
+    setLoading(true);
+    setError(false);
     try {
       const response = await apiFetch("/vehicles");
+      // Non-ok HTTP (e.g. 500) → error state with retry, not a false "empty".
+      if (!response.ok) throw new Error("Request failed");
       const data = await response.json();
       setVehicles(data.vehicles || []);
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      console.log(err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,11 +100,21 @@ export default function VehicleTable({
     return list;
   }, [vehicles, statusFilter, searchQuery]);
 
+  if (loading)
+    return (
+      <TableSkeleton columns={user?.role === "ADMIN" ? 7 : 6} rows={8} />
+    );
+
+  if (error)
+    return (
+      <ErrorState message="Couldn't load vehicles." onRetry={fetchVehicles} />
+    );
+
   return (
-    <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border px-6 py-5">
-        <h3 className="text-[18px] font-semibold text-muted-foreground">
+      <div className="border-b border-border px-4 py-3.5">
+        <h3 className="text-base font-semibold text-muted-foreground">
           All Vehicles ({filteredVehicles.length})
         </h3>
       </div>
@@ -103,25 +124,25 @@ export default function VehicleTable({
         <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b border-border z-10">
             <tr>
-              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Vehicle
               </th>
 
-              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Driver
               </th>
 
-              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 GPS Device
               </th>
 
               {user?.role === "ADMIN" && (
-                <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Client
                 </th>
               )}
 
-              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer outline-none select-none">
@@ -170,11 +191,11 @@ export default function VehicleTable({
                 </DropdownMenu>
               </th>
 
-              <th className="px-6 py-4 text-[15px] font-semibold text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Created
               </th>
 
-              <th className="px-6 py-4 text-right text-[15px] font-semibold text-muted-foreground">
+              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Actions
               </th>
             </tr>
@@ -200,45 +221,45 @@ export default function VehicleTable({
                   key={vehicle.id}
                   className="group hover:bg-muted/30 transition-colors"
                 >
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <div>
-                      <h4 className="text-[16px] font-bold text-foreground">
+                      <h4 className="text-sm font-bold text-foreground">
                         {vehicle.vehicleNumber}
                       </h4>
 
-                      <p className="mt-1 text-[15px] text-muted-foreground font-medium">
+                      <p className="mt-1 text-sm text-muted-foreground font-medium">
                         {vehicle.vehicleName}
                       </p>
                     </div>
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] font-medium text-foreground">
+                  <td className="px-4 py-3.5 text-sm font-medium text-foreground">
                     {vehicle.driverName}
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] font-mono text-muted-foreground">
+                  <td className="px-4 py-3.5 text-sm font-mono text-muted-foreground">
                     {vehicle.gpsDeviceId}
                   </td>
 
                   {user?.role === "ADMIN" && (
-                    <td className="px-6 py-5 text-[15px] font-medium text-foreground">
+                    <td className="px-4 py-3.5 text-sm font-medium text-foreground">
                       {vehicle.client?.name || "-"}
                     </td>
                   )}
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <VehicleStatusBadge
                       status={vehicle.status}
                     />
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] text-muted-foreground font-medium">
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground font-medium">
                     {new Date(
                       vehicle.createdAt,
                     ).toLocaleDateString()}
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() =>
@@ -246,7 +267,7 @@ export default function VehicleTable({
                             `/vehicles/${vehicle.id}`,
                           )
                         }
-                        className="flex h-8 px-3 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 text-[14px] font-bold text-primary transition-all cursor-pointer"
+                        className="flex h-8 px-3 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 text-xs font-bold text-primary transition-all cursor-pointer"
                       >
                         View
                       </button>

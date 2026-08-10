@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
+import { DetailSkeleton } from "@/components/ui/skeletons/detail-skeleton";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
@@ -110,7 +111,7 @@ export default function VehicleDetailPage() {
   }, [params.id]);
 
   if (loading) {
-    return <div className="p-6">Loading vehicle...</div>;
+    return <DetailSkeleton />;
   }
 
   if (!vehicle) {
@@ -118,7 +119,7 @@ export default function VehicleDetailPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6">
       {/* Back */}
       <Link
         href="/vehicles"
@@ -131,7 +132,7 @@ export default function VehicleDetailPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+          <h1 className="page-title">
             {" "}
             {vehicle.vehicleName}
           </h1>
@@ -160,7 +161,7 @@ export default function VehicleDetailPage() {
             <h3 className="font-semibold">Driver</h3>
           </div>
 
-          <p className="mt-4 break-all text-xl font-bold md:text-2xl">
+          <p className="mt-4 break-all text-lg font-semibold">
             {vehicle.driverName}
           </p>
         </div>
@@ -173,7 +174,7 @@ export default function VehicleDetailPage() {
             <h3 className="font-semibold">GPS Device</h3>
           </div>
 
-          <p className="mt-4 break-all text-2xl font-bold">
+          <p className="mt-4 break-all text-xl font-semibold">
             {vehicle.gpsDeviceId}
           </p>
         </div>
@@ -186,7 +187,7 @@ export default function VehicleDetailPage() {
               <h3 className="font-semibold">Client</h3>
             </div>
 
-            <p className="mt-4 break-all text-2xl font-bold">
+            <p className="mt-4 break-all text-xl font-semibold">
               {vehicle.client?.name || "N/A"}
             </p>
           </div>
@@ -205,7 +206,7 @@ export default function VehicleDetailPage() {
             </h3>
           </div>
 
-          <h2 className="mt-4 text-3xl font-bold">12</h2>
+          <h2 className="mt-4 text-2xl font-semibold">12</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Vehicles currently active
@@ -221,7 +222,7 @@ export default function VehicleDetailPage() {
             </h3>
           </div>
 
-          <h2 className="mt-4 text-3xl font-bold">245 km</h2>
+          <h2 className="mt-4 text-2xl font-semibold">245 km</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Distance travelled today
@@ -241,7 +242,7 @@ export default function VehicleDetailPage() {
           <div className="mt-4 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-green-500" />
 
-            <h2 className="text-2xl font-bold">Connected</h2>
+            <h2 className="text-xl font-semibold">Connected</h2>
           </div>
 
           <p className="mt-1 text-sm text-muted-foreground">
@@ -312,7 +313,7 @@ export default function VehicleDetailPage() {
           <div className="mt-6">
             <p className="text-sm text-muted-foreground">Current Speed</p>
 
-            <h2 className="mt-2 text-4xl font-bold md:text-5xl">
+            <h2 className="mt-2 text-3xl font-semibold">
               {roundSpeed(vehicle.speed)}
               <span className="ml-2 text-xl">km/h</span>
             </h2>
@@ -359,19 +360,19 @@ export default function VehicleDetailPage() {
                 Distance Travelled
               </p>
 
-              <h4 className="mt-1 text-2xl font-bold">245 km</h4>
+              <h4 className="mt-1 text-xl font-semibold">245 km</h4>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Running Time</p>
 
-              <h4 className="mt-1 text-2xl font-bold">5h 22m</h4>
+              <h4 className="mt-1 text-xl font-semibold">5h 22m</h4>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Idle Time</p>
 
-              <h4 className="mt-1 text-2xl font-bold">1h 10m</h4>
+              <h4 className="mt-1 text-xl font-semibold">1h 10m</h4>
             </div>
 
             <div>

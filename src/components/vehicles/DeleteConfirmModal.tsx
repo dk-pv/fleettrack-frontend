@@ -3,6 +3,7 @@
 interface Props {
   open: boolean;
   userName?: string;
+  loading?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -10,14 +11,15 @@ interface Props {
 export default function DeleteConfirmModal({
   open,
   userName,
+  loading,
   onClose,
   onConfirm,
 }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[999] bg-black/40 flex items-center justify-center">
-      <div className="w-full max-w-md rounded-2xl bg-card text-foreground border border-border p-6 shadow-xl">
+    <div className="fixed inset-0 z-[999] bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-lg bg-card text-foreground border border-border p-6 shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <h2 className="text-xl font-semibold">
           Delete User
         </h2>
@@ -30,23 +32,25 @@ export default function DeleteConfirmModal({
           ?
         </p>
 
-        <p className="mt-2 text-xs text-red-500">
+        <p className="mt-2 text-xs text-destructive">
           This action cannot be undone.
         </p>
 
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-xl border px-4 py-2"
+            disabled={loading}
+            className="rounded-xl border px-4 py-2 disabled:opacity-60"
           >
             Cancel
           </button>
 
           <button
             onClick={onConfirm}
-            className="rounded-xl bg-red-500 px-4 py-2 text-white"
+            disabled={loading}
+            className="rounded-xl bg-destructive px-4 py-2 text-white disabled:opacity-70"
           >
-            Delete
+            {loading ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

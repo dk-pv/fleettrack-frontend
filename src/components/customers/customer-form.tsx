@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 interface Props {
   buttonText?: string;
   editCustomer?: Customer | null;
+  onSuccess?: () => void;
 }
 
 const inputClass = "h-10 w-full rounded-lg border px-3";
@@ -23,6 +24,7 @@ const sectionLabel =
 export default function CustomerForm({
   buttonText = "Add Customer",
   editCustomer,
+  onSuccess,
 }: Props) {
   const [name, setName] = useState(editCustomer?.name || "");
   const [type, setType] = useState<CustomerType>(
@@ -82,7 +84,7 @@ export default function CustomerForm({
 
       if (data.success) {
         toast.success(isEdit ? "Customer updated" : "Customer created");
-        window.location.reload();
+        onSuccess?.();
       } else {
         toast.error(data.message || "Something went wrong");
       }

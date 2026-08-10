@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLiveOps } from "@/hooks/use-live-ops";
 import TripStatusBadge from "@/components/trips/trip-status-badge";
 import { formatSpeed } from "@/lib/utils/format-speed";
+import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 
 /** Live vehicle status pill classes (mirrors the ActiveVehicles widget). */
 function vehicleStatusClasses(status?: string): string {
@@ -15,7 +16,7 @@ function vehicleStatusClasses(status?: string): string {
 }
 
 const th =
-  "px-6 py-4 text-[15px] font-semibold text-muted-foreground";
+  "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 
 /**
  * Live operations monitor (DSH-02.2 / DSH-02.3). Ongoing trips with their driver
@@ -27,10 +28,10 @@ export default function LiveOperations() {
   const { ongoingTrips, liveVehicles, loading } = useLiveOps();
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm">
-      <div className="border-b border-border px-6 py-5">
-        <h3 className="text-[18px] font-semibold">Live operations</h3>
-        <p className="text-[15px] text-muted-foreground mt-1">
+    <div className="rounded-lg border border-border bg-card">
+      <div className="border-b border-border px-4 py-3.5">
+        <h3 className="text-base font-semibold">Live operations</h3>
+        <p className="text-sm text-muted-foreground mt-1">
           Ongoing trips with live driver &amp; vehicle status
         </p>
       </div>
@@ -50,14 +51,7 @@ export default function LiveOperations() {
 
           <tbody>
             {loading ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="py-10 text-center text-muted-foreground"
-                >
-                  Loading operations...
-                </td>
-              </tr>
+              <TableSkeletonRows columns={6} rows={4} />
             ) : ongoingTrips.length === 0 ? (
               <tr>
                 <td
@@ -78,7 +72,7 @@ export default function LiveOperations() {
                     key={trip.id}
                     className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
                   >
-                    <td className="px-6 py-5 font-medium text-[15px]">
+                    <td className="px-4 py-3.5 font-medium text-sm">
                       <Link
                         href={`/trips/${trip.id}`}
                         className="text-primary hover:underline"
@@ -87,46 +81,46 @@ export default function LiveOperations() {
                       </Link>
                     </td>
 
-                    <td className="px-6 py-5">
-                      <div className="text-[16px] font-medium">{trip.origin}</div>
-                      <div className="text-[15px] text-muted-foreground">
+                    <td className="px-4 py-3.5">
+                      <div className="text-sm font-medium">{trip.origin}</div>
+                      <div className="text-sm text-muted-foreground">
                         to {trip.destination}
                       </div>
                     </td>
 
-                    <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                    <td className="px-4 py-3.5 text-sm text-muted-foreground">
                       {trip.driverName ?? live?.driverName ?? "—"}
                     </td>
 
-                    <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                    <td className="px-4 py-3.5 text-sm text-muted-foreground">
                       {trip.vehicle?.vehicleNumber ??
                         live?.vehicleNumber ??
                         "—"}
                     </td>
 
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-3.5">
                       {live ? (
                         <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[14px] font-bold uppercase tracking-wide ${vehicleStatusClasses(
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ${vehicleStatusClasses(
                               live.status,
                             )}`}
                           >
                             <span className="h-2 w-2 rounded-full bg-current" />
                             {live.status}
                           </span>
-                          <span className="text-[15px] text-muted-foreground">
+                          <span className="text-sm text-muted-foreground">
                             {formatSpeed(live.speed)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[15px] text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                           No live signal
                         </span>
                       )}
                     </td>
 
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-3.5">
                       <TripStatusBadge status={trip.status} />
                     </td>
                   </tr>

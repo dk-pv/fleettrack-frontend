@@ -137,7 +137,7 @@ export default function TripStopsModal({ open, onClose, trip, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">Manage Stops</DialogTitle>
           <DialogDescription>

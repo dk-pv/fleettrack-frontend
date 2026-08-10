@@ -65,7 +65,7 @@
 //       {stats.map((item) => (
 //         <div
 //           key={item.title}
-//           className="rounded-2xl border border-border bg-card p-6 shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+//           className="rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
 //         >
 //           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.title}</p>
 

@@ -27,7 +27,7 @@ export default function SettingsTabs({
           }
           className={`rounded-lg px-4 py-2 text-center text-sm font-medium transition-all duration-200 ${
             activeTab === tab
-              ? "bg-muted text-foreground shadow-sm"
+              ? "bg-muted text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >

@@ -256,17 +256,6 @@ function VehicleMarker({
   useEffect(() => {
     if (!map || !google.maps.marker?.AdvancedMarkerElement) return;
 
-    // TEMP DIAG — remove after production diagnosis. Captures the map's capability at
-    // the exact instant before AdvancedMarkerElement construction. If
-    // `advancedAvailable` is false here, the map did NOT authorize as a vector map
-    // (RefererNotAllowedMapError) and constructing the marker against it is what throws
-    // "Cannot read properties of undefined (reading 'keys')".
-    console.warn("[FT-DIAG] marker pre-construct", {
-      isMap: map instanceof google.maps.Map,
-      hasMarkerLib: !!google.maps.marker?.AdvancedMarkerElement,
-      advancedAvailable: map.getMapCapabilities().isAdvancedMarkersAvailable,
-    });
-
     const container = document.createElement("div");
     container.style.position = "relative";
     container.style.width = "40px";
@@ -429,7 +418,7 @@ function LiveStatusCard({ vehicles, hasSelected }: LiveStatusCardProps) {
   return (
     <div
       className={cn(
-        "absolute z-[40] rounded-xl bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-md border border-border select-none transition-all duration-300",
+        "absolute z-[40] rounded-lg bg-card px-4 py-2.5 shadow-sm border border-border select-none transition-all duration-300",
         hasSelected
           ? "bottom-[300px] left-3 md:bottom-4 md:left-4"
           : "bottom-4 left-3 md:bottom-4 md:left-4",
@@ -501,7 +490,7 @@ function MapControls({
             (mapRef.current.getZoom() ?? DEFAULT_ZOOM) + 1,
           )
         }
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
         title="Zoom in"
       >
         <Plus className="h-4 w-4" />
@@ -513,7 +502,7 @@ function MapControls({
             (mapRef.current.getZoom() ?? DEFAULT_ZOOM) - 1,
           )
         }
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
         title="Zoom out"
       >
         <Minus className="h-4 w-4" />
@@ -521,7 +510,7 @@ function MapControls({
 
       <button
         onClick={onLocate}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card/90 backdrop-blur-md border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
         title="Center on vehicle"
       >
         <LocateFixed className="h-4 w-4" />
@@ -532,7 +521,7 @@ function MapControls({
         className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-all cursor-pointer shadow-sm outline-none ${
           followMode
             ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
-            : "bg-card/90 backdrop-blur-md border-border hover:bg-muted/80 text-foreground"
+            : "bg-card border-border hover:bg-muted/80 text-foreground"
         }`}
         title={
           followMode ? "Following vehicle (click to stop)" : "Follow vehicle"
@@ -643,22 +632,10 @@ export default function TrackingMap({
       mapRef.current = mapInstance;
       setMap(mapInstance);
 
-      // TEMP DIAG — remove after production diagnosis. Proves whether the map
-      // authorized as an advanced-markers-capable vector map at onLoad time.
-      console.warn("[FT-DIAG] map onLoad", {
-        hasMarkerLib: !!google.maps.marker?.AdvancedMarkerElement,
-        capabilities: mapInstance.getMapCapabilities(),
-      });
-
       // Mark the map ready only after tiles actually render — proof that auth
       // succeeded. This gates marker creation (see the markers block below), so a
       // map left dead by an auth failure never gets AdvancedMarkerElements attached.
       google.maps.event.addListenerOnce(mapInstance, "tilesloaded", () => {
-        // TEMP DIAG — proves whether `tilesloaded` fires at all when auth fails,
-        // i.e. whether the mapReady gate actually holds in production.
-        console.warn("[FT-DIAG] tilesloaded", {
-          capabilities: mapInstance.getMapCapabilities(),
-        });
         setMapReady(true);
       });
 
@@ -852,11 +829,8 @@ export default function TrackingMap({
   return (
     <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden">
       {/* LIVE BADGE */}
-      <div className="absolute right-4 top-4 z-[40] flex items-center gap-2 rounded-lg bg-card/90 backdrop-blur-md px-3.5 py-1.5 shadow-sm border border-border">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-          <span className="relative inline-flex h-full w-full rounded-full bg-success" />
-        </span>
+      <div className="absolute right-4 top-4 z-[40] flex items-center gap-2 rounded-lg bg-card px-3 py-1.5 shadow-sm border border-border">
+        <span className="h-2 w-2 rounded-full bg-success" />
         <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">
           Live Tracking
         </span>

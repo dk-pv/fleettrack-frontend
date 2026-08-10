@@ -52,7 +52,7 @@ export default function CustomerTripsModal({ open, onClose, customer }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[900px]">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[900px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">Trip History</DialogTitle>
           <DialogDescription>

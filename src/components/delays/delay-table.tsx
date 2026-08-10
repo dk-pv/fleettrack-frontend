@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Delay } from "@/types/delay";
 import DelayCategoryBadge from "./delay-category-badge";
+import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
 
 interface Props {
   delays: Delay[];
@@ -30,35 +31,28 @@ export default function DelayTable({
 }: Props) {
   const cols = onSelect ? 7 : 6;
 
+  if (loading) return <TableSkeleton columns={cols} rows={8} />;
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px]">
+        <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-left">
-              <th className="px-6 py-4 text-sm font-semibold">Trip</th>
-              <th className="px-6 py-4 text-sm font-semibold">Category</th>
-              <th className="px-6 py-4 text-sm font-semibold">Reason</th>
-              <th className="px-6 py-4 text-sm font-semibold">Duration</th>
-              <th className="px-6 py-4 text-sm font-semibold">Reported at</th>
-              <th className="px-6 py-4 text-sm font-semibold">Source</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Trip</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Category</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Reason</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Duration</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Reported at</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Source</th>
               {onSelect && (
-                <th className="px-6 py-4 text-sm font-semibold">Actions</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Actions</th>
               )}
             </tr>
           </thead>
 
           <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={cols}
-                  className="py-10 text-center text-muted-foreground"
-                >
-                  Loading delays...
-                </td>
-              </tr>
-            ) : error ? (
+            {error ? (
               <tr>
                 <td colSpan={cols} className="py-10 text-center text-destructive">
                   {error}
@@ -79,7 +73,7 @@ export default function DelayTable({
                   key={delay.id}
                   className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
                 >
-                  <td className="px-6 py-4 font-medium">
+                  <td className="px-4 py-3.5 font-medium">
                     <Link
                       href={`/trips/${delay.tripId}`}
                       className="text-primary hover:underline"
@@ -88,28 +82,28 @@ export default function DelayTable({
                     </Link>
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3.5">
                     <DelayCategoryBadge category={delay.category} />
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {delay.reason || "—"}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {delay.durationMinutes} min
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {formatDateTime(delay.reportedAt)}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {delay.source}
                   </td>
 
                   {onSelect && (
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3.5">
                       <button
                         onClick={() => onSelect(delay)}
                         className="text-sm font-medium text-primary hover:underline"

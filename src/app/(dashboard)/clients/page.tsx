@@ -13,11 +13,11 @@
 //   const [searchQuery, setSearchQuery] = useState("");
 
 //   return (
-//     <div className="space-y-6 p-6">
+//     <div className="space-y-6">
 //       {/* Header */}
 //       <div className="flex items-start justify-between">
 //         <div>
-//           <h1 className="text-4xl font-bold tracking-tight">
+//           <h1 className="page-title">
 //             Client Management
 //           </h1>
 
@@ -76,12 +76,13 @@ import { useAuthStore } from "@/store/auth-store";
 export default function ClientsPage() {
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">
+          <h1 className="page-title">
             Client Management
           </h1>
 
@@ -91,7 +92,7 @@ export default function ClientsPage() {
         </div>
 
         {user?.role === "ADMIN" && (
-          <AddClientModal>
+          <AddClientModal onSuccess={() => setRefreshKey((k) => k + 1)}>
             <button className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground">
               <Plus className="h-4 w-4" />
               Add Client
@@ -116,7 +117,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <ClientTable searchQuery={searchQuery} />
+      <ClientTable searchQuery={searchQuery} refreshKey={refreshKey} />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Globe } from "lucide-react";
 
 export default function GeneralSettings() {
   return (
-    <div className="rounded-2xl border border-border bg-background p-4 md:p-6">
+    <div className="rounded-lg border border-border bg-background p-4 md:p-6">
       {/* Header */}
 
       <div className="flex items-center gap-3">

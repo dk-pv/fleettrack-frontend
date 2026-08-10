@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { apiFetch } from "@/lib/fetcher";
@@ -10,48 +10,68 @@ import DeleteCustomerDialog from "./DeleteCustomerDialog";
 import CustomerTypeBadge from "./customer-type-badge";
 import CustomerAddressesModal from "./customer-addresses-modal";
 import CustomerTripsModal from "./customer-trips-modal";
+import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Props {
   searchQuery?: string;
+  /** Bumped by the page-level Add modal so the table refetches its own data. */
+  refreshKey?: number;
 }
 
 /**
  * Customer directory table (CUS-02.2) — hand-rolled table with search, edit
  * (reuses the add/edit modal) and delete. Mirrors client-table.
  */
-export default function CustomerTable({ searchQuery = "" }: Props) {
+export default function CustomerTable({
+  searchQuery = "",
+  refreshKey = 0,
+}: Props) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [addressesFor, setAddressesFor] = useState<Customer | null>(null);
   const [tripsFor, setTripsFor] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const mounted = useRef(false);
 
-  const fetchCustomers = async () => {
-    const res = await apiFetch("/customers");
-    const data = await res.json();
-    setCustomers(data.customers || []);
-  };
-
-  // Inlined (not a call to fetchCustomers) to satisfy the no-setState-in-effect
-  // lint rule, mirroring the trips hooks.
-  useEffect(() => {
-    async function load() {
+  // Only the first load shows the skeleton; mutations / refreshKey do a silent refetch.
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(false);
+    try {
       const res = await apiFetch("/customers");
+      // Non-ok HTTP (e.g. 500) → error state with retry, not a false "empty".
+      if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       setCustomers(data.customers || []);
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError(true);
+      else toast.error("Couldn't refresh customers");
+    } finally {
+      if (!silent) setLoading(false);
     }
-    load();
-  }, []);
+  };
+
+  useEffect(() => {
+    load(mounted.current);
+    mounted.current = true;
+  }, [refreshKey]);
 
   const confirmDelete = async () => {
     if (!deleteId) return;
 
+    setDeleting(true);
     try {
       const res = await apiFetch(`/customers/${deleteId}`, { method: "DELETE" });
       const data = await res.json();
 
       if (data.success) {
         toast.success("Customer deleted");
-        fetchCustomers();
+        setDeleteId(null);
+        await load(true);
       } else {
         toast.error(data.message || "Delete failed");
       }
@@ -59,7 +79,7 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
       console.error(error);
       toast.error("Something went wrong");
     } finally {
-      setDeleteId(null);
+      setDeleting(false);
     }
   };
 
@@ -74,20 +94,27 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
     );
   }, [customers, searchQuery]);
 
+  if (loading) return <TableSkeleton columns={6} rows={8} />;
+
+  if (error)
+    return (
+      <ErrorState message="Couldn't load customers." onRetry={() => load()} />
+    );
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[850px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Type</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Phone</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Phone</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Created
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Actions
               </th>
             </tr>
@@ -109,27 +136,30 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
                   key={customer.id}
                   className="border-b border-border transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-6 py-4 font-medium">{customer.name}</td>
+                  <td className="px-4 py-3.5 font-medium">{customer.name}</td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3.5">
                     <CustomerTypeBadge type={customer.type} />
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {customer.email || "—"}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {customer.phone || "—"}
                   </td>
 
-                  <td className="px-6 py-4 text-muted-foreground">
+                  <td className="px-4 py-3.5 text-muted-foreground">
                     {new Date(customer.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-3">
-                      <AddCustomerModal editCustomer={customer}>
+                      <AddCustomerModal
+                        editCustomer={customer}
+                        onSuccess={() => load(true)}
+                      >
                         <button className="text-sm font-medium text-primary hover:underline">
                           Edit
                         </button>
@@ -151,7 +181,7 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
 
                       <button
                         onClick={() => setDeleteId(customer.id)}
-                        className="text-sm font-medium text-red-500 hover:underline"
+                        className="text-sm font-medium text-destructive hover:underline"
                       >
                         Delete
                       </button>
@@ -166,6 +196,7 @@ export default function CustomerTable({ searchQuery = "" }: Props) {
 
       <DeleteCustomerDialog
         open={deleteId !== null}
+        loading={deleting}
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}
       />

@@ -10,7 +10,7 @@ import { downloadResponse } from "@/lib/download";
 import { DelayPeriod, DelayStatBucket } from "@/types/delay-report";
 
 const th =
-  "px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+  "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
   "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
@@ -22,7 +22,7 @@ function BucketTable({
   buckets: DelayStatBucket[];
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
@@ -91,15 +91,15 @@ export default function DelayReportPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-orange-500/10 p-3">
-            <Clock className="h-6 w-6 text-orange-600" />
+          <div className="rounded-lg bg-primary/10 p-3">
+            <Clock className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Delay Report</h1>
+            <h1 className="page-title">Delay Report</h1>
             <p className="mt-1 text-muted-foreground">
               Delay analysis by category, driver, route and period
             </p>
@@ -109,7 +109,7 @@ export default function DelayReportPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           <Download className="h-4 w-4" />
           {exporting ? "Exporting..." : "Export PDF"}
@@ -154,7 +154,7 @@ export default function DelayReportPage() {
         </div>
         <button
           onClick={apply}
-          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:opacity-90"
+          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Apply
         </button>
@@ -162,19 +162,19 @@ export default function DelayReportPage() {
 
       {/* Totals */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Total delays
           </p>
-          <p className="mt-2 text-2xl font-bold">
+          <p className="mt-2 text-2xl font-semibold tabular-nums">
             {loading ? "…" : stats.total.count}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Total minutes
           </p>
-          <p className="mt-2 text-2xl font-bold">
+          <p className="mt-2 text-2xl font-semibold tabular-nums">
             {loading ? "…" : stats.total.totalMinutes}
           </p>
         </div>

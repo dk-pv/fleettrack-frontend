@@ -123,7 +123,7 @@ export const sidebarMenu: NavItem[] = [
     ],
   },
   {
-    title: "clients",
+    title: "Clients",
     icon: Users,
     href: "/clients",
     roles: ["ADMIN"],
@@ -203,7 +203,7 @@ function NavLink({
 
       <span
         className={`
-          text-[15px] font-medium whitespace-nowrap transition-all duration-300
+          text-sm font-medium whitespace-nowrap transition-all duration-300
 
           ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
 
@@ -256,7 +256,7 @@ export default function Sidebar({
           }
         }}
         className={`
-          fixed left-0 top-0 z-[100] flex h-screen flex-col
+          fixed left-0 top-0 z-[100] flex h-dvh flex-col
           border-r border-border
           bg-card
           text-card-foreground
@@ -283,9 +283,9 @@ export default function Sidebar({
                 expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-4 lg:hidden"
               } block`}
             >
-              <h1 className="text-[18px] font-semibold tracking-tight leading-none text-foreground">FleetTrack</h1>
+              <h1 className="text-base font-semibold tracking-tight leading-none text-foreground">FleetTrack</h1>
 
-              <p className="text-[14px] text-muted-foreground mt-0.5 font-medium tracking-wider uppercase">GPS Portal</p>
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium tracking-wider uppercase">GPS Portal</p>
             </div>
           </div>
 
@@ -338,7 +338,7 @@ export default function Sidebar({
 
                       <span
                         className={`
-                          flex-1 text-left text-[15px] font-medium whitespace-nowrap transition-all duration-300
+                          flex-1 text-left text-sm font-medium whitespace-nowrap transition-all duration-300
 
                           ${expanded ? "opacity-100 translate-x-0 lg:block" : "opacity-0 -translate-x-2 lg:hidden"}
 
@@ -405,7 +405,7 @@ export default function Sidebar({
         <div className="border-t border-border px-5 py-4 flex items-center justify-between">
           <p
             className={`
-              text-[14px] text-muted-foreground font-semibold uppercase tracking-wider
+              text-xs text-muted-foreground font-semibold uppercase tracking-wider
 
               ${expanded ? "lg:block" : "lg:hidden"}
 

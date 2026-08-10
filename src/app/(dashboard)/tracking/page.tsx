@@ -8,6 +8,8 @@ import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
 import CustomSelect from "@/components/ui/custom-select";
+import { TrackingListSkeleton } from "@/components/ui/skeletons/tracking-list-skeleton";
+import { MapSkeleton } from "@/components/ui/skeletons/map-skeleton";
 
 interface Vehicle {
   id: string;
@@ -135,15 +137,20 @@ export default function TrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        Loading tracking...
+      <div className="flex h-full">
+        <div className="hidden w-[280px] flex-shrink-0 border-r border-border md:block">
+          <TrackingListSkeleton />
+        </div>
+        <div className="flex-1 p-3">
+          <MapSkeleton />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-medium text-foreground">
           {error === "network"
             ? "Can't reach the server. Check your connection."
@@ -160,7 +167,7 @@ export default function TrackingPage() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-64px)] overflow-hidden bg-background">
+    <div className="relative h-full overflow-hidden bg-background">
       {/* MOBILE VIEW (< 768px / md) */}
       <div className="flex h-full flex-col md:hidden">
         {/* Search & Custom Dropdown Header */}
@@ -191,7 +198,7 @@ export default function TrackingPage() {
         {/* Mobile bottom sheet drawer details */}
         {selected && (
           <div className="absolute bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
-            <div className="w-full bg-card/95 backdrop-blur-md rounded-t-3xl border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
+            <div className="w-full bg-card rounded-t-2xl border-t border-border shadow-lg">
               {/* Drag Handle */}
               <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-3" />
               <div className="max-h-[50vh] overflow-y-auto pb-8 px-4 no-scrollbar">
@@ -232,7 +239,7 @@ export default function TrackingPage() {
           {/* Floating Tablet Vehicle Details */}
           {selected && (
             <div className="absolute right-4 bottom-4 top-4 w-[310px] z-50 animate-in fade-in-50 slide-in-from-right duration-300">
-              <div className="h-full w-full bg-card/95 backdrop-blur-md rounded-2xl border border-border shadow-xl flex flex-col overflow-hidden">
+              <div className="h-full w-full bg-card rounded-lg border border-border shadow-md flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto no-scrollbar">
                   <VehicleDetails
                     vehicle={selected}

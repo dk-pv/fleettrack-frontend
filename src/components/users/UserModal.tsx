@@ -70,15 +70,15 @@ export default function UserModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-lg rounded-2xl bg-card text-foreground border border-border p-6">
-        <h2 className="mb-5 text-[22px] font-bold">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-lg bg-card text-foreground border border-border p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <h2 className="mb-5 text-lg font-bold">
           {isEdit ? "Edit User" : "Add User"}
         </h2>
 
         <div className="space-y-4">
           <input
-            className="w-full rounded-xl border p-4 text-[16px]"
+            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             placeholder="Name"
             value={form.name}
             onChange={(e) =>
@@ -90,7 +90,7 @@ export default function UserModal({
           />
 
           <input
-            className="w-full rounded-xl border p-4 text-[16px]"
+            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             placeholder="Email"
             value={form.email}
             onChange={(e) =>
@@ -103,7 +103,7 @@ export default function UserModal({
 
           <input
             type="password"
-            className="w-full rounded-xl border p-4 text-[16px]"
+            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             placeholder={
               isEdit
                 ? "Leave empty to keep password"
@@ -119,7 +119,7 @@ export default function UserModal({
           />
 
           <select
-            className="w-full rounded-xl border p-4 text-[16px]"
+            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             value={form.role}
             onChange={(e) =>
               setForm({
@@ -135,7 +135,7 @@ export default function UserModal({
 
         <div className="mt-6 flex justify-end gap-3">
           <button
-            className="rounded-xl border px-5 py-2.5 text-[15px] font-medium"
+            className="rounded-xl border px-5 py-2.5 text-sm font-medium"
             onClick={onClose}
           >
             Cancel

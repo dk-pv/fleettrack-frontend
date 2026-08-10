@@ -234,7 +234,7 @@ export default function Navbar({
         fixed top-0 right-0 z-25
         flex h-16 items-center justify-between
         border-b border-border
-        bg-background/80 backdrop-blur-md
+        bg-card
         px-4 sm:px-6 lg:px-8
         transition-all duration-300
         left-0
@@ -255,7 +255,7 @@ export default function Navbar({
             <input
               type="text"
               placeholder="Search dashboard..."
-              className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-[16px]"
+              className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function Navbar({
         {user?.role === "ADMIN" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="px-4 py-2 border rounded-lg text-[15px] font-semibold">
+              <button className="flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
                 {selectedClient?.name || "All Clients"}
               </button>
             </DropdownMenuTrigger>
@@ -297,17 +297,17 @@ export default function Navbar({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 rounded-lg border border-border px-2.5 py-1.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-[14px] font-bold text-primary">
+            <button className="flex h-9 items-center gap-2.5 rounded-lg border border-border px-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                 {getInitials()}
               </div>
 
               <div className="hidden lg:block text-left">
-                <h4 className="text-[15px] font-semibold">
+                <h4 className="text-sm font-semibold">
                   {user?.name || "Unknown"}
                 </h4>
 
-                <p className="text-[14px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {formatRole(user?.role)}
                 </p>
               </div>

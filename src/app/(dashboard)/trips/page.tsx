@@ -8,6 +8,8 @@ import { Route as RouteIcon, Plus } from "lucide-react";
 import { useTrips } from "@/hooks/use-trips";
 import TripTable from "@/components/trips/trip-table";
 import TripFormModal from "@/components/trips/trip-form-modal";
+import { PageHeaderSkeleton } from "@/components/ui/skeletons/page-header-skeleton";
+import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
 import {
   TripSummaryBucket,
   TRIP_SUMMARY_BUCKETS,
@@ -33,16 +35,16 @@ function TripsPageContent() {
   }, [trips, bucket]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-blue-500/10 p-3">
-            <RouteIcon className="h-6 w-6 text-blue-600" />
+          <div className="rounded-lg bg-primary/10 p-3">
+            <RouteIcon className="h-6 w-6 text-primary" />
           </div>
 
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Trips</h1>
+            <h1 className="page-title">Trips</h1>
             <p className="mt-1 text-muted-foreground">
               Manage trips, assignments and lifecycle
             </p>
@@ -52,7 +54,7 @@ function TripsPageContent() {
         {permissions.canCreate && (
           <button
             onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             Create Trip
@@ -91,7 +93,14 @@ function TripsPageContent() {
 export default function TripsPage() {
   // useSearchParams() requires a Suspense boundary for static prerender (Next 16).
   return (
-    <Suspense fallback={<div className="p-6">Loading trips...</div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <PageHeaderSkeleton action />
+          <TableSkeleton columns={6} rows={8} />
+        </div>
+      }
+    >
       <TripsPageContent />
     </Suspense>
   );

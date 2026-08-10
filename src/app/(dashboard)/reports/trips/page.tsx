@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useTripReport } from "@/hooks/use-trip-report";
 import { exportTripSummaryReport } from "@/services/trip-report.service";
 import { downloadResponse } from "@/lib/download";
+import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 import TripStatusBadge from "@/components/trips/trip-status-badge";
 
 function formatDateTime(iso: string) {
@@ -14,7 +15,7 @@ function formatDateTime(iso: string) {
 }
 
 const th =
-  "px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+  "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
   "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
@@ -42,15 +43,15 @@ export default function TripReportPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-blue-500/10 p-3">
-            <RouteIcon className="h-6 w-6 text-blue-600" />
+          <div className="rounded-lg bg-primary/10 p-3">
+            <RouteIcon className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Trip Report</h1>
+            <h1 className="page-title">Trip Report</h1>
             <p className="mt-1 text-muted-foreground">
               Trip summary by status for a period
             </p>
@@ -60,7 +61,7 @@ export default function TripReportPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           <Download className="h-4 w-4" />
           {exporting ? "Exporting..." : "Export PDF"}
@@ -91,7 +92,7 @@ export default function TripReportPage() {
         </div>
         <button
           onClick={apply}
-          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:opacity-90"
+          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Apply
         </button>
@@ -99,27 +100,27 @@ export default function TripReportPage() {
 
       {/* By status */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-8">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-4">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Total
           </p>
-          <p className="mt-1 text-2xl font-bold">{report.total}</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{report.total}</p>
         </div>
         {report.byStatus.map((entry) => (
           <div
             key={entry.status}
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+            className="rounded-lg border border-border bg-card p-4"
           >
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {entry.status}
             </p>
-            <p className="mt-1 text-2xl font-bold">{entry.count}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">{entry.count}</p>
           </div>
         ))}
       </div>
 
       {/* Trips */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold">Trips</h3>
         </div>
@@ -137,14 +138,7 @@ export default function TripReportPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    Loading report...
-                  </td>
-                </tr>
+                <TableSkeletonRows columns={6} rows={6} />
               ) : report.rows.length === 0 ? (
                 <tr>
                   <td

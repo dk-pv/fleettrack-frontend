@@ -42,7 +42,7 @@ export default function VehicleDetails({
         className="flex items-center justify-between mb-4"
       >
         <div>
-          <h2 className="text-lg font-extrabold text-foreground tracking-tight">{vehicle.vehicleNumber}</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">{vehicle.vehicleNumber}</h2>
           <p className="text-xs font-medium text-muted-foreground mt-0.5">{vehicle.driverName}</p>
         </div>
 
@@ -50,12 +50,12 @@ export default function VehicleDetails({
           <button
             onClick={onClose}
             className="
-              flex h-10 w-10 items-center justify-center
-              rounded-xl border border-border bg-card/50 hover:bg-muted text-muted-foreground hover:text-foreground
-              transition-all duration-200 active:scale-95 cursor-pointer
+              flex h-8 w-8 items-center justify-center
+              rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground
+              transition-colors duration-150 cursor-pointer
             "
           >
-            <X className="h-4.5 w-4.5" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -63,7 +63,7 @@ export default function VehicleDetails({
       {/* Content */}
 
       <div className="grid grid-cols-2 gap-3.5">
-        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+        <div className="rounded-lg border border-border bg-muted/30 p-3.5">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</p>
 
           <div className="mt-2.5">
@@ -93,21 +93,21 @@ export default function VehicleDetails({
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+        <div className="rounded-lg border border-border bg-muted/30 p-3.5">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Speed</p>
 
-          <p className="mt-2 text-lg font-extrabold text-foreground tracking-tight">
+          <p className="mt-2 text-lg font-semibold text-foreground tracking-tight">
             {roundSpeed(vehicle.speed)} <span className="text-xs font-semibold text-muted-foreground">km/h</span>
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+        <div className="rounded-lg border border-border bg-muted/30 p-3.5">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Client</p>
 
           <p className="mt-2 text-xs font-bold text-foreground truncate">{vehicle.clientName}</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card/45 p-3.5 shadow-xs">
+        <div className="rounded-lg border border-border bg-muted/30 p-3.5">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">GPS Device</p>
 
           <p className="mt-2 text-xs font-bold text-foreground truncate">{vehicle.gpsDeviceId}</p>
@@ -120,10 +120,10 @@ export default function VehicleDetails({
         <Link
           href="/trips"
           className="
-            flex h-11 flex-1 items-center justify-center
-            gap-2 rounded-xl border border-border bg-card/50
+            flex h-9 flex-1 items-center justify-center
+            gap-2 rounded-lg border border-border bg-card
             text-xs font-bold hover:bg-muted text-foreground
-            transition-all duration-200 active:scale-98 shadow-xs
+            transition-colors duration-150
           "
         >
           <Route className="h-4 w-4 text-muted-foreground" />
@@ -133,10 +133,10 @@ export default function VehicleDetails({
         <button
           onClick={onCenterMap}
           className="
-            flex h-11 flex-1 items-center justify-center
-            gap-2 rounded-xl border border-border bg-card/50
+            flex h-9 flex-1 items-center justify-center
+            gap-2 rounded-lg border border-border bg-card
             text-xs font-bold hover:bg-muted text-foreground
-            transition-all duration-200 active:scale-98 shadow-xs
+            transition-colors duration-150
             cursor-pointer
           "
         >

@@ -7,6 +7,7 @@ import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import { socket } from "@/lib/socket";
 import { acceptVehiclePacket, mergeVehicleUpdate } from "@/lib/vehicle-update";
+import { DetailSkeleton } from "@/components/ui/skeletons/detail-skeleton";
 
 interface Vehicle {
   id: string;
@@ -101,15 +102,15 @@ export default function SingleTrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        Loading tracking...
+      <div className="h-full overflow-y-auto p-4 sm:p-6">
+        <DetailSkeleton />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-medium text-foreground">
           {error === "network"
             ? "Can't reach the server. Check your connection."
@@ -127,14 +128,14 @@ export default function SingleTrackingPage() {
 
   if (!vehicle) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         Vehicle not found
       </div>
     );
   }
 
   return (
-    <div className="relative h-[calc(100vh-64px)] overflow-hidden bg-background">
+    <div className="relative h-full overflow-hidden bg-background">
       {/* MOBILE VIEW (< 768px / md) */}
       <div className="flex h-full flex-col md:hidden">
         {/* Map Area */}

@@ -45,14 +45,14 @@ export default function DelaysPage() {
     "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-orange-500/10 p-3">
-          <Clock className="h-6 w-6 text-orange-600" />
+        <div className="rounded-lg bg-primary/10 p-3">
+          <Clock className="h-6 w-6 text-primary" />
         </div>
 
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Delays</h1>
+          <h1 className="page-title">Delays</h1>
           <p className="mt-1 text-muted-foreground">
             Reported delays across trips
           </p>
@@ -78,7 +78,7 @@ export default function DelaysPage() {
           onClick={() => setGrouped((g) => !g)}
           className={`rounded-lg px-3 py-2 text-sm font-medium ${
             grouped
-              ? "bg-primary text-white"
+              ? "bg-primary text-primary-foreground"
               : "border border-border hover:bg-muted"
           }`}
         >

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import AddClientModal from "./add-client-modal";
 import DeleteClientDialog from "./DeleteClientDialog";
 import { toast } from "sonner";
-
+import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Client {
   id: string;
@@ -17,25 +18,48 @@ interface Client {
 
 interface Props {
   searchQuery?: string;
+  /** Bumped by the page-level Add modal so the table refetches its own data. */
+  refreshKey?: number;
 }
 
-export default function ClientTable({ searchQuery = "" }: Props) {
+export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props) {
   const [clients, setClients] = useState<Client[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const mounted = useRef(false);
 
-  const fetchClients = async () => {
-    const res = await apiFetch("/clients");
-    const data = await res.json();
-    setClients(data.clients || []);
+  // `silent` refetches (after a mutation or a parent refreshKey bump) update the
+  // table in place; only the very first load shows the skeleton.
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(false);
+    try {
+      const res = await apiFetch("/clients");
+      // apiFetch resolves for HTTP errors too — treat a non-ok status as a failure
+      // so a 500 surfaces the error state (with retry) instead of a false "empty".
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
+      setClients(data.clients || []);
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError(true);
+      else toast.error("Couldn't refresh clients");
+    } finally {
+      if (!silent) setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    load(mounted.current);
+    mounted.current = true;
+  }, [refreshKey]);
 
   const confirmDelete = async () => {
     if (!deleteId) return;
 
+    setDeleting(true);
     try {
       const res = await apiFetch(`/clients/${deleteId}`, {
         method: "DELETE",
@@ -45,15 +69,16 @@ export default function ClientTable({ searchQuery = "" }: Props) {
 
       if (data.success) {
         toast.success("Client deleted");
-        fetchClients();
+        setDeleteId(null);
+        await load(true);
       } else {
         toast.error(data.message || "Delete failed");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       toast.error("Something went wrong");
     } finally {
-      setDeleteId(null);
+      setDeleting(false);
     }
   };
 
@@ -66,29 +91,36 @@ export default function ClientTable({ searchQuery = "" }: Props) {
     );
   }, [clients, searchQuery]);
 
+  if (loading) return <TableSkeleton columns={5} rows={8} />;
+
+  if (error)
+    return (
+      <ErrorState message="Couldn't load clients." onRetry={() => load()} />
+    );
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[950px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="px-6 py-5 text-left text-[15px] font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Name
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Email
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 API URL
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Created
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Actions
               </th>
             </tr>
@@ -114,36 +146,39 @@ export default function ClientTable({ searchQuery = "" }: Props) {
                     transition-colors
                   "
                 >
-                  <td className="px-6 py-5 font-semibold text-[16px]">{client.name}</td>
+                  <td className="px-4 py-3.5 font-semibold text-sm">{client.name}</td>
 
-                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
                     {client.email}
                   </td>
 
-                  <td className="px-6 py-5 max-w-[420px]">
+                  <td className="px-4 py-3.5 max-w-[420px]">
                     <div
-                      className="truncate text-[15px] text-muted-foreground"
+                      className="truncate text-sm text-muted-foreground"
                       title={client.apiUrl}
                     >
                       {client.apiUrl}
                     </div>
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
                     {new Date(client.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-4">
-                      <AddClientModal editUser={client}>
-                        <button className="text-primary text-[15px] font-medium hover:underline">
+                      <AddClientModal
+                        editUser={client}
+                        onSuccess={() => load(true)}
+                      >
+                        <button className="text-primary text-sm font-medium hover:underline">
                           Edit
                         </button>
                       </AddClientModal>
 
                       <button
                         onClick={() => setDeleteId(client.id)}
-                        className="text-red-500 text-[15px] font-medium hover:underline"
+                        className="text-destructive text-sm font-medium hover:underline"
                       >
                         Delete
                       </button>
@@ -158,6 +193,7 @@ export default function ClientTable({ searchQuery = "" }: Props) {
 
       <DeleteClientDialog
         open={deleteId !== null}
+        loading={deleting}
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}
       />

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
 import { Truck, Activity, AlertTriangle, type LucideIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
   title: string;
@@ -29,42 +30,50 @@ export default function StatsCard({
         ? AlertTriangle
         : Truck;
 
-  const badgeColors = color === "green"
-    ? "bg-success/10 text-success border-success/10"
-    : color === "red"
-      ? "bg-destructive/10 text-destructive border-destructive/10"
-      : "bg-muted text-muted-foreground border-border";
+  // Accent is reserved for the icon + a subtle border tint — the card body stays
+  // neutral so the whole dashboard doesn't read as a wall of coloured cards.
+  const iconColors =
+    color === "green"
+      ? "bg-success/10 text-success border-success/15"
+      : color === "red"
+        ? "bg-destructive/10 text-destructive border-destructive/15"
+        : "bg-muted text-muted-foreground border-border";
 
   const card = (
-    <Card
-      className={`h-full flex flex-col justify-between rounded-2xl border p-6 xl:p-8 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${
+    <div
+      className={cn(
+        "flex h-full flex-col justify-between gap-4 rounded-lg border bg-card p-5 transition-colors",
         color === "green"
-          ? "border-success/15 bg-success/5 dark:border-success/10 dark:bg-success/5"
+          ? "border-success/20"
           : color === "red"
-            ? "border-destructive/15 bg-destructive/5 dark:border-destructive/10 dark:bg-destructive/5"
-            : "border-border bg-card shadow-xs"
-      }`}
+            ? "border-destructive/20"
+            : "border-border",
+        href && "hover:border-primary/40",
+      )}
     >
-      <div className="flex items-start justify-between gap-4">
-        <h3 className="text-[18px] font-semibold text-muted-foreground leading-tight">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-[13px] font-medium leading-tight text-muted-foreground">
           {title}
         </h3>
 
-        <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-lg border ${badgeColors}`}>
-          <Icon className="h-5 w-5" />
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+            iconColors,
+          )}
+        >
+          <Icon className="h-4 w-4" />
         </div>
       </div>
 
-      <div className="mt-6">
-        <h2 className="text-[36px] xl:text-[42px] font-extrabold tracking-tight text-foreground leading-none">
+      <div>
+        <div className="text-2xl font-semibold leading-none tracking-tight text-foreground tabular-nums">
           {value}
-        </h2>
+        </div>
 
-        <p className="mt-2 text-[15px] text-muted-foreground font-medium">
-          {description}
-        </p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
       </div>
-    </Card>
+    </div>
   );
 
   return href ? (

@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 
 export default function NotificationSettings() {
   return (
-    <div className="rounded-2xl border border-border bg-background p-4 md:p-6">
+    <div className="rounded-lg border border-border bg-background p-4 md:p-6">
       <div className="flex items-center gap-3">
         <Bell className="h-5 w-5 text-muted-foreground" />
 

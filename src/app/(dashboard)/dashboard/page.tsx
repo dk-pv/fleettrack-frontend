@@ -28,15 +28,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
 
       <div>
-        <h1 className="text-[32px] font-bold tracking-tight">
-          Dashboard Overview
-        </h1>
+        <h1 className="page-title">Dashboard Overview</h1>
 
-        <p className="mt-2 text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           Monitor your fleet performance and activity
         </p>
       </div>

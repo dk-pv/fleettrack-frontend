@@ -14,28 +14,28 @@ export default function UserTable({
   onDelete,
 }: Props) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[700px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Name
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Email
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Role
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Created
               </th>
 
-              <th className="px-6 py-5 text-left text-[15px] font-semibold text-foreground">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Actions
               </th>
             </tr>
@@ -61,22 +61,22 @@ export default function UserTable({
                     hover:bg-muted/40
                   "
                 >
-                  <td className="px-6 py-5 text-[16px] font-semibold text-foreground">
+                  <td className="px-4 py-3.5 text-sm font-semibold text-foreground">
                     {user.name}
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
                     {user.email}
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <span
                       className={`
-                        inline-flex rounded-full px-3 py-1 text-[14px] font-semibold
+                        inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide
                         ${
                           user.role === "ADMIN"
-                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                            : "bg-gray-500/10 text-gray-600 dark:text-gray-300"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
                         }
                       `}
                     >
@@ -84,18 +84,18 @@ export default function UserTable({
                     </span>
                   </td>
 
-                  <td className="px-6 py-5 text-[15px] text-muted-foreground">
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
                     {new Date(
                       user.createdAt
                     ).toLocaleDateString()}
                   </td>
 
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-4">
                       <button
                         onClick={() => onEdit(user)}
                         className="
-                          text-[15px] font-medium text-primary
+                          text-sm font-medium text-primary
                           hover:underline
                         "
                       >
@@ -105,7 +105,7 @@ export default function UserTable({
                       <button
                         onClick={() => onDelete(user)}
                         className="
-                          text-[15px] font-medium text-red-500
+                          text-sm font-medium text-destructive
                           hover:underline
                         "
                       >

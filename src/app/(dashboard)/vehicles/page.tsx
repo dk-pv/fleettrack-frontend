@@ -11,10 +11,10 @@ export default function VehiclesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Vehicles</h1>
+        <h1 className="page-title">Vehicles</h1>
 
         <p className="mt-2 text-muted-foreground">
           Manage your fleet vehicles and assignments

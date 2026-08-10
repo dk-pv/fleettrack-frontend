@@ -8,13 +8,15 @@ import AuthProvider from "@/providers/auth-provider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  preload: false,
+  display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  preload: false,
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {

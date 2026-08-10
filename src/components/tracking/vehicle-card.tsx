@@ -32,15 +32,15 @@ export default function VehicleCard({
   return (
     <div
       onClick={onClick}
-      className={`cursor-pointer rounded-xl border p-3.5 transition-all duration-200 select-none ${
+      className={`cursor-pointer rounded-lg border p-3 transition-colors duration-150 select-none ${
         active
-          ? "border-primary bg-primary/5 dark:border-primary/10 shadow-xs"
+          ? "border-primary bg-primary/5 dark:border-primary/10"
           : "border-border bg-card hover:bg-muted/40"
       }`}
     >
       <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
-          <h3 className="truncate text-xs font-bold leading-none text-foreground">
+          <h3 className="truncate text-[13px] font-semibold leading-none text-foreground">
             {vehicle.vehicleNumber}
           </h3>
 

@@ -15,11 +15,13 @@ interface Client {
 interface Props {
   buttonText?: string;
   editUser?: Client | null;
+  onSuccess?: () => void;
 }
 
 export default function ClientForm({
   buttonText = "Add Client",
   editUser,
+  onSuccess,
 }: Props) {
   const [name, setName] = useState(editUser?.name || "");
   const [email, setEmail] = useState(editUser?.email || "");
@@ -56,11 +58,16 @@ export default function ClientForm({
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Success");
-        window.location.reload();
+        toast.success(isEdit ? "Client updated" : "Client created");
+        onSuccess?.();
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Something went wrong");
       }
+    } catch (err) {
+      // On failure keep the modal open (onSuccess not called), surface the error,
+      // and restore the button via finally.
+      console.error(err);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -72,21 +79,21 @@ export default function ClientForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Client Name"
-        className="h-10 w-full rounded-lg border px-3 text-[16px]"
+        className="h-10 w-full rounded-lg border px-3 text-sm"
       />
 
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="h-10 w-full rounded-lg border px-3 text-[16px]"
+        className="h-10 w-full rounded-lg border px-3 text-sm"
       />
 
       <input
         value={apiUrl}
         onChange={(e) => setApiUrl(e.target.value)}
         placeholder="API URL"
-        className="h-10 w-full rounded-lg border px-3 text-[16px]"
+        className="h-10 w-full rounded-lg border px-3 text-sm"
       />
 
       {!isEdit && (
@@ -95,7 +102,7 @@ export default function ClientForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="h-10 w-full rounded-lg border px-3 text-[16px]"
+          className="h-10 w-full rounded-lg border px-3 text-sm"
         />
       )}
 

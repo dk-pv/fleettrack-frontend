@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useCostReport } from "@/hooks/use-cost-report";
 import { exportCostReport } from "@/services/cost-report.service";
 import { downloadResponse } from "@/lib/download";
+import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 import TripStatusBadge from "@/components/trips/trip-status-badge";
 
 function formatMoney(value: number): string {
@@ -29,7 +30,7 @@ function titleCase(value: string): string {
 }
 
 const th =
-  "px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+  "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
   "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
@@ -57,15 +58,15 @@ export default function CostReportPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-emerald-500/10 p-3">
-            <FileBarChart className="h-6 w-6 text-emerald-600" />
+          <div className="rounded-lg bg-primary/10 p-3">
+            <FileBarChart className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Cost Report</h1>
+            <h1 className="page-title">Cost Report</h1>
             <p className="mt-1 text-muted-foreground">
               Planned vs actual trip costs
             </p>
@@ -75,7 +76,7 @@ export default function CostReportPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           <Download className="h-4 w-4" />
           {exporting ? "Exporting..." : "Export PDF"}
@@ -104,7 +105,7 @@ export default function CostReportPage() {
         </div>
         <button
           onClick={apply}
-          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:opacity-90"
+          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Apply
         </button>
@@ -112,28 +113,28 @@ export default function CostReportPage() {
 
       {/* Totals */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Estimated
           </p>
-          <p className="mt-2 text-2xl font-bold">
+          <p className="mt-2 text-2xl font-semibold tabular-nums">
             {formatMoney(report.totals.estimatedTotal)}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Actual
           </p>
-          <p className="mt-2 text-2xl font-bold">
+          <p className="mt-2 text-2xl font-semibold tabular-nums">
             {formatMoney(report.totals.actualTotal)}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Variance
           </p>
           <p
-            className={`mt-2 text-2xl font-bold ${varianceClass(
+            className={`mt-2 text-2xl font-semibold tabular-nums ${varianceClass(
               report.totals.variance,
             )}`}
           >
@@ -143,7 +144,7 @@ export default function CostReportPage() {
       </div>
 
       {/* By component */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold">By component</h3>
         </div>
@@ -182,7 +183,7 @@ export default function CostReportPage() {
       </div>
 
       {/* Per trip */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold">Trips</h3>
         </div>
@@ -200,14 +201,7 @@ export default function CostReportPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    Loading report...
-                  </td>
-                </tr>
+                <TableSkeletonRows columns={6} rows={6} />
               ) : report.rows.length === 0 ? (
                 <tr>
                   <td

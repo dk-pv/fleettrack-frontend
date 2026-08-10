@@ -7,9 +7,10 @@ import { toast } from "sonner";
 import { useDriverReport } from "@/hooks/use-driver-report";
 import { exportDriverPerformanceReport } from "@/services/driver-report.service";
 import { downloadResponse } from "@/lib/download";
+import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 
 const th =
-  "px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+  "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
   "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
@@ -48,15 +49,15 @@ export default function DriverReportPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-violet-500/10 p-3">
-            <Users className="h-6 w-6 text-violet-600" />
+          <div className="rounded-lg bg-primary/10 p-3">
+            <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Driver Report</h1>
+            <h1 className="page-title">Driver Report</h1>
             <p className="mt-1 text-muted-foreground">
               Per-driver trip volume, completion and on-time performance
             </p>
@@ -66,7 +67,7 @@ export default function DriverReportPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           <Download className="h-4 w-4" />
           {exporting ? "Exporting..." : "Export PDF"}
@@ -97,7 +98,7 @@ export default function DriverReportPage() {
         </div>
         <button
           onClick={apply}
-          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:opacity-90"
+          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Apply
         </button>
@@ -108,18 +109,18 @@ export default function DriverReportPage() {
         {summaryCards.map((card) => (
           <div
             key={card.label}
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+            className="rounded-lg border border-border bg-card p-4"
           >
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {card.label}
             </p>
-            <p className="mt-1 text-2xl font-bold">{card.value}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">{card.value}</p>
           </div>
         ))}
       </div>
 
       {/* By driver */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold">By driver</h3>
         </div>
@@ -142,14 +143,7 @@ export default function DriverReportPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td
-                    colSpan={11}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    Loading report...
-                  </td>
-                </tr>
+                <TableSkeletonRows columns={11} rows={6} />
               ) : report.rows.length === 0 ? (
                 <tr>
                   <td
