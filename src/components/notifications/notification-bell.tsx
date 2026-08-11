@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/hooks/use-notifications";
 import NotificationItem from "./notification-item";
+import EmptyState from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PREVIEW_COUNT = 6;
@@ -65,9 +66,7 @@ export default function NotificationBell() {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : preview.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              No notifications yet
-            </p>
+            <EmptyState title="No notifications yet" className="py-6" />
           ) : (
             <div className="divide-y divide-border">
               {preview.map((n) => (

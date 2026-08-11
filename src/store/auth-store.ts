@@ -1,9 +1,5 @@
 import { create } from "zustand";
-
-type UserRole =
-  | "ADMIN"
-  | "CLIENT"
-  | "VIEWER";
+import type { UserRole } from "@/types/user";
 
 interface User {
   id: string;

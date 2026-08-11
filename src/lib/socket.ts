@@ -31,6 +31,14 @@ export const socket = io(socketUrl, {
   reconnectionAttempts: Infinity,
   reconnectionDelay: 2000,
   timeout: 20000,
+  // Send the JWT on every (re)connect. As a callback it re-reads localStorage each time,
+  // so login / refresh / reconnect all carry a fresh token. The gateway rejects sockets
+  // without a valid token, and scopes updates to the authenticated client's vehicles.
+  auth: (cb) => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    cb({ token: token ?? "" });
+  },
 });
 
 socket.on("connect", () => {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/fetcher";
 import AddClientModal from "./add-client-modal";
-import DeleteClientDialog from "./DeleteClientDialog";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -191,8 +191,10 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
         </table>
       </div>
 
-      <DeleteClientDialog
+      <ConfirmDialog
         open={deleteId !== null}
+        title="Delete Client?"
+        description="This action cannot be undone. This will permanently delete the client and related data."
         loading={deleting}
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}

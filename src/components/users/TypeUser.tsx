@@ -1,4 +1,6 @@
-export type UserRole = "ADMIN" | "VIEWER" | "CLIENT";
+import type { UserRole } from "@/types/user";
+
+export type { UserRole };
 
 export interface User {
   id: string;

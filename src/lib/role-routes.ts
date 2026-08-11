@@ -1,4 +1,4 @@
-export type AppRole = "ADMIN" | "CLIENT" | "VIEWER";
+import type { UserRole } from "@/types/user";
 
 /**
  * Per-role allowed route prefixes (RBAC). ADMIN is the Fleet Owner — it owns the
@@ -7,7 +7,7 @@ export type AppRole = "ADMIN" | "CLIENT" | "VIEWER";
  * client-only workflow modules (trips, delays, reports, notifications, customers)
  * stay CLIENT-scoped. Enforced client-side by RoleGuard and server-side by @Roles.
  */
-export const roleRoutes: Record<AppRole, string[]> = {
+export const roleRoutes: Record<UserRole, string[]> = {
   ADMIN: [
     "/dashboard",
     "/tracking",
@@ -38,7 +38,7 @@ export function roleLanding(): string {
 
 /** True when `pathname` falls within one of the role's allowed route prefixes. */
 export function isRouteAllowed(role: string, pathname: string): boolean {
-  const allowed = roleRoutes[role as AppRole] ?? [];
+  const allowed = roleRoutes[role as UserRole] ?? [];
   return allowed.some(
     (base) => pathname === base || pathname.startsWith(base + "/"),
   );

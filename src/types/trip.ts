@@ -6,11 +6,13 @@
  * changes to consumers. Keep field names aligned with the planned Prisma model.
  */
 
+import type { UserRole } from "@/types/user";
+
 /* ------------------------------------------------------------------ */
 /* Roles & permissions                                                 */
 /* ------------------------------------------------------------------ */
 
-export type UserRole = "ADMIN" | "CLIENT" | "VIEWER";
+export type { UserRole };
 
 /**
  * Capability flags for the trip module.

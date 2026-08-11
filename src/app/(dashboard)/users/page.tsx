@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 import UserTable from "@/components/users/UserTable";
 import UserModal from "@/components/users/UserModal";
-import DeleteConfirmModal from "@/components/users/DeleteConfirmModal";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 
@@ -128,10 +128,19 @@ export default function UsersPage() {
       />
 
       {/* Delete Modal */}
-      <DeleteConfirmModal
+      <ConfirmDialog
         open={!!deleteUserState}
+        title="Delete User?"
+        description={
+          <>
+            This action cannot be undone. This will permanently delete{" "}
+            <span className="font-semibold text-foreground">
+              {deleteUserState?.name ?? "this user"}
+            </span>{" "}
+            and related data.
+          </>
+        }
         loading={deleting}
-        userName={deleteUserState?.name}
         onClose={() => setDeleteUserState(null)}
         onConfirm={handleDeleteConfirm}
       />

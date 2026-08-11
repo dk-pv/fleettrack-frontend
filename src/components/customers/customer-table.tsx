@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/fetcher";
 import { Customer } from "@/types/customer";
 import AddCustomerModal from "./add-customer-modal";
-import DeleteCustomerDialog from "./DeleteCustomerDialog";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import CustomerTypeBadge from "./customer-type-badge";
 import CustomerAddressesModal from "./customer-addresses-modal";
 import CustomerTripsModal from "./customer-trips-modal";
@@ -194,8 +194,10 @@ export default function CustomerTable({
         </table>
       </div>
 
-      <DeleteCustomerDialog
+      <ConfirmDialog
         open={deleteId !== null}
+        title="Delete Customer?"
+        description="This action cannot be undone. This will permanently delete the customer."
         loading={deleting}
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}

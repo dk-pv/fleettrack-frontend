@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, Layers3 } from "lucide-react";
 import VehicleCard from "./vehicle-card";
+import EmptyState from "@/components/ui/empty-state";
 
 interface Vehicle {
   id: string;
@@ -124,9 +125,7 @@ export default function VehicleList({
 
         {/* VEHICLES */}
         {filtered.length === 0 ? (
-          <p className="mt-6 text-center text-xs text-muted-foreground font-medium">
-            No vehicles found.
-          </p>
+          <EmptyState title="No vehicles found." />
         ) : groups.length <= 1 ? (
           filtered.map((vehicle) => (
             <VehicleCard
