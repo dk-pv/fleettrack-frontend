@@ -18,13 +18,18 @@ import WeeklyActivityChart from "@/components/dashboard/weekly-activity-chart";
 
 import { useDashboard } from "@/hooks/use-dashboard";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function DashboardPage() {
-  const { stats, vehicles, tripSummary, deliveryMetrics, loading } =
+  const { stats, vehicles, tripSummary, deliveryMetrics, loading, error, reload } =
     useDashboard();
 
   if (loading) {
     return <DashboardSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorState message="Couldn't load the dashboard." onRetry={reload} />;
   }
 
   return (

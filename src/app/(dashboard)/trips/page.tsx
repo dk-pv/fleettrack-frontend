@@ -10,6 +10,7 @@ import TripTable from "@/components/trips/trip-table";
 import TripFormModal from "@/components/trips/trip-form-modal";
 import { PageHeaderSkeleton } from "@/components/ui/skeletons/page-header-skeleton";
 import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   TripSummaryBucket,
   TRIP_SUMMARY_BUCKETS,
@@ -17,7 +18,7 @@ import {
 } from "@/types/trip";
 
 function TripsPageContent() {
-  const { trips, loading, permissions, createTrip } = useTrips();
+  const { trips, loading, error, permissions, createTrip, refetch } = useTrips();
   const [modalOpen, setModalOpen] = useState(false);
 
   // Drill-down from the dashboard (DSH-01.3): ?status=<bucket> narrows the list.
@@ -76,7 +77,11 @@ function TripsPageContent() {
       )}
 
       {/* Table */}
-      <TripTable trips={visibleTrips} loading={loading} />
+      {error && !loading ? (
+        <ErrorState message="Couldn't load trips." onRetry={refetch} />
+      ) : (
+        <TripTable trips={visibleTrips} loading={loading} />
+      )}
 
       {/* Create modal (client only) */}
       {permissions.canCreate && (

@@ -12,7 +12,6 @@ interface Client {
   id: string;
   name: string;
   email: string;
-  apiUrl: string;
   createdAt: string;
 }
 
@@ -91,7 +90,7 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
     );
   }, [clients, searchQuery]);
 
-  if (loading) return <TableSkeleton columns={5} rows={8} />;
+  if (loading) return <TableSkeleton columns={4} rows={8} />;
 
   if (error)
     return (
@@ -113,10 +112,6 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
               </th>
 
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                API URL
-              </th>
-
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Created
               </th>
 
@@ -130,7 +125,7 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="py-10 text-center text-muted-foreground"
                 >
                   No clients found
@@ -150,15 +145,6 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
 
                   <td className="px-4 py-3.5 text-sm text-muted-foreground">
                     {client.email}
-                  </td>
-
-                  <td className="px-4 py-3.5 max-w-[420px]">
-                    <div
-                      className="truncate text-sm text-muted-foreground"
-                      title={client.apiUrl}
-                    >
-                      {client.apiUrl}
-                    </div>
                   </td>
 
                   <td className="px-4 py-3.5 text-sm text-muted-foreground">

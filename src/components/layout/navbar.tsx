@@ -152,7 +152,7 @@ import {
   Search,
 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useClientStore } from "@/store/client-store";
@@ -187,21 +187,42 @@ export default function Navbar({
     useClientStore();
 
   const [clients, setClients] = useState<Client[]>([]);
+  const [clientsError, setClientsError] = useState(false);
 
+  // First statement is `await`, so calling this in the effect performs no
+  // synchronous setState (keeps react-hooks/set-state-in-effect happy).
+  const loadClients = useCallback(async () => {
+    try {
+      const response = await apiFetch("/clients");
+      if (!response.ok) throw new Error("Request failed");
+      const data = await response.json();
+      setClients(data.clients || []);
+      setClientsError(false);
+    } catch (error) {
+      console.log(error);
+      setClientsError(true);
+    }
+  }, []);
+
+  // Inlined (not a call to `loadClients`) to satisfy the no-setState-in-effect
+  // lint rule; `loadClients` stays for the dropdown Retry action.
   useEffect(() => {
     if (user?.role !== "ADMIN") return;
 
-    const loadClients = async () => {
+    async function load() {
       try {
         const response = await apiFetch("/clients");
+        if (!response.ok) throw new Error("Request failed");
         const data = await response.json();
         setClients(data.clients || []);
+        setClientsError(false);
       } catch (error) {
         console.log(error);
+        setClientsError(true);
       }
-    };
+    }
 
-    loadClients();
+    load();
   }, [user]);
 
   const handleLogout = () => {
@@ -287,6 +308,24 @@ export default function Navbar({
                   {client.name}
                 </DropdownMenuItem>
               ))}
+
+              {clientsError && (
+                <>
+                  <div className="px-2 py-1.5 text-xs text-destructive">
+                    Couldn&apos;t load clients.
+                  </div>
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      // Keep the menu open so the retry stays in place.
+                      e.preventDefault();
+                      loadClients();
+                    }}
+                    className="cursor-pointer text-xs font-medium text-primary"
+                  >
+                    Retry
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}

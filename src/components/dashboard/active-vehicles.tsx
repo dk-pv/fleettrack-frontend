@@ -20,6 +20,12 @@ export default function ActiveVehicles({
       </div>
 
       <div className="space-y-3 mt-6">
+        {!vehicles?.length && (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No active vehicles
+          </p>
+        )}
+
         {vehicles?.map((vehicle) => (
           <div
             key={vehicle.id}

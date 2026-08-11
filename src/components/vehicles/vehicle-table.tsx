@@ -24,6 +24,7 @@ interface Vehicle {
   driverName: string;
   status: string;
   createdAt: string;
+  providerName?: string | null;
 
   client?: {
     id: string;
@@ -33,6 +34,22 @@ interface Vehicle {
 
 interface VehicleTableProps {
   searchQuery?: string;
+}
+
+// Human-readable GPS provider label for the "GPS Device" column, from the existing
+// providerName field. Unknown providers fall back to a capitalized form (never break).
+const PROVIDER_LABELS: Record<string, string> = {
+  airotrack: "AiroTrack",
+  transight: "Transight",
+};
+
+function providerLabel(providerName?: string | null): string {
+  if (!providerName) return "—";
+  const key = providerName.toLowerCase();
+  return (
+    PROVIDER_LABELS[key] ??
+    providerName.charAt(0).toUpperCase() + providerName.slice(1)
+  );
 }
 
 export default function VehicleTable({
@@ -237,8 +254,8 @@ export default function VehicleTable({
                     {vehicle.driverName}
                   </td>
 
-                  <td className="px-4 py-3.5 text-sm font-mono text-muted-foreground">
-                    {vehicle.gpsDeviceId}
+                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
+                    {providerLabel(vehicle.providerName)}
                   </td>
 
                   {user?.role === "ADMIN" && (

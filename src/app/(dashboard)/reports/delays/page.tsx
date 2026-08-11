@@ -8,6 +8,7 @@ import { useDelayReport } from "@/hooks/use-delay-report";
 import { exportDelayStats } from "@/services/delay-report.service";
 import { downloadResponse } from "@/lib/download";
 import { DelayPeriod, DelayStatBucket } from "@/types/delay-report";
+import { ErrorState } from "@/components/ui/error-state";
 
 const th =
   "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
@@ -67,7 +68,7 @@ function BucketTable({
 }
 
 export default function DelayReportPage() {
-  const { stats, filter, setFilter, loading } = useDelayReport();
+  const { stats, filter, setFilter, loading, error } = useDelayReport();
   const [period, setPeriod] = useState<DelayPeriod>("month");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -160,33 +161,42 @@ export default function DelayReportPage() {
         </button>
       </div>
 
-      {/* Totals */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Total delays
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {loading ? "…" : stats.total.count}
-          </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Total minutes
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {loading ? "…" : stats.total.totalMinutes}
-          </p>
-        </div>
-      </div>
+      {error && !loading ? (
+        <ErrorState
+          message="Couldn't load the delay report."
+          onRetry={() => setFilter({ ...filter })}
+        />
+      ) : (
+        <>
+          {/* Totals */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Total delays
+              </p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">
+                {loading ? "…" : stats.total.count}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Total minutes
+              </p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">
+                {loading ? "…" : stats.total.totalMinutes}
+              </p>
+            </div>
+          </div>
 
-      {/* Dimensions */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <BucketTable title="By category" buckets={stats.byCategory} />
-        <BucketTable title="By driver" buckets={stats.byDriver} />
-        <BucketTable title="By route" buckets={stats.byRoute} />
-        <BucketTable title="By period" buckets={stats.byPeriod} />
-      </div>
+          {/* Dimensions */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <BucketTable title="By category" buckets={stats.byCategory} />
+            <BucketTable title="By driver" buckets={stats.byDriver} />
+            <BucketTable title="By route" buckets={stats.byRoute} />
+            <BucketTable title="By period" buckets={stats.byPeriod} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

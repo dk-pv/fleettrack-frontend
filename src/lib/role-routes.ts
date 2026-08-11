@@ -27,8 +27,6 @@ export const roleRoutes: Record<UserRole, string[]> = {
     "/notifications",
     "/customers",
   ],
-
-  VIEWER: ["/dashboard", "/tracking", "/vehicles"],
 };
 
 /** Where to send a user who lands on a route their role can't access. */

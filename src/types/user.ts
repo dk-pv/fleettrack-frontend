@@ -1,6 +1,6 @@
 /**
  * Canonical application role — the single source of truth for FleetTrack roles.
- * Values are unchanged (ADMIN, CLIENT, VIEWER); every other module imports this type
- * instead of re-declaring it.
+ * The product has exactly two roles: ADMIN and CLIENT (CLIENT is the synthetic
+ * runtime role of a Client login). Every other module imports this type.
  */
-export type UserRole = "ADMIN" | "CLIENT" | "VIEWER";
+export type UserRole = "ADMIN" | "CLIENT";

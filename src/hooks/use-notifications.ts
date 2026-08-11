@@ -23,14 +23,18 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const reload = useCallback(async () => {
     try {
       const data = await getNotifications();
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
+      setError(false);
     } catch (err) {
       console.log(err);
+      // Background refresh failure stays silent so a good list isn't blown away;
+      // the initial-load path below owns the visible error state.
     }
   }, []);
 
@@ -44,8 +48,10 @@ export function useNotifications() {
         if (!active) return;
         setNotifications(data.notifications);
         setUnreadCount(data.unreadCount);
+        setError(false);
       } catch (err) {
         console.log(err);
+        if (active) setError(true);
       } finally {
         if (active) setLoading(false);
       }
@@ -96,5 +102,5 @@ export function useNotifications() {
     }
   }, []);
 
-  return { notifications, unreadCount, loading, reload, markRead, markAllRead };
+  return { notifications, unreadCount, loading, error, reload, markRead, markAllRead };
 }

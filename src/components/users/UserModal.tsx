@@ -24,7 +24,7 @@ export default function UserModal({
     name: "",
     email: "",
     password: "",
-    role: "VIEWER",
+    role: "ADMIN",
   });
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function UserModal({
         name: "",
         email: "",
         password: "",
-        role: "VIEWER",
+        role: "ADMIN",
       });
     }
   }, [user]);
@@ -129,7 +129,6 @@ export default function UserModal({
             }
           >
             <option value="ADMIN">ADMIN</option>
-            <option value="VIEWER">VIEWER</option>
           </select>
         </div>
 

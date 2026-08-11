@@ -16,7 +16,6 @@ interface Client {
   id: string;
   name: string;
   email: string;
-  apiUrl: string;
 }
 
 interface AddClientModalProps {
@@ -47,8 +46,8 @@ export default function AddClientModal({
 
           <DialogDescription>
             {isEdit
-              ? "Update client information and API."
-              : "Add a new client and assign tracking API."}
+              ? "Update client information."
+              : "Add a new client, set a login password, and assign vehicles."}
           </DialogDescription>
         </DialogHeader>
 

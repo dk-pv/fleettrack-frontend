@@ -20,7 +20,7 @@ const inputClass =
   "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
 export default function TripReportPage() {
-  const { report, filter, setFilter, loading } = useTripReport();
+  const { report, filter, setFilter, loading, error } = useTripReport();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -139,6 +139,21 @@ export default function TripReportPage() {
             <tbody>
               {loading ? (
                 <TableSkeletonRows columns={6} rows={6} />
+              ) : error ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-10 text-center text-sm text-destructive"
+                  >
+                    Couldn&apos;t load report.{" "}
+                    <button
+                      onClick={() => setFilter({ ...filter })}
+                      className="font-medium underline underline-offset-2"
+                    >
+                      Try again
+                    </button>
+                  </td>
+                </tr>
               ) : report.rows.length === 0 ? (
                 <tr>
                   <td

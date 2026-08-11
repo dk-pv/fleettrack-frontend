@@ -46,19 +46,19 @@ export const sidebarMenu: NavItem[] = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/dashboard",
-    roles: ["ADMIN", "CLIENT", "VIEWER"],
+    roles: ["ADMIN", "CLIENT"],
   },
   {
     title: "Live Tracking",
     icon: Map,
     href: "/tracking",
-    roles: ["ADMIN", "CLIENT", "VIEWER"],
+    roles: ["ADMIN", "CLIENT"],
   },
   {
     title: "Vehicles",
     icon: Truck,
     href: "/vehicles",
-    roles: ["ADMIN", "CLIENT", "VIEWER"],
+    roles: ["ADMIN", "CLIENT"],
   },
   {
     title: "Trips",
@@ -226,7 +226,8 @@ export default function Sidebar({
 
   const { user } = useAuthStore();
 
-  const role = user?.role || "VIEWER";
+  // No user yet (hydrating) → no role → no menu items render until the real role loads.
+  const role = user?.role ?? "";
 
   // Accordion state for the Reports group. It auto-stays-open on any report route
   // (derived, not stored) so requirement 6 holds even on a hard refresh.

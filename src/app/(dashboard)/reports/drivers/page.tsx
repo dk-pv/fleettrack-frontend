@@ -15,7 +15,7 @@ const inputClass =
   "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
 export default function DriverReportPage() {
-  const { report, filter, setFilter, loading } = useDriverReport();
+  const { report, filter, setFilter, loading, error } = useDriverReport();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -144,6 +144,21 @@ export default function DriverReportPage() {
             <tbody>
               {loading ? (
                 <TableSkeletonRows columns={11} rows={6} />
+              ) : error ? (
+                <tr>
+                  <td
+                    colSpan={11}
+                    className="py-10 text-center text-sm text-destructive"
+                  >
+                    Couldn&apos;t load report.{" "}
+                    <button
+                      onClick={() => setFilter({ ...filter })}
+                      className="font-medium underline underline-offset-2"
+                    >
+                      Try again
+                    </button>
+                  </td>
+                </tr>
               ) : report.rows.length === 0 ? (
                 <tr>
                   <td

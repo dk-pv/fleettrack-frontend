@@ -6,6 +6,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import NotificationItem from "@/components/notifications/notification-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 /**
  * Notifications page (NOT-04.2 / NOT-04.3). Full list of the caller's scoped notifications
@@ -13,7 +14,7 @@ import EmptyState from "@/components/ui/empty-state";
  * bell — one notification data flow, one row component.
  */
 export default function NotificationsPage() {
-  const { notifications, unreadCount, loading, markRead, markAllRead } =
+  const { notifications, unreadCount, loading, error, reload, markRead, markAllRead } =
     useNotifications();
 
   return (
@@ -52,6 +53,8 @@ export default function NotificationsPage() {
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
+        ) : error && notifications.length === 0 ? (
+          <ErrorState message="Couldn't load notifications." onRetry={reload} />
         ) : notifications.length === 0 ? (
           <EmptyState title="No notifications yet" />
         ) : (

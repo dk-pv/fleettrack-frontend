@@ -22,7 +22,7 @@ const PREVIEW_COUNT = 6;
  * hook + row component as the page — one notification data flow, one UI.
  */
 export default function NotificationBell() {
-  const { notifications, unreadCount, loading, markRead, markAllRead } =
+  const { notifications, unreadCount, loading, error, markRead, markAllRead } =
     useNotifications();
 
   const preview = notifications.slice(0, PREVIEW_COUNT);
@@ -65,6 +65,8 @@ export default function NotificationBell() {
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
             </div>
+          ) : error && preview.length === 0 ? (
+            <EmptyState title="Couldn't load notifications" className="py-6" />
           ) : preview.length === 0 ? (
             <EmptyState title="No notifications yet" className="py-6" />
           ) : (

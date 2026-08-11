@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -34,56 +35,64 @@ export function useDashboard() {
   const [loading, setLoading] =
     useState(true);
 
+  const [error, setError] =
+    useState(false);
+
+  const clientId = selectedClient?.id;
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(false);
+
+      const statsData = await getDashboardStats(clientId);
+      setStats(statsData.data);
+
+      const vehicleData = await getActiveVehicles(clientId);
+      setVehicles(vehicleData.data || []);
+
+      const summaryData = await getTripSummary(clientId);
+      setTripSummary(summaryData.data);
+
+      const metricsData = await getDeliveryMetrics(clientId);
+      setDeliveryMetrics(metricsData.data);
+    } catch (err) {
+      console.log(err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId]);
+
+  // Initial load + reload when the scoped client changes. Inlined (not a call to
+  // `load`) to satisfy the no-setState-in-effect lint rule, mirroring use-trips.
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
+        setError(false);
 
-        const clientId =
-          selectedClient?.id;
-
-        const statsData =
-          await getDashboardStats(
-            clientId,
-          );
-
+        const statsData = await getDashboardStats(clientId);
         setStats(statsData.data);
 
-        const vehicleData =
-          await getActiveVehicles(
-            clientId,
-          );
+        const vehicleData = await getActiveVehicles(clientId);
+        setVehicles(vehicleData.data || []);
 
-        setVehicles(
-          vehicleData.data || [],
-        );
+        const summaryData = await getTripSummary(clientId);
+        setTripSummary(summaryData.data);
 
-        const summaryData =
-          await getTripSummary(
-            clientId,
-          );
-
-        setTripSummary(
-          summaryData.data,
-        );
-
-        const metricsData =
-          await getDeliveryMetrics(
-            clientId,
-          );
-
-        setDeliveryMetrics(
-          metricsData.data,
-        );
-      } catch (error) {
-        console.log(error);
+        const metricsData = await getDeliveryMetrics(clientId);
+        setDeliveryMetrics(metricsData.data);
+      } catch (err) {
+        console.log(err);
+        setError(true);
       } finally {
         setLoading(false);
       }
     }
 
     fetchData();
-  }, [selectedClient]);
+  }, [clientId]);
 
   return {
     stats,
@@ -91,5 +100,7 @@ export function useDashboard() {
     tripSummary,
     deliveryMetrics,
     loading,
+    error,
+    reload: load,
   };
 }

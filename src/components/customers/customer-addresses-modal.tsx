@@ -38,6 +38,7 @@ export default function CustomerAddressesModal({
 }: Props) {
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [editing, setEditing] = useState<CustomerAddress | null>(null);
   const [adding, setAdding] = useState(false);
@@ -45,10 +46,17 @@ export default function CustomerAddressesModal({
 
   const fetchAddresses = async () => {
     setLoading(true);
+    setError(false);
     try {
       const res = await apiFetch(`/customers/${customer.id}/addresses`);
+      if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       setAddresses(data.addresses || []);
+    } catch (err) {
+      // Without this, a fetch rejection here was an unhandled promise that
+      // bubbled to the route error boundary and blanked the page.
+      console.error(err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -58,10 +66,15 @@ export default function CustomerAddressesModal({
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(false);
       try {
         const res = await apiFetch(`/customers/${customer.id}/addresses`);
+        if (!res.ok) throw new Error("Request failed");
         const data = await res.json();
         setAddresses(data.addresses || []);
+      } catch (err) {
+        console.error(err);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -160,6 +173,16 @@ export default function CustomerAddressesModal({
         <div className="mt-3 space-y-2">
           {loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : error ? (
+            <div className="py-6 text-center text-sm">
+              <p className="text-muted-foreground">Couldn&apos;t load addresses.</p>
+              <button
+                onClick={fetchAddresses}
+                className="mt-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              >
+                Try again
+              </button>
+            </div>
           ) : filtered.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               No addresses

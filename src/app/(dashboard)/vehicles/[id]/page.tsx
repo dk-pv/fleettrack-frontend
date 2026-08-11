@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/fetcher";
 import { DetailSkeleton } from "@/components/ui/skeletons/detail-skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import VehicleStatusBadge from "@/components/vehicles/vehicle-status-badge";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
@@ -51,6 +52,7 @@ export default function VehicleDetailPage() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const downloadReport = async () => {
     if (!vehicle) return;
@@ -92,26 +94,66 @@ export default function VehicleDetailPage() {
 
   const fetchVehicle = async () => {
     try {
+      setLoading(true);
+      setError(false);
+
       const response = await apiFetch(`/vehicles/${params.id}`);
+
+      // apiFetch resolves on HTTP errors — a 500/network failure must surface as
+      // an error state, not the misleading "Vehicle not found" fallback below.
+      if (!response.ok) throw new Error("Request failed");
 
       const data = await response.json();
 
-      setVehicle(data.vehicle);
+      setVehicle(data.vehicle ?? null);
     } catch (error) {
       console.log(error);
+      setError(true);
     } finally {
       setLoading(false);
     }
   };
 
+  // Inlined loader (not a call to `fetchVehicle`) to satisfy the
+  // no-setState-in-effect lint rule; fetchVehicle stays for the retry button.
   useEffect(() => {
-    if (params.id) {
-      fetchVehicle();
+    if (!params.id) return;
+
+    async function load() {
+      try {
+        setError(false);
+
+        const response = await apiFetch(`/vehicles/${params.id}`);
+
+        if (!response.ok) throw new Error("Request failed");
+
+        const data = await response.json();
+
+        setVehicle(data.vehicle ?? null);
+      } catch (err) {
+        console.log(err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    load();
   }, [params.id]);
 
   if (loading) {
     return <DetailSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorState
+          message="Couldn't load this vehicle."
+          onRetry={fetchVehicle}
+        />
+      </div>
+    );
   }
 
   if (!vehicle) {

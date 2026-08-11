@@ -1,119 +1,104 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-
-// import { API_URL } from "@/lib/api";
-
-// interface User {
-//   role: string;
-// }
-
-// export default function ClientStats() {
-//   const [users, setUsers] = useState<User[]>([]);
-
-//   const fetchUsers = async () => {
-//     try {
-//       const token = localStorage.getItem("token");
-
-//       const response = await fetch(`${API_URL}/clients`, {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
-
-//       const data = await response.json();
-
-//       setUsers(data.users || []);
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchUsers();
-//   }, []);
-
-//   const totalUsers = users.length;
-
-//   const admins = users.filter((user) => user.role === "ADMIN").length;
-
-//   const clients = users.filter((user) => user.role === "CLIENT").length;
-
-//   const viewers = users.filter((user) => user.role === "VIEWER").length;
-
-//   const stats = [
-//     {
-//       title: "Total Users",
-//       value: totalUsers,
-//     },
-//     {
-//       title: "Admins",
-//       value: admins,
-//     },
-//     {
-//       title: "Clients",
-//       value: clients,
-//     },
-//     {
-//       title: "Viewers",
-//       value: viewers,
-//     },
-//   ];
-
-//   return (
-//     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-//       {stats.map((item) => (
-//         <div
-//           key={item.title}
-//           className="rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
-//         >
-//           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.title}</p>
-
-//           <h3 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground leading-none">{item.value}</h3>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
-
-
-
-
 "use client";
 
-import { useEffect, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
 
+import { apiFetch } from "@/lib/fetcher";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
+
+/**
+ * Client directory stat cards.
+ *
+ * "Total Clients" is the real /clients count. The API's Client model has no
+ * active/status field (see clients.service.findAll), so an "Active Clients"
+ * count can't be derived — it's shown as unavailable rather than fabricated.
+ * (Previously both cards rendered the same `count`, so "Active" just mirrored
+ * "Total".) Wire it up once the backend exposes client activity.
+ */
 export default function ClientStats() {
-  const [count, setCount] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`${API_URL}/clients`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+  // First statement is `await`, so calling this in the effect performs no
+  // synchronous setState (keeps react-hooks/set-state-in-effect happy).
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch("/clients");
+      // apiFetch resolves on HTTP errors — a non-ok response must become an
+      // error state, not a silent zero count.
+      if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
-      setCount(data.clients?.length || 0);
-    };
-
-    load();
+      setTotal(data.clients?.length ?? 0);
+      setError(false);
+    } catch (err) {
+      console.error(err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Inlined (not a call to `load`) to satisfy the no-setState-in-effect lint
+  // rule; `load` stays for the ErrorState retry.
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await apiFetch("/clients");
+        if (!res.ok) throw new Error("Request failed");
+        const data = await res.json();
+        setTotal(data.clients?.length ?? 0);
+        setError(false);
+      } catch (err) {
+        console.error(err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        {["Total Clients", "Active Clients"].map((label) => (
+          <div
+            key={label}
+            className="rounded-xl border border-border bg-card p-6"
+          >
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <Skeleton className="mt-2 h-9 w-16" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        message="Couldn't load client stats."
+        onRetry={() => {
+          setLoading(true);
+          load();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded-xl border bg-card p-6">
-        <p>Total Clients</p>
-        <h2 className="text-3xl font-bold">{count}</h2>
+      <div className="rounded-xl border border-border bg-card p-6">
+        <p className="text-sm text-muted-foreground">Total Clients</p>
+        <h2 className="text-3xl font-bold">{total}</h2>
       </div>
 
-      <div className="rounded-xl border bg-card p-6">
-        <p>Active Clients</p>
-        <h2 className="text-3xl font-bold">{count}</h2>
+      <div className="rounded-xl border border-border bg-card p-6">
+        <p className="text-sm text-muted-foreground">Active Clients</p>
+        <h2 className="text-3xl font-bold text-muted-foreground">—</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Not tracked yet</p>
       </div>
     </div>
   );
