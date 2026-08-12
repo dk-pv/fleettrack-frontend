@@ -8,6 +8,8 @@ interface ConfirmDialogProps {
   description?: React.ReactNode;
   confirmLabel?: string;
   loadingLabel?: string;
+  /** Confirm-button colour: "destructive" (default, deletes) or "primary" (approvals). */
+  confirmVariant?: "primary" | "destructive";
   loading?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -26,6 +28,7 @@ export default function ConfirmDialog({
   description,
   confirmLabel = "Delete",
   loadingLabel = "Deleting...",
+  confirmVariant = "destructive",
   loading,
   onClose,
   onConfirm,
@@ -47,7 +50,7 @@ export default function ConfirmDialog({
         </h2>
 
         {description && (
-          <p className="mt-3 text-sm text-muted-foreground">{description}</p>
+          <div className="mt-3 text-sm text-muted-foreground">{description}</div>
         )}
 
         <div className="mt-6 flex justify-end gap-3">
@@ -62,7 +65,11 @@ export default function ConfirmDialog({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 disabled:opacity-70"
+            className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-70 ${
+              confirmVariant === "primary"
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "bg-destructive text-white hover:bg-destructive/90"
+            }`}
           >
             {loading ? loadingLabel : confirmLabel}
           </button>

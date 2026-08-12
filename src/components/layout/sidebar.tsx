@@ -16,6 +16,7 @@ import {
   FileBarChart,
   Bell,
   ChevronDown,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
@@ -65,6 +66,12 @@ export const sidebarMenu: NavItem[] = [
     icon: Route,
     href: "/trips",
     roles: ["CLIENT"],
+  },
+  {
+    title: "Trip Requests",
+    icon: ClipboardList,
+    href: "/trip-requests",
+    roles: ["ADMIN", "CLIENT"],
   },
   {
     title: "Delays",

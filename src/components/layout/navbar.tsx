@@ -158,6 +158,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useClientStore } from "@/store/client-store";
 import ThemeToggle from "./theme-toggle";
 import NotificationBell from "@/components/notifications/notification-bell";
+import { useNotificationSound } from "@/hooks/use-notification-sound";
 import { apiFetch } from "@/lib/fetcher";
 
 import {
@@ -185,6 +186,9 @@ export default function Navbar({
 
   const { selectedClient, setSelectedClient } =
     useClientStore();
+
+  // F8 — chime once on a genuinely new notification (single mount point for the app).
+  useNotificationSound();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsError, setClientsError] = useState(false);
