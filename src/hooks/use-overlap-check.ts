@@ -26,9 +26,13 @@ export function useOverlapCheck(
     scheduledStart: string;
     scheduledEnd: string;
     excludeTripId?: string;
+    // ADMIN-only: scope the check to the selected client. A CLIENT omits it, so the
+    // backend pins the check to its own trips via the JWT (query clientId ignored).
+    clientId?: string;
   },
 ) {
-  const { resourceId, scheduledStart, scheduledEnd, excludeTripId } = input;
+  const { resourceId, scheduledStart, scheduledEnd, excludeTripId, clientId } =
+    input;
 
   const [conflicts, setConflicts] = useState<OverlapConflict[]>([]);
   const [checking, setChecking] = useState(false);
@@ -56,12 +60,14 @@ export function useOverlapCheck(
                 scheduledStart,
                 scheduledEnd,
                 excludeTripId,
+                clientId,
               })
             : await checkDriverOverlap({
                 driverId: resourceId,
                 scheduledStart,
                 scheduledEnd,
                 excludeTripId,
+                clientId,
               });
         setConflicts(res.conflicts);
       } catch (err) {
@@ -79,6 +85,7 @@ export function useOverlapCheck(
     scheduledStart,
     scheduledEnd,
     excludeTripId,
+    clientId,
     enabled,
   ]);
 

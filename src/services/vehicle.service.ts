@@ -9,6 +9,10 @@ import { GeoPoint, TripVehicle } from "@/types/trip";
  * CLIENT receives only their own vehicles — no clientId argument needed. This
  * centralises the fetch so trip creation reuses it instead of duplicating the
  * inline `apiFetch("/vehicles")` calls in the vehicles/tracking pages.
+ *
+ * `clientId` is ADMIN-only: it narrows the list to a selected client's vehicles
+ * (GET /vehicles?clientId=). A CLIENT omits it — the JWT stays authoritative, so
+ * it can never be used to read another tenant's vehicles.
  */
 
 interface ApiVehicle {
@@ -17,8 +21,9 @@ interface ApiVehicle {
   vehicleName: string;
 }
 
-export async function getVehicles(): Promise<TripVehicle[]> {
-  const response = await apiFetch("/vehicles");
+export async function getVehicles(clientId?: string): Promise<TripVehicle[]> {
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const response = await apiFetch(`/vehicles${query}`);
   const data = await response.json();
   const vehicles: ApiVehicle[] = data.vehicles ?? [];
 

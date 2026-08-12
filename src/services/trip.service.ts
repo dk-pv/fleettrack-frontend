@@ -92,6 +92,7 @@ async function requestOverlap(params: {
   scheduledStart: string;
   scheduledEnd: string;
   excludeTripId?: string;
+  clientId?: string;
 }): Promise<OverlapResponse> {
   const start = new Date(params.scheduledStart);
   const end = new Date(params.scheduledEnd);
@@ -105,6 +106,9 @@ async function requestOverlap(params: {
   query.set("start", start.toISOString());
   query.set("end", end.toISOString());
   if (params.excludeTripId) query.set("excludeTripId", params.excludeTripId);
+  // ADMIN-only: scopes the check to the selected client. A CLIENT omits it and the
+  // backend pins the check to its own trips via the JWT (query clientId ignored).
+  if (params.clientId) query.set("clientId", params.clientId);
 
   const res = await apiFetch(`/trips/overlap?${query.toString()}`);
   if (!res.ok) {
@@ -129,6 +133,7 @@ export async function checkVehicleOverlap(
     scheduledStart: candidate.scheduledStart,
     scheduledEnd: candidate.scheduledEnd,
     excludeTripId: candidate.excludeTripId,
+    clientId: candidate.clientId,
   });
 }
 
@@ -144,6 +149,7 @@ export async function checkDriverOverlap(
     scheduledStart: candidate.scheduledStart,
     scheduledEnd: candidate.scheduledEnd,
     excludeTripId: candidate.excludeTripId,
+    clientId: candidate.clientId,
   });
 }
 
@@ -178,20 +184,33 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
  * identifier — sent back verbatim as the trip's driverId so the DRIVER_OVERLAP guard
  * matches. Fails soft (empty) on a transient error so the form still opens.
  *
+ * `clientId` is ADMIN-only: it targets a selected client's drivers
+ * (GET /trips/drivers?clientId=). A CLIENT omits it — the JWT stays authoritative.
+ *
  *   API: GET /trips/drivers -> { drivers }
  */
-export async function getDrivers(): Promise<TripDriver[]> {
-  const res = await apiFetch("/trips/drivers");
+export async function getDrivers(clientId?: string): Promise<TripDriver[]> {
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const res = await apiFetch(`/trips/drivers${query}`);
   if (!res.ok) return [];
   const data = await res.json();
   return data.drivers ?? [];
 }
 
-/** Reference data for the trip creation form: real vehicles + real drivers. */
-export async function getTripFormOptions(): Promise<TripFormOptions> {
-  // Both are scoped to the client by the JWT; fetched together so the form opens in a
-  // single round-trip.
-  const [vehicles, drivers] = await Promise.all([getVehicles(), getDrivers()]);
+/**
+ * Reference data for the trip creation form: real vehicles + real drivers.
+ * `clientId` is ADMIN-only (a selected client's resources); a CLIENT omits it and
+ * both lists stay JWT-scoped.
+ */
+export async function getTripFormOptions(
+  clientId?: string,
+): Promise<TripFormOptions> {
+  // Both are scoped to the client (CLIENT: JWT; ADMIN: the selected clientId); fetched
+  // together so the form opens in a single round-trip.
+  const [vehicles, drivers] = await Promise.all([
+    getVehicles(clientId),
+    getDrivers(clientId),
+  ]);
 
   return { vehicles, drivers };
 }

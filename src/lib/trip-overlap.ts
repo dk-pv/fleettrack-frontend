@@ -13,6 +13,8 @@ export interface OverlapCandidate {
   scheduledEnd: string;
   /** Exclude this trip from the check (when editing an existing trip). */
   excludeTripId?: string;
+  /** ADMIN-only: scope the check to the selected client. A CLIENT omits it (JWT-scoped). */
+  clientId?: string;
 }
 
 export interface DriverOverlapCandidate {
@@ -21,4 +23,6 @@ export interface DriverOverlapCandidate {
   scheduledEnd: string;
   /** Exclude this trip from the check (when editing an existing trip). */
   excludeTripId?: string;
+  /** ADMIN-only: scope the check to the selected client. A CLIENT omits it (JWT-scoped). */
+  clientId?: string;
 }

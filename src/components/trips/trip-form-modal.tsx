@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { useTripOptions } from "@/hooks/use-trip-options";
 import { useCustomerOptions } from "@/hooks/use-customer-options";
+import { useClients } from "@/hooks/use-clients";
 import { useRoutePreview } from "@/hooks/use-route-preview";
 import { useOverlapCheck } from "@/hooks/use-overlap-check";
 import { useRouteOptimization } from "@/hooks/use-route-optimization";
@@ -31,19 +32,50 @@ import {
   updateStopAddress,
 } from "@/lib/trip-stops";
 
+type TripFormMode = "request" | "admin-create";
+
 interface Props {
   open: boolean;
   onClose: () => void;
   onCreate: (dto: CreateTripDto) => Promise<unknown>;
+  /**
+   * "request" (default): CLIENT submits a trip REQUEST for its OWN client — no client
+   *   selector, JWT-scoped resources. Existing behavior, unchanged (parent injects
+   *   createTripRequest → POST /trip-requests).
+   * "admin-create": ADMIN creates a trip DIRECTLY on behalf of a SELECTED client — a
+   *   required client selector gates the resources (parent injects createTrip → POST
+   *   /trips). Slice E supplies that ADMIN entry point.
+   */
+  mode?: TripFormMode;
 }
 
 const inputClass =
   "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
-export default function TripFormModal({ open, onClose, onCreate }: Props) {
+export default function TripFormModal({
+  open,
+  onClose,
+  onCreate,
+  mode = "request",
+}: Props) {
+  const isAdmin = mode === "admin-create";
   const { user } = useAuthStore();
-  const { vehicles, drivers, loading: optionsLoading } = useTripOptions();
-  const { customers, loading: customersLoading } = useCustomerOptions();
+
+  // ADMIN direct-create: the selected client whose resources the form operates on.
+  // Empty until the admin picks one; every resource selector stays disabled until then.
+  const [adminClientId, setAdminClientId] = useState("");
+  // Only ADMIN mode targets a specific client; request mode stays JWT-scoped (undefined),
+  // so every option/overlap hook below behaves exactly as before for a CLIENT.
+  const selectedClientId = isAdmin ? adminClientId || undefined : undefined;
+
+  // Client list for the ADMIN selector — fetched only in admin mode so a CLIENT never
+  // hits the ADMIN-only /clients endpoint.
+  const { clients, loading: clientsLoading } = useClients(isAdmin);
+
+  const { vehicles, drivers, loading: optionsLoading } =
+    useTripOptions(selectedClientId);
+  const { customers, loading: customersLoading } =
+    useCustomerOptions(selectedClientId);
   const {
     points: routePoints,
     loading: routeLoading,
@@ -71,11 +103,13 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     resourceId: vehicleId,
     scheduledStart: start,
     scheduledEnd: end,
+    clientId: selectedClientId,
   });
   const driverOverlap = useOverlapCheck("driver", {
     resourceId: driverId,
     scheduledStart: start,
     scheduledEnd: end,
+    clientId: selectedClientId,
   });
 
   // Multi-stop route optimization (TM-06) — through the service, never the mock.
@@ -129,6 +163,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
   };
 
   const resetForm = () => {
+    setAdminClientId("");
     setReference("");
     setPickup("");
     setDelivery("");
@@ -146,6 +181,13 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ADMIN direct-create requires a selected client first — it is the source of the
+    // owning clientId AND of every resource the form listed (backend re-validates).
+    if (isAdmin && !adminClientId) {
+      toast.error("Please select a client");
+      return;
+    }
 
     if (
       !reference ||
@@ -179,7 +221,9 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
 
     const dto: CreateTripDto = {
       reference,
-      clientId: user?.id ?? "",
+      // ADMIN: the selected client (backend validates it owns the resources). CLIENT:
+      // its own id for API shape — the backend ignores it and uses the JWT.
+      clientId: isAdmin ? adminClientId : user?.id ?? "",
       vehicleId,
       driverId,
       driverName: driver?.name ?? null,
@@ -197,7 +241,11 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     try {
       setSubmitting(true);
       await onCreate(dto);
-      toast.success("Trip request submitted successfully");
+      toast.success(
+        isAdmin
+          ? "Trip created successfully"
+          : "Trip request submitted successfully",
+      );
       resetForm();
       onClose();
     } catch (err) {
@@ -211,7 +259,9 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
           "This driver is already booked for an overlapping schedule",
         );
       } else {
-        toast.error("Failed to submit trip request");
+        toast.error(
+          isAdmin ? "Failed to create trip" : "Failed to submit trip request",
+        );
       }
     } finally {
       setSubmitting(false);
@@ -222,14 +272,52 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Request Trip</DialogTitle>
+          <DialogTitle className="text-2xl">
+            {isAdmin ? "Create Trip" : "Request Trip"}
+          </DialogTitle>
           <DialogDescription>
-            Submit a trip request for admin approval. No trip is created until an
-            admin approves it.
+            {isAdmin
+              ? "Create a trip directly on behalf of a selected client."
+              : "Submit a trip request for admin approval. No trip is created until an admin approves it."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* ADMIN direct-create: pick the client first — it scopes every resource
+              selector below and becomes the trip's owning client. */}
+          {isAdmin && (
+            <div>
+              <label className="mb-1 block text-sm font-medium">Client</label>
+              <select
+                value={adminClientId}
+                onChange={(e) => {
+                  setAdminClientId(e.target.value);
+                  // Changing client invalidates any resource chosen for the previous
+                  // one — clear them so a stale id can't be submitted. (Slice C option
+                  // hooks discard the previous client's in-flight responses.)
+                  setVehicleId("");
+                  setDriverId("");
+                  setCustomerId("");
+                }}
+                disabled={clientsLoading || clients.length === 0}
+                className={inputClass}
+              >
+                <option value="">
+                  {clientsLoading
+                    ? "Loading clients…"
+                    : clients.length === 0
+                      ? "No clients found"
+                      : "Select a client"}
+                </option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block text-sm font-medium">Reference</label>
             <input
@@ -390,10 +478,14 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
               <select
                 value={vehicleId}
                 onChange={(e) => setVehicleId(e.target.value)}
-                disabled={optionsLoading}
+                disabled={optionsLoading || (isAdmin && !adminClientId)}
                 className={inputClass}
               >
-                <option value="">Select vehicle</option>
+                <option value="">
+                  {isAdmin && !adminClientId
+                    ? "Select a client first"
+                    : "Select vehicle"}
+                </option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.vehicleNumber}
@@ -407,10 +499,14 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
               <select
                 value={driverId}
                 onChange={(e) => setDriverId(e.target.value)}
-                disabled={optionsLoading}
+                disabled={optionsLoading || (isAdmin && !adminClientId)}
                 className={inputClass}
               >
-                <option value="">Select driver</option>
+                <option value="">
+                  {isAdmin && !adminClientId
+                    ? "Select a client first"
+                    : "Select driver"}
+                </option>
                 {drivers.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
@@ -428,10 +524,14 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
             <select
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
-              disabled={customersLoading}
+              disabled={customersLoading || (isAdmin && !adminClientId)}
               className={inputClass}
             >
-              <option value="">No customer</option>
+              <option value="">
+                {isAdmin && !adminClientId
+                  ? "Select a client first"
+                  : "No customer"}
+              </option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -509,11 +609,18 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
               disabled={
                 submitting ||
                 vehicleOverlap.hasOverlap ||
-                driverOverlap.hasOverlap
+                driverOverlap.hasOverlap ||
+                (isAdmin && !adminClientId)
               }
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
-              {submitting ? "Submitting..." : "Submit request"}
+              {submitting
+                ? isAdmin
+                  ? "Creating..."
+                  : "Submitting..."
+                : isAdmin
+                  ? "Create Trip"
+                  : "Submit request"}
             </button>
           </div>
         </form>
