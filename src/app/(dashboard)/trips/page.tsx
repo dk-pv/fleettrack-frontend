@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Route as RouteIcon, Plus } from "lucide-react";
 
 import { useTrips } from "@/hooks/use-trips";
+import { useTripRequests } from "@/hooks/use-trip-requests";
 import TripTable from "@/components/trips/trip-table";
 import TripFormModal from "@/components/trips/trip-form-modal";
 import { PageHeaderSkeleton } from "@/components/ui/skeletons/page-header-skeleton";
@@ -18,7 +19,10 @@ import {
 } from "@/types/trip";
 
 function TripsPageContent() {
-  const { trips, loading, error, permissions, createTrip, refetch } = useTrips();
+  const { trips, loading, error, permissions, refetch } = useTrips();
+  // CLIENT trip creation now submits a trip REQUEST for admin approval (no Trip is
+  // created directly) — the same form, routed through the trip-requests workflow.
+  const { create: createTripRequest } = useTripRequests();
   const [modalOpen, setModalOpen] = useState(false);
 
   // Drill-down from the dashboard (DSH-01.3): ?status=<bucket> narrows the list.
@@ -58,7 +62,7 @@ function TripsPageContent() {
             className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
-            Create Trip
+            Request Trip
           </button>
         )}
       </div>
@@ -83,12 +87,12 @@ function TripsPageContent() {
         <TripTable trips={visibleTrips} loading={loading} />
       )}
 
-      {/* Create modal (client only) */}
+      {/* Request modal (client only) — submits a trip request for admin approval */}
       {permissions.canCreate && (
         <TripFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
-          onCreate={createTrip}
+          onCreate={createTripRequest}
         />
       )}
     </div>

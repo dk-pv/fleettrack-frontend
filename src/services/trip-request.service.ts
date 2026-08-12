@@ -1,150 +1,103 @@
 /**
- * Trip Request service.
+ * Trip Request service — the ONLY module that touches trip-request data.
  *
- * DUMMY implementation for the frontend-first phase: it operates on an in-memory store
- * seeded from local data and makes NO backend calls. The hook/UI never learn whether the
- * data is dummy or real — later the internals of these functions swap to `apiFetch(...)`
- * (POST/GET /trip-requests, PATCH /trip-requests/:id/approve|reject) with the SAME
- * signatures, and nothing above this file changes.
+ * Backend integration: reads AND writes hit the real NestJS API via `apiFetch`, following
+ * the same conventions as trip.service.ts. The server owns ownership scoping (CLIENT sees
+ * its own, ADMIN sees admin-audience), the atomic approval claim, the Trip it creates on
+ * approval, and the notifications — all derived from the JWT.
  *
- *   Trip Request UI → use-trip-requests → trip-request.service → dummy data   (now)
- *   Trip Request UI → use-trip-requests → trip-request.service → NestJS API    (later)
+ *   Trip Request UI → use-trip-requests → trip-request.service → NestJS API
+ *
+ *   API (NestJS):
+ *     GET   /trip-requests            -> { success, requests }   (CLIENT own / ADMIN audience)
+ *     GET   /trip-requests/:id        -> { success, request }
+ *     POST  /trip-requests            -> { success, request }    (CLIENT; no Trip created)
+ *     PATCH /trip-requests/:id/approve-> { success, request, trip } (ADMIN)
+ *     PATCH /trip-requests/:id/reject -> { success, request }    (ADMIN; body { reason })
  */
 
 import type { CreateTripDto } from "@/types/trip";
-import type { UserRole } from "@/types/user";
-import { TripRequest, TripRequestStatus } from "@/types/trip-request";
-import {
-  tripRequestSeed,
-  CURRENT_DUMMY_CLIENT,
-  DUMMY_REVIEWER,
-} from "@/data/trip-requests";
+import { TripRequest } from "@/types/trip-request";
+import { apiFetch } from "@/lib/fetcher";
 
-// Session store: a clone of the seed so approve/reject/create persist within a browser
-// session and reset on reload — appropriate for a demo data layer.
-let store: TripRequest[] = tripRequestSeed.map((r) => ({ ...r }));
-
-// Small artificial latency so the real loading/skeleton states are exercised.
-const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const nowIso = () => new Date().toISOString();
-
-let localSeq = 1;
-const nextLocalId = () => `req-local-${localSeq++}`;
-
-/** List requests scoped like the future API: ADMIN sees all, CLIENT sees only its own. */
-export async function getTripRequests(role: UserRole): Promise<TripRequest[]> {
-  await delay();
-  const rows =
-    role === "ADMIN"
-      ? store
-      : store.filter((r) => r.clientId === CURRENT_DUMMY_CLIENT.id);
-  return [...rows].sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-}
-
-/** A single request by id (ownership scoping is applied in the list; detail reuses it). */
-export async function getTripRequest(id: string): Promise<TripRequest | null> {
-  await delay();
-  const found = store.find((r) => r.id === id);
-  return found ? { ...found } : null;
+/** Extract the server error code/message (VEHICLE_OVERLAP, REQUEST_NOT_PENDING, …). */
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  const err = await res.json().catch(() => null);
+  return typeof err?.message === "string" ? err.message : fallback;
 }
 
 /**
- * Create a PENDING request from the existing trip-form payload. Dummy: attaches it to the
- * demo client and prepends it to the store — NO POST to the backend. (Wired to the CLIENT
- * form during integration, when the form's vehicle/driver options come from the real API.)
+ * List requests. Ownership scoping is server-side from the JWT (CLIENT own, ADMIN
+ * audience), so no client-side filtering is needed. Fails soft (empty) on a transient
+ * error so the list/skeleton degrade gracefully.
+ */
+export async function getTripRequests(): Promise<TripRequest[]> {
+  const res = await apiFetch("/trip-requests");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.requests ?? []) as TripRequest[];
+}
+
+/** A single request by id (server enforces ownership; 404/403 → null). */
+export async function getTripRequest(id: string): Promise<TripRequest | null> {
+  const res = await apiFetch(`/trip-requests/${id}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return (data.request ?? null) as TripRequest | null;
+}
+
+/**
+ * Create a PENDING request from the existing trip-form payload. The server derives the
+ * owning client from the JWT (any clientId in the body is ignored) and creates NO Trip.
+ * Surfaces the server's error code (INVALID_VEHICLE / INVALID_CUSTOMER / …) to the form.
  */
 export async function createTripRequest(
   dto: CreateTripDto,
 ): Promise<TripRequest> {
-  await delay();
-  const id = nextLocalId();
-  const ts = nowIso();
-  const request: TripRequest = {
-    id,
-    status: TripRequestStatus.PENDING,
-    clientId: CURRENT_DUMMY_CLIENT.id,
-    client: CURRENT_DUMMY_CLIENT,
-    reference: dto.reference?.trim() || null,
-    vehicleId: dto.vehicleId ?? null,
-    vehicle: null,
-    driverId: dto.driverId ?? null,
-    driverName: dto.driverName ?? null,
-    customerId: dto.customerId ?? null,
-    customer: null,
-    origin: dto.origin,
-    destination: dto.destination,
-    originLat: null,
-    originLng: null,
-    destinationLat: null,
-    destinationLng: null,
-    stops: (dto.stops ?? []).map((s) => ({ address: s.address })),
-    distanceKm: dto.distanceKm ?? null,
-    durationMins: dto.durationMins ?? null,
-    notes: dto.notes ?? null,
-    scheduledStart: dto.scheduledStart,
-    scheduledEnd: dto.scheduledEnd,
-    tripId: null,
-    trip: null,
-    reviewedById: null,
-    reviewedBy: null,
-    reviewedAt: null,
-    rejectionReason: null,
-    createdAt: ts,
-    updatedAt: ts,
-  };
-  store = [request, ...store];
-  return { ...request };
+  const res = await apiFetch("/trip-requests", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    throw new Error(await errorMessage(res, "Failed to submit trip request"));
+  }
+  const data = await res.json();
+  return data.request as TripRequest;
 }
 
 /**
- * Approve a PENDING request. Dummy: simulates the Trip that approval would create
- * (tripId + reference) and stamps the reviewer/time. Only PENDING requests may be
- * approved — a second attempt throws, matching the backend guard.
+ * Approve a PENDING request. The server atomically claims it, creates the Trip (ASSIGNED)
+ * via the reused trip-creation path, stores the tripId and notifies the client. The
+ * response carries both { request, trip }; the hook returns the updated request. Surfaces
+ * the server's code (REQUEST_NOT_PENDING / VEHICLE_OVERLAP / …).
  */
 export async function approveTripRequest(id: string): Promise<TripRequest> {
-  await delay();
-  const req = store.find((r) => r.id === id);
-  if (!req) throw new Error("Trip request not found");
-  if (req.status !== TripRequestStatus.PENDING) {
-    throw new Error("Only pending requests can be approved");
+  const res = await apiFetch(`/trip-requests/${id}/approve`, {
+    method: "PATCH",
+  });
+  if (!res.ok) {
+    throw new Error(await errorMessage(res, "Failed to approve request"));
   }
-  const ts = nowIso();
-  const tripRef = req.reference ?? `TRIP-2026-${id.slice(-4).toUpperCase()}`;
-  req.status = TripRequestStatus.APPROVED;
-  req.tripId = `trip-${id}`;
-  req.trip = { id: `trip-${id}`, reference: tripRef };
-  req.reviewedById = DUMMY_REVIEWER.id;
-  req.reviewedBy = DUMMY_REVIEWER;
-  req.reviewedAt = ts;
-  req.rejectionReason = null;
-  req.updatedAt = ts;
-  return { ...req };
+  const data = await res.json();
+  return data.request as TripRequest;
 }
 
 /**
- * Reject a PENDING request with a reason. Dummy: stamps status/reviewer/time/reason and
- * creates no Trip. Only PENDING requests may be rejected.
+ * Reject a PENDING request with a required reason (the server trims and enforces it).
+ * No Trip is created; the client is notified. Surfaces REQUEST_NOT_PENDING /
+ * REJECTION_REASON_REQUIRED.
  */
 export async function rejectTripRequest(
   id: string,
   reason: string,
 ): Promise<TripRequest> {
-  await delay();
-  const req = store.find((r) => r.id === id);
-  if (!req) throw new Error("Trip request not found");
-  if (req.status !== TripRequestStatus.PENDING) {
-    throw new Error("Only pending requests can be rejected");
+  const res = await apiFetch(`/trip-requests/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) {
+    throw new Error(await errorMessage(res, "Failed to reject request"));
   }
-  const ts = nowIso();
-  req.status = TripRequestStatus.REJECTED;
-  req.reviewedById = DUMMY_REVIEWER.id;
-  req.reviewedBy = DUMMY_REVIEWER;
-  req.reviewedAt = ts;
-  req.rejectionReason = reason.trim();
-  req.updatedAt = ts;
-  return { ...req };
+  const data = await res.json();
+  return data.request as TripRequest;
 }

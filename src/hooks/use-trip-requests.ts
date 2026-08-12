@@ -28,32 +28,31 @@ export function useTripRequests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (!silent) setLoading(true);
-      setError(false);
-      try {
-        const data = await getTripRequests(role);
-        setRequests(data);
-      } catch (err) {
-        console.log(err);
-        if (!silent) setError(true);
-      } finally {
-        if (!silent) setLoading(false);
-      }
-    },
-    [role],
-  );
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(false);
+    try {
+      // Ownership scoping is server-side from the JWT (CLIENT own / ADMIN audience).
+      const data = await getTripRequests();
+      setRequests(data);
+    } catch (err) {
+      console.log(err);
+      if (!silent) setError(true);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
 
-  // Initial load + reload when the role resolves/changes. Inlined (not a call to `load`)
-  // with an unmount guard, mirroring the other data hooks.
+  // Initial load on mount. Inlined (not a call to `load`) with an unmount guard, mirroring
+  // the other data hooks (use-notifications). The JWT is present at mount, so one fetch is
+  // enough; a different user logging in remounts the dashboard tree.
   useEffect(() => {
     let active = true;
     (async () => {
       try {
         setLoading(true);
         setError(false);
-        const data = await getTripRequests(role);
+        const data = await getTripRequests();
         if (active) setRequests(data);
       } catch (err) {
         console.log(err);
@@ -65,7 +64,7 @@ export function useTripRequests() {
     return () => {
       active = false;
     };
-  }, [role]);
+  }, []);
 
   const create = useCallback(
     async (dto: CreateTripDto) => {

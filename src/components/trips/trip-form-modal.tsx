@@ -197,7 +197,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     try {
       setSubmitting(true);
       await onCreate(dto);
-      toast.success("Trip created");
+      toast.success("Trip request submitted successfully");
       resetForm();
       onClose();
     } catch (err) {
@@ -211,7 +211,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
           "This driver is already booked for an overlapping schedule",
         );
       } else {
-        toast.error("Failed to create trip");
+        toast.error("Failed to submit trip request");
       }
     } finally {
       setSubmitting(false);
@@ -222,9 +222,10 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Create Trip</DialogTitle>
+          <DialogTitle className="text-2xl">Request Trip</DialogTitle>
           <DialogDescription>
-            Schedule a new trip and assign a vehicle and driver.
+            Submit a trip request for admin approval. No trip is created until an
+            admin approves it.
           </DialogDescription>
         </DialogHeader>
 
@@ -512,7 +513,7 @@ export default function TripFormModal({ open, onClose, onCreate }: Props) {
               }
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
-              {submitting ? "Creating..." : "Create Trip"}
+              {submitting ? "Submitting..." : "Submit request"}
             </button>
           </div>
         </form>

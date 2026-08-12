@@ -6,6 +6,9 @@ import {
   Clock,
   CheckCircle2,
   PackageCheck,
+  ClipboardList,
+  ThumbsUp,
+  XCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,6 +24,9 @@ const ICON: Record<NotificationType, LucideIcon> = {
   TRIP_DELAYED: Clock,
   TRIP_COMPLETED: CheckCircle2,
   POD_UPLOADED: PackageCheck,
+  TRIP_REQUESTED: ClipboardList,
+  TRIP_REQUEST_APPROVED: ThumbsUp,
+  TRIP_REQUEST_REJECTED: XCircle,
 };
 
 const ICON_TONE: Record<NotificationType, string> = {
@@ -28,7 +34,23 @@ const ICON_TONE: Record<NotificationType, string> = {
   TRIP_DELAYED: "text-orange-600 bg-orange-500/10",
   TRIP_COMPLETED: "text-success bg-success/10",
   POD_UPLOADED: "text-primary bg-primary/10",
+  TRIP_REQUESTED: "text-primary bg-primary/10",
+  TRIP_REQUEST_APPROVED: "text-success bg-success/10",
+  TRIP_REQUEST_REJECTED: "text-destructive bg-destructive/10",
 };
+
+/**
+ * Where a notification links when clicked. Request notifications open the request; the
+ * approval opens the created trip; all others open their trip. Only linked when the
+ * relevant id actually exists (never invents an id).
+ */
+function notificationHref(n: AppNotification): string | null {
+  if (n.type === "TRIP_REQUESTED" || n.type === "TRIP_REQUEST_REJECTED") {
+    return n.tripRequestId ? `/trip-requests/${n.tripRequestId}` : null;
+  }
+  // TRIP_REQUEST_APPROVED and the trip-lifecycle types link to the trip.
+  return n.tripId ? `/trips/${n.tripId}` : null;
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -82,13 +104,10 @@ export default function NotificationItem({ notification, onMarkRead }: Props) {
     </div>
   );
 
-  if (notification.tripId) {
+  const href = notificationHref(notification);
+  if (href) {
     return (
-      <Link
-        href={`/trips/${notification.tripId}`}
-        onClick={handleClick}
-        className="block"
-      >
+      <Link href={href} onClick={handleClick} className="block">
         {body}
       </Link>
     );

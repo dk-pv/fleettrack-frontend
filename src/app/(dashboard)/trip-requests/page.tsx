@@ -18,7 +18,7 @@ const FILTERS: StatusFilter[] = ["ALL", ...TRIP_REQUEST_STATUSES];
 /**
  * Trip Requests — one role-aware route (D6). ADMIN reviews all clients' requests; a
  * CLIENT sees only its own history. Approve/Reject controls live on the detail page and
- * render for ADMIN only. Dummy data via useTripRequests → trip-request.service.
+ * render for ADMIN only. Real data via useTripRequests → trip-request.service → API.
  */
 export default function TripRequestsPage() {
   const { requests, loading, error, role, refresh } = useTripRequests();
