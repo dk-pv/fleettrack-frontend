@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createUser, updateUser } from "@/lib/user-api";
+import { apiErrorMessage } from "@/lib/fetcher";
 import { User } from "./TypeUser";
 import { Button } from "@/components/ui/button";
 
@@ -64,6 +66,10 @@ export default function UserModal({
       onClose();
     } catch (error) {
       console.error(error);
+      // apiFetch rejects on non-2xx. Previously a failed save fell through to
+      // onSuccess() and showed a "User created" toast — now it reports the real
+      // reason (e.g. 400 "Email already exists") and keeps the modal open.
+      toast.error(apiErrorMessage(error, "Failed to save user"));
     } finally {
       setLoading(false);
     }

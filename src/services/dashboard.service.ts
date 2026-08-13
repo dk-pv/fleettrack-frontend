@@ -39,6 +39,21 @@ export async function getTripSummary(clientId?: string) {
   return response.json();
 }
 
+/* WEEKLY ACTIVITY (DSH-05) — trips scheduled to start on each of the last 7 days.
+   The server owns the day bucketing (fixed timezone) and always returns 7 entries,
+   oldest → newest, so the chart renders the response as-is. */
+export async function getWeeklyActivity(clientId?: string) {
+  const query = clientId
+    ? `?clientId=${clientId}`
+    : "";
+
+  const response = await apiFetch(
+    `/dashboard/weekly-activity${query}`
+  );
+
+  return response.json();
+}
+
 /* DELIVERY METRICS (DSH-04.1) */
 export async function getDeliveryMetrics(clientId?: string) {
   const query = clientId

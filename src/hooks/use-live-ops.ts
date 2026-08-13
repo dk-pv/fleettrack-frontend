@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { socket } from "@/lib/socket";
 import { getTrips } from "@/services/trip.service";
 import { getLiveVehicles, LiveVehicle } from "@/services/vehicle.service";
-import { isEtaActive, Trip } from "@/types/trip";
+import { ETA_ACTIVE_STATUSES, isEtaActive, Trip } from "@/types/trip";
 import { useAuthStore } from "@/store/auth-store";
 import { useClientStore } from "@/store/client-store";
 
@@ -22,7 +22,7 @@ import { useClientStore } from "@/store/client-store";
  * clobbers other listeners.
  */
 export function useLiveOps() {
-  const { user } = useAuthStore();
+  const { user, hydrated } = useAuthStore();
   const { selectedClient } = useClientStore();
 
   // A CLIENT is pinned to its own trips; an ADMIN may narrow by the selected client.
@@ -33,16 +33,25 @@ export function useLiveOps() {
     {},
   );
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Initial snapshot: ongoing trips + a seed of live vehicle status. Inlined async
   // (no-setState-in-effect lint rule); re-run on clientId change (ADMIN filter).
   useEffect(() => {
+    // Auth hydrates in an effect (AuthProvider), and child effects run before parent
+    // ones — so without this guard the first pass fetches with `user` still null, i.e.
+    // unscoped, and hydration then re-runs it. Waiting costs nothing: `loading` starts
+    // true, so the skeleton is already showing.
+    if (!hydrated) return;
+
     let active = true;
 
     async function load() {
       try {
+        // Same in-transit set as the ETA overview — matching URLs means the two
+        // widgets still share one request via getTrips' in-flight de-duplication.
         const [tripsRes, vehicles] = await Promise.all([
-          getTrips(clientId),
+          getTrips(clientId, ETA_ACTIVE_STATUSES),
           getLiveVehicles(),
         ]);
         if (!active) return;
@@ -50,8 +59,13 @@ export function useLiveOps() {
         setLiveVehicles(
           Object.fromEntries(vehicles.map((v) => [v.id, v])),
         );
+        setError(null);
       } catch (err) {
-        console.log(err);
+        // apiFetch rejects on non-2xx, so a failure (including a 403 on /trips) lands
+        // here instead of silently resolving to an empty list. Without this the board
+        // rendered "No ongoing trips" — indistinguishable from a genuinely quiet fleet.
+        console.error(err);
+        if (active) setError("Couldn't load live operations.");
       } finally {
         if (active) setLoading(false);
       }
@@ -62,7 +76,7 @@ export function useLiveOps() {
     return () => {
       active = false;
     };
-  }, [clientId]);
+  }, [clientId, hydrated]);
 
   // Live vehicle/driver status via the shared tracking socket (reused singleton —
   // not a new connection). Patches the status map in place on each broadcast.
@@ -89,5 +103,5 @@ export function useLiveOps() {
     };
   }, []);
 
-  return { ongoingTrips, liveVehicles, loading };
+  return { ongoingTrips, liveVehicles, loading, error };
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { apiFetch } from "@/lib/fetcher";
+import { apiErrorMessage, apiFetch } from "@/lib/fetcher";
 import { ADDRESS_KINDS, AddressKind, CustomerAddress } from "@/types/customer";
 import { Button } from "@/components/ui/button";
 
@@ -77,8 +77,9 @@ export default function AddressForm({
       } else {
         toast.error(data.message || "Something went wrong");
       }
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err) {
+      // apiFetch rejects on non-2xx — surface the API's message rather than a generic one.
+      toast.error(apiErrorMessage(err, "Something went wrong"));
     } finally {
       setLoading(false);
     }

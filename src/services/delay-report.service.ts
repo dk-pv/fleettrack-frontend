@@ -25,8 +25,9 @@ function queryString(filter: DelayReportFilter): string {
 export async function getDelayStats(
   filter: DelayReportFilter,
 ): Promise<DelayStats> {
+  // apiFetch throws on non-2xx — a failed report must reach the caller's error state,
+  // never render as a real all-zero report.
   const res = await apiFetch(`/delays/stats${queryString(filter)}`);
-  if (!res.ok) return EMPTY_DELAY_STATS;
   const data = await res.json();
   return {
     range: data.range ?? EMPTY_DELAY_STATS.range,

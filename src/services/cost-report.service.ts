@@ -24,8 +24,9 @@ function queryString(filter: CostReportFilter): string {
 export async function getCostReport(
   filter: CostReportFilter,
 ): Promise<CostReport> {
+  // apiFetch throws on non-2xx — a failed report must reach the caller's error state,
+  // never render as a real all-zero report.
   const res = await apiFetch(`/trip-costs/report${queryString(filter)}`);
-  if (!res.ok) return EMPTY_COST_REPORT;
   const data = await res.json();
   return {
     rows: data.rows ?? [],

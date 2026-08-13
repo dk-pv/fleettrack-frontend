@@ -129,7 +129,7 @@ export default function TripRequestDetailPage() {
           <h3 className="mb-4 font-semibold">Review</h3>
           <TripRequestReviewActions
             request={request}
-            onApprove={() => approve(request.id)}
+            onApprove={(driver) => approve(request.id, driver)}
             onReject={(reason) => reject(request.id, reason)}
           />
         </div>
@@ -162,6 +162,7 @@ export default function TripRequestDetailPage() {
               }
             />
             <Field label="Driver" value={request.driverName ?? "—"} />
+            <Field label="Driver phone" value={request.driverPhone ?? "—"} />
             <Field label="Customer" value={request.customer?.name ?? "—"} />
           </div>
         </div>

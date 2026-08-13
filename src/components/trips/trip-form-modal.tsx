@@ -72,7 +72,9 @@ export default function TripFormModal({
   // hits the ADMIN-only /clients endpoint.
   const { clients, loading: clientsLoading } = useClients(isAdmin);
 
-  const { vehicles, drivers, loading: optionsLoading } =
+  // `drivers` is deliberately not read: the driver is typed in (ADMIN) or assigned at
+  // approval, so there is no driver list to select from any more.
+  const { vehicles, loading: optionsLoading } =
     useTripOptions(selectedClientId);
   const { customers, loading: customersLoading } =
     useCustomerOptions(selectedClientId);
@@ -89,7 +91,10 @@ export default function TripFormModal({
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [vehicleId, setVehicleId] = useState("");
-  const [driverId, setDriverId] = useState("");
+  // ADMIN direct-create only: the driver is typed in, not picked. A CLIENT request
+  // carries no driver at all — the ADMIN assigns one when approving it.
+  const [driverName, setDriverName] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [notes, setNotes] = useState("");
   const [stops, setStops] = useState<StopDraft[]>([]);
@@ -105,12 +110,8 @@ export default function TripFormModal({
     scheduledEnd: end,
     clientId: selectedClientId,
   });
-  const driverOverlap = useOverlapCheck("driver", {
-    resourceId: driverId,
-    scheduledStart: start,
-    scheduledEnd: end,
-    clientId: selectedClientId,
-  });
+  // No driver overlap check any more: a driver is now a typed name rather than a
+  // selectable resource with an id, so there is nothing to check availability against.
 
   // Multi-stop route optimization (TM-06) — through the service, never the mock.
   const {
@@ -170,7 +171,8 @@ export default function TripFormModal({
     setStart("");
     setEnd("");
     setVehicleId("");
-    setDriverId("");
+    setDriverName("");
+    setDriverPhone("");
     setCustomerId("");
     setNotes("");
     setStops([]);
@@ -189,16 +191,18 @@ export default function TripFormModal({
       return;
     }
 
-    if (
-      !reference ||
-      !pickup ||
-      !delivery ||
-      !start ||
-      !end ||
-      !vehicleId ||
-      !driverId
-    ) {
+    if (!reference || !pickup || !delivery || !start || !end || !vehicleId) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Driver is ADMIN-only and mandatory there; a CLIENT request has no driver at all.
+    if (isAdmin && !driverName.trim()) {
+      toast.error("Driver name is required");
+      return;
+    }
+    if (isAdmin && !driverPhone.trim()) {
+      toast.error("Driver phone is required");
       return;
     }
 
@@ -212,21 +216,20 @@ export default function TripFormModal({
       return;
     }
 
-    if (driverOverlap.hasOverlap) {
-      toast.error("This driver is already booked for an overlapping schedule");
-      return;
-    }
-
-    const driver = drivers.find((d) => d.id === driverId);
-
     const dto: CreateTripDto = {
       reference,
       // ADMIN: the selected client (backend validates it owns the resources). CLIENT:
       // its own id for API shape — the backend ignores it and uses the JWT.
       clientId: isAdmin ? adminClientId : user?.id ?? "",
       vehicleId,
-      driverId,
-      driverName: driver?.name ?? null,
+      // Driver only travels on the ADMIN direct-create payload. The CLIENT request omits
+      // it entirely, and the backend nulls anything a client sends anyway.
+      ...(isAdmin
+        ? {
+            driverName: driverName.trim(),
+            driverPhone: driverPhone.trim(),
+          }
+        : {}),
       customerId: customerId || undefined,
       origin: pickup,
       destination: delivery,
@@ -296,7 +299,6 @@ export default function TripFormModal({
                   // one — clear them so a stale id can't be submitted. (Slice C option
                   // hooks discard the previous client's in-flight responses.)
                   setVehicleId("");
-                  setDriverId("");
                   setCustomerId("");
                 }}
                 disabled={clientsLoading || clients.length === 0}
@@ -494,27 +496,36 @@ export default function TripFormModal({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Driver</label>
-              <select
-                value={driverId}
-                onChange={(e) => setDriverId(e.target.value)}
-                disabled={optionsLoading || (isAdmin && !adminClientId)}
-                className={inputClass}
-              >
-                <option value="">
-                  {isAdmin && !adminClientId
-                    ? "Select a client first"
-                    : "Select driver"}
-                </option>
-                {drivers.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Driver — ADMIN direct-create only. A CLIENT submits no driver; the ADMIN
+                enters one in the approval modal when the request is reviewed. */}
+            {isAdmin && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  Driver Name <span className="text-destructive">*</span>
+                </label>
+                <input
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value)}
+                  placeholder="e.g. Ravi Kumar"
+                  className={inputClass}
+                />
+              </div>
+            )}
           </div>
+
+          {isAdmin && (
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Driver Phone <span className="text-destructive">*</span>
+              </label>
+              <input
+                value={driverPhone}
+                onChange={(e) => setDriverPhone(e.target.value)}
+                placeholder="e.g. +91 98765 43210"
+                className={inputClass}
+              />
+            </div>
+          )}
 
           {/* Customer (optional) — links the trip to a customer (CUS-07.1) */}
           <div>
@@ -547,13 +558,6 @@ export default function TripFormModal({
             checking={vehicleOverlap.checking}
             hasOverlap={vehicleOverlap.hasOverlap}
             conflicts={vehicleOverlap.conflicts}
-          />
-          <OverlapNotice
-            label="Driver"
-            show={!!driverId && scheduleValid}
-            checking={driverOverlap.checking}
-            hasOverlap={driverOverlap.hasOverlap}
-            conflicts={driverOverlap.conflicts}
           />
 
           <div>
@@ -609,7 +613,6 @@ export default function TripFormModal({
               disabled={
                 submitting ||
                 vehicleOverlap.hasOverlap ||
-                driverOverlap.hasOverlap ||
                 (isAdmin && !adminClientId)
               }
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"

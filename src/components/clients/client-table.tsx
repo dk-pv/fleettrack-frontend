@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { apiFetch } from "@/lib/fetcher";
+import { apiErrorMessage, apiFetch } from "@/lib/fetcher";
 import AddClientModal from "./add-client-modal";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
@@ -36,8 +36,8 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
     setError(false);
     try {
       const res = await apiFetch("/clients");
-      // apiFetch resolves for HTTP errors too — treat a non-ok status as a failure
-      // so a 500 surfaces the error state (with retry) instead of a false "empty".
+      // apiFetch now rejects on non-2xx, so a 500 surfaces the error state (with retry)
+      // instead of a false "empty". Kept as a defensive guard.
       if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       setClients(data.clients || []);
@@ -75,7 +75,9 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
       }
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong");
+      // apiFetch rejects on non-2xx — this is where the backend message now arrives
+      // (e.g. 409 "Client has an active trip…"), so show it instead of a generic error.
+      toast.error(apiErrorMessage(err, "Something went wrong"));
     } finally {
       setDeleting(false);
     }

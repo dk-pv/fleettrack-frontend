@@ -15,8 +15,9 @@ import {
  *        PUT /trips/:id/cost -> { cost, variance }
  */
 export async function getTripCost(tripId: string): Promise<TripCostResult> {
+  // apiFetch throws on non-2xx. A null cost is a real state ("nothing recorded yet"),
+  // so a failed load must NOT collapse into it — the caller's error state owns that.
   const res = await apiFetch(`/trips/${tripId}/cost`);
-  if (!res.ok) return { cost: null, variance: ZERO_VARIANCE };
   const data = await res.json();
   return { cost: data.cost ?? null, variance: data.variance ?? ZERO_VARIANCE };
 }

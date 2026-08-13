@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { apiFetch } from "@/lib/fetcher";
+import { apiFetch, isApiError } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
 import { acceptVehiclePacket, mergeVehicleUpdate } from "@/lib/vehicle-update";
 import { useClientStore } from "@/store/client-store";
@@ -48,8 +48,8 @@ export default function TrackingPage() {
     try {
       const response = await apiFetch("/vehicles");
 
-      // apiFetch resolves for HTTP errors too — an unchecked response would let a
-      // 500 fall through as "no vehicles". Treat a non-ok status as an API failure.
+      // apiFetch now rejects on non-2xx, so a 500 lands in the catch below. Kept as a
+      // defensive guard: it also covers a non-ok response reaching here another way.
       if (!response.ok) {
         setError("api");
         return;
@@ -58,9 +58,11 @@ export default function TrackingPage() {
       const data = await response.json();
       setVehicles(data.vehicles || []);
     } catch (err) {
-      // fetch itself rejected → the server was unreachable.
-      console.log(err);
-      setError("network");
+      // An ApiError means the server answered with a 4xx/5xx; anything else means
+      // fetch itself rejected and the server was unreachable. Keeping them apart
+      // preserves the two distinct messages below.
+      console.error(err);
+      setError(isApiError(err) ? "api" : "network");
     } finally {
       setLoading(false);
     }

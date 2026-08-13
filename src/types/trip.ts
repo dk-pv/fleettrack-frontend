@@ -140,6 +140,20 @@ export const TRIP_SUMMARY_BUCKET_LABELS: Record<TripSummaryBucket, string> = {
   completed: "Completed",
 };
 
+/**
+ * One day of the dashboard's weekly activity chart (DSH-05): how many trips are
+ * scheduled to start that day. Days are bucketed server-side in a fixed timezone, so
+ * `date` is already the correct calendar day and needs no client-side conversion.
+ */
+export interface WeeklyActivityDay {
+  /** Calendar day, YYYY-MM-DD. */
+  date: string;
+  /** Short weekday name for the axis, e.g. "Wed". */
+  label: string;
+  /** Trips scheduled to start on this day. */
+  value: number;
+}
+
 /** Dashboard trip summary counts (DSH-01.1) — one number per bucket. */
 export interface TripSummary {
   active: number;
@@ -258,6 +272,8 @@ export interface Trip {
   vehicle: TripVehicle | null;
   driverId: string | null;
   driverName: string | null;
+  /** Driver contact, entered by the ADMIN at direct-create or at request approval. */
+  driverPhone: string | null;
 
   /* Customer this trip is for (CUS-07) — nullable */
   customerId: string | null;
@@ -296,7 +312,12 @@ export interface CreateTripDto {
   clientId: string;
   vehicleId?: string | null;
   driverId?: string | null;
+  /**
+   * Driver name + phone. Both REQUIRED for an ADMIN direct create (enforced server-side);
+   * a CLIENT trip request sends neither — the ADMIN supplies them when approving.
+   */
   driverName?: string | null;
+  driverPhone?: string | null;
   customerId?: string | null;
   origin: string;
   destination: string;

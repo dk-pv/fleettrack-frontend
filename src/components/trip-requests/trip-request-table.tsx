@@ -1,16 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardList, Eye } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { ClipboardList, Eye, Trash2 } from "lucide-react";
 
 import { TripRequest } from "@/types/trip-request";
 import TripRequestStatusBadge from "./trip-request-status-badge";
 import EmptyState from "@/components/ui/empty-state";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { apiErrorMessage } from "@/lib/fetcher";
 
 interface Props {
   requests: TripRequest[];
   /** ADMIN sees the owning client column; a CLIENT (own requests only) does not. */
   showClient: boolean;
+  /**
+   * Delete a request. Omitted → no delete control is rendered. The server is the real
+   * authority (ADMIN any, CLIENT only its own, never one that already made a Trip).
+   */
+  onDelete?: (request: TripRequest) => Promise<void>;
 }
 
 function fmtDateTime(iso: string) {
@@ -30,7 +39,47 @@ const th =
  * language) and a stacked card list below md, so mobile never gets a squeezed wide table.
  * Both link a row to the request detail.
  */
-export default function TripRequestTable({ requests, showClient }: Props) {
+export default function TripRequestTable({
+  requests,
+  showClient,
+  onDelete,
+}: Props) {
+  const [pendingDelete, setPendingDelete] = useState<TripRequest | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || !onDelete) return;
+    setDeleting(true);
+    try {
+      await onDelete(pendingDelete);
+      toast.success("Trip request deleted");
+      setPendingDelete(null);
+    } catch (err) {
+      console.error(err);
+      // Surfaces the server's own reason (e.g. REQUEST_HAS_TRIP) rather than a generic one.
+      toast.error(apiErrorMessage(err, "Couldn't delete this request"));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteButton = (r: TripRequest) =>
+    onDelete ? (
+      <button
+        type="button"
+        onClick={(e) => {
+          // The mobile row is a Link — don't navigate when deleting from it.
+          e.preventDefault();
+          e.stopPropagation();
+          setPendingDelete(r);
+        }}
+        className="inline-flex items-center gap-1 text-destructive hover:underline"
+      >
+        <Trash2 className="h-4 w-4" />
+        Delete
+      </button>
+    ) : null;
+
   if (requests.length === 0) {
     return (
       <div className="rounded-lg border border-border bg-card">
@@ -108,13 +157,16 @@ export default function TripRequestTable({ requests, showClient }: Props) {
                   </td>
 
                   <td className="px-4 py-3.5 text-right">
-                    <Link
-                      href={`/trip-requests/${r.id}`}
-                      className="inline-flex items-center gap-1 text-primary hover:underline"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Link>
+                    <div className="inline-flex items-center gap-4">
+                      <Link
+                        href={`/trip-requests/${r.id}`}
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View
+                      </Link>
+                      {deleteButton(r)}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -148,9 +200,28 @@ export default function TripRequestTable({ requests, showClient }: Props) {
               <span>{r.vehicle?.vehicleNumber ?? "No vehicle"}</span>
               <span>{fmtDateTime(r.scheduledStart)}</span>
             </div>
+
+            {onDelete && (
+              <div className="mt-3 border-t border-border pt-3 text-sm">
+                {deleteButton(r)}
+              </div>
+            )}
           </Link>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete Trip Request"
+        description="Are you sure you want to delete this trip request?"
+        confirmLabel="Delete"
+        loadingLabel="Deleting..."
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={confirmDelete}
+      />
     </>
   );
 }

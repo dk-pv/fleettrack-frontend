@@ -11,32 +11,32 @@ import {
 
 import { useEffect, useState } from "react";
 
-export const weeklyActivity = [
-  { day: "Mon", value: 42 },
-  { day: "Tue", value: 58 },
-  { day: "Wed", value: 47 },
-  { day: "Thu", value: 71 },
-  { day: "Fri", value: 66 },
-  { day: "Sat", value: 53 },
-  { day: "Sun", value: 38 },
-];
+import { WeeklyActivityDay } from "@/types/trip";
+
+interface WeeklyActivityChartProps {
+  /**
+   * The last 7 days, oldest → newest, already bucketed and zero-filled by the server
+   * (DSH-05). Rendered as-is — a day with no trips is a real 0, not a gap.
+   */
+  days: WeeklyActivityDay[];
+}
 
 const CustomTooltip = ({
   active,
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: { day: string }; value: number }>;
+  payload?: Array<{ payload: { label: string }; value: number }>;
 }) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
         <p className="text-xs font-bold text-muted-foreground">
-          {payload[0].payload.day}
+          {payload[0].payload.label}
         </p>
 
         <p className="mt-1 text-sm font-extrabold text-foreground">
-          {payload[0].value} Active Trips
+          {payload[0].value} Scheduled Trips
         </p>
       </div>
     );
@@ -45,7 +45,9 @@ const CustomTooltip = ({
   return null;
 };
 
-export default function WeeklyActivityChart() {
+export default function WeeklyActivityChart({
+  days,
+}: WeeklyActivityChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export default function WeeklyActivityChart() {
           Weekly Activity
         </h3>
 
-        <p className="text-sm text-muted-foreground mt-1">Fleet utilization trends over the past week</p>
+        <p className="text-sm text-muted-foreground mt-1">Scheduled trips over the last 7 days</p>
       </div>
 
       <div className="h-[240px] w-full mt-6 min-h-0 min-w-0">
@@ -68,8 +70,8 @@ export default function WeeklyActivityChart() {
             width="99%"
             height={240}
           >
-            <AreaChart 
-              data={weeklyActivity}
+            <AreaChart
+              data={days}
               margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
             >
               <defs>
@@ -85,8 +87,8 @@ export default function WeeklyActivityChart() {
                 vertical={false} 
               />
 
-              <XAxis 
-                dataKey="day" 
+              <XAxis
+                dataKey="label"
                 tickLine={false}
                 axisLine={false}
                 dy={10}

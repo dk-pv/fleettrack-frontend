@@ -99,8 +99,8 @@ export default function VehicleDetailPage() {
 
       const response = await apiFetch(`/vehicles/${params.id}`);
 
-      // apiFetch resolves on HTTP errors — a 500/network failure must surface as
-      // an error state, not the misleading "Vehicle not found" fallback below.
+      // apiFetch now rejects on non-2xx, so a 500/network failure reaches the catch
+      // and never falls through to "Vehicle not found". Kept as a defensive guard.
       if (!response.ok) throw new Error("Request failed");
 
       const data = await response.json();

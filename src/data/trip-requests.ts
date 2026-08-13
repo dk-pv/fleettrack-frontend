@@ -96,6 +96,8 @@ function mk(s: SeedInput): TripRequest {
     vehicle: s.vehicle,
     driverId: `drv:${s.driverName.toLowerCase().replace(/\s+/g, "-")}`,
     driverName: s.driverName,
+    // Driver phone is only ever set by an ADMIN at approval; seed rows carry none.
+    driverPhone: null,
     customerId: s.customer ? s.customer.id : null,
     customer: s.customer ?? null,
     origin: s.origin,

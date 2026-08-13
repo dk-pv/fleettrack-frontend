@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { apiFetch } from "@/lib/fetcher";
+import { apiErrorMessage, apiFetch } from "@/lib/fetcher";
 import { AddressKind, Customer, CustomerAddress } from "@/types/customer";
 import AddressForm from "./address-form";
 
@@ -108,8 +108,9 @@ export default function CustomerAddressesModal({
       } else {
         toast.error("Delete failed");
       }
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err) {
+      // apiFetch rejects on non-2xx — surface the API's message rather than a generic one.
+      toast.error(apiErrorMessage(err, "Something went wrong"));
     } finally {
       setConfirmId(null);
     }

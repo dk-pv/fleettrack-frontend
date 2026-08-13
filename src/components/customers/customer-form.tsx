@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/fetcher";
+import { apiErrorMessage, apiFetch } from "@/lib/fetcher";
 import { Customer, CUSTOMER_TYPES, CustomerType } from "@/types/customer";
 import { Button } from "@/components/ui/button";
 
@@ -89,9 +89,12 @@ export default function CustomerForm({
         toast.error(data.message || "Something went wrong");
       }
     } catch (error) {
-      // A thrown fetch/parse error used to be swallowed (no catch) → silent failure.
+      // apiFetch rejects on non-2xx, so a validation/permission failure lands here with
+      // the API's own message instead of being read off the error body as a "response".
       console.error(error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(
+        apiErrorMessage(error, "Something went wrong. Please try again."),
+      );
     } finally {
       setLoading(false);
     }

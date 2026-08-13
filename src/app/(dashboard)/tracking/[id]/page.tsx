@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { apiFetch } from "@/lib/fetcher";
+import { apiFetch, isApiError } from "@/lib/fetcher";
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleDetails from "@/components/tracking/vehicle-details";
 import { socket } from "@/lib/socket";
@@ -47,8 +47,8 @@ export default function SingleTrackingPage() {
     try {
       const response = await apiFetch(`/vehicles/${params.id}`);
 
-      // apiFetch resolves for HTTP errors too — distinguish a real API failure from
-      // a genuine "not found" so we never show "Vehicle not found" on a 500.
+      // apiFetch now rejects on non-2xx, so a 500 lands in the catch below and never
+      // shows "Vehicle not found". Kept as a defensive guard.
       if (!response.ok) {
         setError("api");
         return;
@@ -57,9 +57,11 @@ export default function SingleTrackingPage() {
       const data = await response.json();
       setVehicle(data.vehicle ?? null);
     } catch (err) {
-      // fetch itself rejected → the server was unreachable.
-      console.log(err);
-      setError("network");
+      // An ApiError means the server answered with a 4xx/5xx; anything else means
+      // fetch itself rejected and the server was unreachable. Keeping them apart
+      // preserves the two distinct messages below.
+      console.error(err);
+      setError(isApiError(err) ? "api" : "network");
     } finally {
       setLoading(false);
     }

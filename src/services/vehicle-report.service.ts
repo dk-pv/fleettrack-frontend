@@ -28,7 +28,8 @@ export async function getVehicleUtilizationReport(
   const res = await apiFetch(
     `/vehicle-reports/utilization${queryString(filter)}`,
   );
-  if (!res.ok) return EMPTY_VEHICLE_UTILIZATION_REPORT;
+  // apiFetch throws on non-2xx — a failed report must reach the caller's error state,
+  // never render as a real all-zero report.
   const data = await res.json();
   return {
     range: data.range ?? EMPTY_VEHICLE_UTILIZATION_REPORT.range,

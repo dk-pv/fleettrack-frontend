@@ -61,12 +61,45 @@ import { apiFetch } from "@/lib/fetcher";
  * List trips. When `clientId` is provided the result is scoped to that client
  * (this is how ADMIN filtering and CLIENT self-scoping both work).
  */
-export async function getTrips(clientId?: string): Promise<TripsResponse> {
+/**
+ * In-flight de-duplication for the trip list. The dashboard mounts two independent
+ * consumers of the same list in the same render (useEtaOverview and useLiveOps), which
+ * meant two identical GET /trips every load. Concurrent callers now share one request.
+ *
+ * Deliberately NOT a timed cache: use-trips refetches immediately after create/update/
+ * delete, and any TTL would hand that refetch the pre-mutation list. The entry is
+ * dropped the moment the request settles, so nothing is ever served stale and a failure
+ * is never cached — the next call is a real retry.
+ */
+const inFlightTrips = new Map<string, Promise<TripsResponse>>();
+
+export async function getTrips(
+  clientId?: string,
+  statuses?: TripStatus[],
+): Promise<TripsResponse> {
   // The backend scopes to the CLIENT via the JWT; clientId only narrows an ADMIN.
-  const query = clientId ? `?clientId=${clientId}` : "";
-  const res = await apiFetch(`/trips${query}`);
-  const data = await res.json();
-  return { trips: data.trips ?? [] };
+  // `statuses` is optional — omitted, the server returns the full list as before.
+  const params = new URLSearchParams();
+  if (clientId) params.set("clientId", clientId);
+  if (statuses?.length) params.set("status", statuses.join(","));
+  const query = params.toString();
+  const path = `/trips${query ? `?${query}` : ""}`;
+
+  // Keyed on the full path — an ADMIN switching client must never be handed the
+  // previously selected client's list.
+  const pending = inFlightTrips.get(path);
+  if (pending) return pending;
+
+  const request = (async (): Promise<TripsResponse> => {
+    const res = await apiFetch(path);
+    const data = await res.json();
+    return { trips: data.trips ?? [] };
+  })().finally(() => {
+    inFlightTrips.delete(path);
+  });
+
+  inFlightTrips.set(path, request);
+  return request;
 }
 
 export async function getTrip(id: string): Promise<TripResponse> {
@@ -110,15 +143,20 @@ async function requestOverlap(params: {
   // backend pins the check to its own trips via the JWT (query clientId ignored).
   if (params.clientId) query.set("clientId", params.clientId);
 
-  const res = await apiFetch(`/trips/overlap?${query.toString()}`);
-  if (!res.ok) {
+  // Deliberately fails OPEN: apiFetch throws on any non-2xx, but a transient error
+  // (or an ADMIN with no client selected) must never block the form by reporting a
+  // clash that wasn't checked. Trip creation re-runs this check server-side and is
+  // the authoritative guard, so a missed pre-check can't create a double booking.
+  try {
+    const res = await apiFetch(`/trips/overlap?${query.toString()}`);
+    const data = await res.json();
+    return {
+      hasOverlap: data.hasOverlap ?? false,
+      conflicts: data.conflicts ?? [],
+    };
+  } catch {
     return { hasOverlap: false, conflicts: [] };
   }
-  const data = await res.json();
-  return {
-    hasOverlap: data.hasOverlap ?? false,
-    conflicts: data.conflicts ?? [],
-  };
 }
 
 /**
@@ -191,10 +229,16 @@ export async function createTrip(dto: CreateTripDto): Promise<TripResponse> {
  */
 export async function getDrivers(clientId?: string): Promise<TripDriver[]> {
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
-  const res = await apiFetch(`/trips/drivers${query}`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.drivers ?? [];
+  // Deliberately fails soft: this shares a Promise.all with getVehicles, and an ADMIN
+  // with no client selected gets a 400 (CLIENT_REQUIRED) by design. Rethrowing would
+  // drop the vehicle list too and leave the form with nothing.
+  try {
+    const res = await apiFetch(`/trips/drivers${query}`);
+    const data = await res.json();
+    return data.drivers ?? [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -315,16 +359,19 @@ export async function getTripTimeline(
 async function geocodeMany(addresses: string[]): Promise<(GeoPoint | null)[]> {
   if (addresses.length === 0) return [];
 
-  const res = await apiFetch("/geocode", {
-    method: "POST",
-    body: JSON.stringify({ addresses }),
-  });
-  if (!res.ok) {
+  // Deliberately fails soft (all null): an unresolvable address is already a valid
+  // null, so a geocoder outage degrades the preview instead of breaking the form.
+  try {
+    const res = await apiFetch("/geocode", {
+      method: "POST",
+      body: JSON.stringify({ addresses }),
+    });
+    const data = await res.json();
+    const points: (GeoPoint | null)[] = data.points ?? [];
+    return addresses.map((_, i) => points[i] ?? null);
+  } catch {
     return addresses.map(() => null);
   }
-  const data = await res.json();
-  const points: (GeoPoint | null)[] = data.points ?? [];
-  return addresses.map((_, i) => points[i] ?? null);
 }
 
 /**
@@ -407,12 +454,15 @@ export async function getTripRoute(tripId: string): Promise<TripRouteResponse> {
 export async function getTripBreadcrumbs(
   tripId: string,
 ): Promise<TripBreadcrumbsResponse> {
-  const res = await apiFetch(`/trips/${tripId}/breadcrumbs`);
-  if (!res.ok) {
+  // Deliberately fails soft: no breadcrumbs is a normal state (nothing recorded), and
+  // playback falls back to the static route either way.
+  try {
+    const res = await apiFetch(`/trips/${tripId}/breadcrumbs`);
+    const data = await res.json();
+    return { breadcrumbs: data.breadcrumbs ?? [] };
+  } catch {
     return { breadcrumbs: [] };
   }
-  const data = await res.json();
-  return { breadcrumbs: data.breadcrumbs ?? [] };
 }
 
 /** Geocode draft addresses (via the API) for a live route preview in the modal. */
@@ -567,10 +617,14 @@ export async function getTripProgress(
  *   API: GET /trips/:id/eta -> { eta }
  */
 export async function getTripEta(tripId: string): Promise<TripEtaResponse> {
-  const res = await apiFetch(`/trips/${tripId}/eta`);
-  if (!res.ok) {
+  // Deliberately fails soft: a null ETA is already a valid state (no live position),
+  // and this shares a Promise.all with the trip/timeline/route/progress loads — a
+  // rethrow here would blank the whole detail page over an optional value.
+  try {
+    const res = await apiFetch(`/trips/${tripId}/eta`);
+    const data = await res.json();
+    return { eta: data.eta ?? null };
+  } catch {
     return { eta: null };
   }
-  const data = await res.json();
-  return { eta: data.eta ?? null };
 }

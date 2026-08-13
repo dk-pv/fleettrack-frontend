@@ -46,9 +46,17 @@ export function useUploads(tripId: string, category: FileCategory) {
   };
 
   const remove = async (id: string) => {
-    const res = await deleteFile(id);
-    if (res.ok) setFiles((prev) => prev.filter((f) => f.id !== id));
-    return res.ok;
+    // apiFetch rejects on non-2xx, so a failed delete now throws instead of returning
+    // a non-ok response. Caught here (this is called straight from an onClick) so it
+    // can't surface as an unhandled rejection; the caller still gets false.
+    try {
+      await deleteFile(id);
+      setFiles((prev) => prev.filter((f) => f.id !== id));
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
   };
 
   return { files, loading, reload, remove };

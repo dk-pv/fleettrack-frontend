@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { apiFetch } from "@/lib/fetcher";
+import { apiErrorMessage, apiFetch } from "@/lib/fetcher";
 import { Customer } from "@/types/customer";
 import AddCustomerModal from "./add-customer-modal";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
@@ -77,7 +77,8 @@ export default function CustomerTable({
       }
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong");
+      // apiFetch rejects on non-2xx — surface the API's message rather than a generic one.
+      toast.error(apiErrorMessage(error, "Something went wrong"));
     } finally {
       setDeleting(false);
     }

@@ -21,19 +21,26 @@ import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton"
 import { ErrorState } from "@/components/ui/error-state";
 
 export default function DashboardPage() {
-  const { stats, vehicles, tripSummary, deliveryMetrics, loading, error, reload } =
-    useDashboard();
+  const {
+    stats,
+    vehicles,
+    tripSummary,
+    deliveryMetrics,
+    weeklyActivity,
+    loading,
+    error,
+    reload,
+  } = useDashboard();
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
-
-  if (error) {
-    return <ErrorState message="Couldn't load the dashboard." onRetry={reload} />;
-  }
-
-  return (
-    <div className="space-y-6">
+  // Only the aggregate blocks (cards + charts + vehicles) wait on useDashboard. The
+  // trip/ETA tables below own their own loading, error and empty states, so gating
+  // them here just delayed their requests until all four aggregate calls had finished.
+  const summary = loading ? (
+    <DashboardSkeleton />
+  ) : error ? (
+    <ErrorState message="Couldn't load the dashboard." onRetry={reload} />
+  ) : (
+    <>
       {/* Header */}
 
       <div>
@@ -166,7 +173,7 @@ export default function DashboardPage() {
         />
 
         <div className="min-w-0 xl:col-span-2">
-          <WeeklyActivityChart />
+          <WeeklyActivityChart days={weeklyActivity} />
         </div>
       </div>
 
@@ -175,6 +182,12 @@ export default function DashboardPage() {
       <div className="grid min-w-0 grid-cols-1 xl:grid-cols-2">
         <ActiveVehicles vehicles={vehicles} />
       </div>
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      {summary}
 
       {/* Active trip ETAs (DSH-03) */}
 

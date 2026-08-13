@@ -28,12 +28,13 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
 
 /**
  * List requests. Ownership scoping is server-side from the JWT (CLIENT own, ADMIN
- * audience), so no client-side filtering is needed. Fails soft (empty) on a transient
- * error so the list/skeleton degrade gracefully.
+ * audience), so no client-side filtering is needed. Throws on a non-2xx (apiFetch) so
+ * the caller shows its error state instead of a convincing "no requests yet".
  */
 export async function getTripRequests(): Promise<TripRequest[]> {
+  // apiFetch throws on non-2xx — a failed load must reach the caller's error state,
+  // never render as a genuine "no requests yet".
   const res = await apiFetch("/trip-requests");
-  if (!res.ok) return [];
   const data = await res.json();
   return (data.requests ?? []) as TripRequest[];
 }
@@ -71,15 +72,30 @@ export async function createTripRequest(
  * response carries both { request, trip }; the hook returns the updated request. Surfaces
  * the server's code (REQUEST_NOT_PENDING / VEHICLE_OVERLAP / …).
  */
-export async function approveTripRequest(id: string): Promise<TripRequest> {
+export async function approveTripRequest(
+  id: string,
+  driver: { driverName: string; driverPhone: string },
+): Promise<TripRequest> {
   const res = await apiFetch(`/trip-requests/${id}/approve`, {
     method: "PATCH",
+    body: JSON.stringify(driver),
   });
   if (!res.ok) {
     throw new Error(await errorMessage(res, "Failed to approve request"));
   }
   const data = await res.json();
   return data.request as TripRequest;
+}
+
+/**
+ * Delete a request. The server authorises it (ADMIN any, CLIENT only its own) and refuses
+ * one that already produced a Trip (REQUEST_HAS_TRIP), so the caller surfaces that message.
+ */
+export async function deleteTripRequest(id: string): Promise<void> {
+  const res = await apiFetch(`/trip-requests/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(await errorMessage(res, "Failed to delete request"));
+  }
 }
 
 /**

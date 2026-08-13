@@ -11,6 +11,7 @@ import {
   createTripRequest,
   getTripRequests,
   rejectTripRequest,
+  deleteTripRequest,
 } from "@/services/trip-request.service";
 
 /**
@@ -76,10 +77,18 @@ export function useTripRequests() {
   );
 
   const approve = useCallback(
-    async (id: string) => {
-      const updated = await approveTripRequest(id);
+    async (id: string, driver: { driverName: string; driverPhone: string }) => {
+      const updated = await approveTripRequest(id, driver);
       await load(true);
       return updated;
+    },
+    [load],
+  );
+
+  const remove = useCallback(
+    async (id: string) => {
+      await deleteTripRequest(id);
+      await load(true);
     },
     [load],
   );
@@ -101,6 +110,7 @@ export function useTripRequests() {
     create,
     approve,
     reject,
+    remove,
     refresh: () => load(),
   };
 }

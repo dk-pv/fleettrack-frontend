@@ -25,8 +25,8 @@ export default function ClientStats() {
   const load = useCallback(async () => {
     try {
       const res = await apiFetch("/clients");
-      // apiFetch resolves on HTTP errors — a non-ok response must become an
-      // error state, not a silent zero count.
+      // apiFetch now rejects on non-2xx, so a failure reaches the catch and becomes an
+      // error state rather than a silent zero count. Kept as a defensive guard.
       if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       setTotal(data.clients?.length ?? 0);

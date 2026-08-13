@@ -55,8 +55,13 @@ export interface TripRequest {
   reference: string | null;
   vehicleId: string | null;
   vehicle: TripVehicle | null;
+  /**
+   * Driver is NOT part of what a CLIENT submits — these stay null until an ADMIN enters
+   * them in the approval modal, at which point they are saved here and on the Trip.
+   */
   driverId: string | null;
   driverName: string | null;
+  driverPhone: string | null;
   customerId: string | null;
   customer: TripCustomer | null;
 

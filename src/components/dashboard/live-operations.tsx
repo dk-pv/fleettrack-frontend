@@ -25,7 +25,7 @@ const th =
  * TripStatusBadge and the ActiveVehicles status-pill styling.
  */
 export default function LiveOperations() {
-  const { ongoingTrips, liveVehicles, loading } = useLiveOps();
+  const { ongoingTrips, liveVehicles, loading, error } = useLiveOps();
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -52,6 +52,13 @@ export default function LiveOperations() {
           <tbody>
             {loading ? (
               <TableSkeletonRows columns={6} rows={4} />
+            ) : error ? (
+              // An API failure must never read as "no ongoing trips" (mirrors EtaOverview).
+              <tr>
+                <td colSpan={6} className="py-10 text-center text-destructive">
+                  {error}
+                </td>
+              </tr>
             ) : ongoingTrips.length === 0 ? (
               <tr>
                 <td

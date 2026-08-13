@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/fetcher";
+import { apiErrorMessage, apiFetch } from "@/lib/fetcher";
 import { Button } from "@/components/ui/button";
 
 interface Client {
@@ -112,16 +112,17 @@ export default function ClientForm({
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
+      if (data.success) {
         toast.success(isEdit ? "Client updated" : "Client created");
         onSuccess?.();
       } else {
-        // Surface the backend message (e.g. 409 "Already assigned…") inside the modal.
         setFormError(data.message || "Something went wrong.");
       }
     } catch (err) {
       console.error(err);
-      setFormError("Something went wrong. Please try again.");
+      // apiFetch rejects on non-2xx, so this is where the backend message now arrives
+      // (e.g. 409 "Already assigned to another client: …"). Keep showing it in the modal.
+      setFormError(apiErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setLoading(false);
     }

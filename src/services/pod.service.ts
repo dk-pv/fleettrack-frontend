@@ -10,8 +10,9 @@ import { PodInput, ProofOfDelivery } from "@/types/pod";
  *        PUT /trips/:id/pod -> { pod }
  */
 export async function getPod(tripId: string): Promise<ProofOfDelivery | null> {
+  // apiFetch throws on non-2xx. A null POD is a real state ("not confirmed yet"), so a
+  // failed load must NOT collapse into it — the caller's error state owns that.
   const res = await apiFetch(`/trips/${tripId}/pod`);
-  if (!res.ok) return null;
   const data = await res.json();
   return data.pod ?? null;
 }

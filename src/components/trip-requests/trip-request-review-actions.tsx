@@ -6,13 +6,20 @@ import { Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { apiErrorMessage } from "@/lib/fetcher";
 import { TripRequest } from "@/types/trip-request";
 
 interface Props {
   request: TripRequest;
-  onApprove: () => Promise<unknown>;
+  onApprove: (driver: {
+    driverName: string;
+    driverPhone: string;
+  }) => Promise<unknown>;
   onReject: (reason: string) => Promise<unknown>;
 }
+
+const modalInputClass =
+  "mt-1 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary";
 
 /**
  * ADMIN approve/reject controls for a PENDING request. Uses the shared ConfirmDialog for
@@ -27,23 +34,44 @@ export default function TripRequestReviewActions({
 }: Props) {
   const [dialog, setDialog] = useState<"approve" | "reject" | null>(null);
   const [reason, setReason] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const close = () => {
     if (submitting) return;
     setDialog(null);
     setReason("");
+    setDriverName("");
+    setDriverPhone("");
   };
 
   const handleApprove = async () => {
+    // The client never supplies a driver, so approval is where one is assigned — both
+    // fields are required and validated before the request is sent.
+    const name = driverName.trim();
+    const phone = driverPhone.trim();
+    if (!name) {
+      toast.error("Driver name is required");
+      return;
+    }
+    if (!phone) {
+      toast.error("Driver phone is required");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await onApprove();
+      await onApprove({ driverName: name, driverPhone: phone });
       toast.success(`Request ${request.reference ?? ""} approved`.trim());
       setDialog(null);
+      setDriverName("");
+      setDriverPhone("");
     } catch (err) {
-      console.log(err);
-      toast.error("Couldn't approve this request");
+      console.error(err);
+      toast.error(
+        apiErrorMessage(err, "Couldn't approve this request"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -93,9 +121,36 @@ export default function TripRequestReviewActions({
 
       <ConfirmDialog
         open={dialog === "approve"}
-        title="Approve trip request?"
-        description={`Approving creates the actual trip for ${request.client.name} and notifies the client. This can't be undone.`}
-        confirmLabel="Approve"
+        title="Approve Trip"
+        description={
+          <>
+            <span className="block">
+              Approving creates the actual trip for {request.client.name} and
+              notifies the client. This can&apos;t be undone.
+            </span>
+
+            <label className="mt-4 block text-sm font-medium text-foreground">
+              Driver Name <span className="text-destructive">*</span>
+              <input
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+                placeholder="e.g. Ravi Kumar"
+                className={modalInputClass}
+              />
+            </label>
+
+            <label className="mt-3 block text-sm font-medium text-foreground">
+              Driver Phone <span className="text-destructive">*</span>
+              <input
+                value={driverPhone}
+                onChange={(e) => setDriverPhone(e.target.value)}
+                placeholder="e.g. +91 98765 43210"
+                className={modalInputClass}
+              />
+            </label>
+          </>
+        }
+        confirmLabel="Approve Trip"
         loadingLabel="Approving..."
         confirmVariant="primary"
         loading={submitting}

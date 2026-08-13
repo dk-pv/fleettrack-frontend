@@ -19,8 +19,9 @@ export async function getNotifications(
   limit?: number,
 ): Promise<NotificationList> {
   const qs = limit ? `?limit=${limit}` : "";
+  // apiFetch throws on non-2xx — a failed load must reach the caller's error state so
+  // the bell shows "Couldn't load notifications", not a convincing "No notifications yet".
   const res = await apiFetch(`/notifications${qs}`);
-  if (!res.ok) return { notifications: [], unreadCount: 0 };
   const data = await res.json();
   return {
     notifications: data.notifications ?? [],

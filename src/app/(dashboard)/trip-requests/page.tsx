@@ -23,7 +23,7 @@ const FILTERS: StatusFilter[] = ["ALL", ...TRIP_REQUEST_STATUSES];
  * render for ADMIN only. Real data via useTripRequests → trip-request.service → API.
  */
 export default function TripRequestsPage() {
-  const { requests, loading, error, role, refresh } = useTripRequests();
+  const { requests, loading, error, role, refresh, remove } = useTripRequests();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("ALL");
   // ADMIN direct trip creation (FLOW B) — opens the shared TripFormModal in
@@ -122,7 +122,11 @@ export default function TripRequestsPage() {
       ) : loading ? (
         <TableSkeleton columns={isAdmin ? 7 : 6} rows={8} />
       ) : (
-        <TripRequestTable requests={filtered} showClient={isAdmin} />
+        <TripRequestTable
+          requests={filtered}
+          showClient={isAdmin}
+          onDelete={(r) => remove(r.id)}
+        />
       )}
 
       {/* ADMIN direct-create — reuses the shared TripFormModal (admin-create mode),

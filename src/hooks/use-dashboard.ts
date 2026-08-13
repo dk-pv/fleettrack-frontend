@@ -11,9 +11,14 @@ import {
   getActiveVehicles,
   getTripSummary,
   getDeliveryMetrics,
+  getWeeklyActivity,
 } from "@/services/dashboard.service";
 
-import { TripSummary, DeliveryMetrics } from "@/types/trip";
+import {
+  TripSummary,
+  DeliveryMetrics,
+  WeeklyActivityDay,
+} from "@/types/trip";
 import { useClientStore } from "@/store/client-store";
 
 export function useDashboard() {
@@ -32,6 +37,9 @@ export function useDashboard() {
   const [deliveryMetrics, setDeliveryMetrics] =
     useState<DeliveryMetrics | null>(null);
 
+  const [weeklyActivity, setWeeklyActivity] =
+    useState<WeeklyActivityDay[]>([]);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -40,24 +48,30 @@ export function useDashboard() {
 
   const clientId = selectedClient?.id;
 
+  // The five calls are independent — five endpoints, five independent states — so they
+  // run concurrently instead of in a chain. Same fail-fast behaviour as before: one
+  // shared catch, so any failure still sets the single `error` flag.
   const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(false);
 
-      const statsData = await getDashboardStats(clientId);
+      const [statsData, vehicleData, summaryData, metricsData, weeklyData] =
+        await Promise.all([
+          getDashboardStats(clientId),
+          getActiveVehicles(clientId),
+          getTripSummary(clientId),
+          getDeliveryMetrics(clientId),
+          getWeeklyActivity(clientId),
+        ]);
+
       setStats(statsData.data);
-
-      const vehicleData = await getActiveVehicles(clientId);
       setVehicles(vehicleData.data || []);
-
-      const summaryData = await getTripSummary(clientId);
       setTripSummary(summaryData.data);
-
-      const metricsData = await getDeliveryMetrics(clientId);
       setDeliveryMetrics(metricsData.data);
+      setWeeklyActivity(weeklyData.data?.days ?? []);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       setError(true);
     } finally {
       setLoading(false);
@@ -67,31 +81,42 @@ export function useDashboard() {
   // Initial load + reload when the scoped client changes. Inlined (not a call to
   // `load`) to satisfy the no-setState-in-effect lint rule, mirroring use-trips.
   useEffect(() => {
+    let active = true;
+
     async function fetchData() {
       try {
         setLoading(true);
         setError(false);
 
-        const statsData = await getDashboardStats(clientId);
+        const [statsData, vehicleData, summaryData, metricsData, weeklyData] =
+          await Promise.all([
+            getDashboardStats(clientId),
+            getActiveVehicles(clientId),
+            getTripSummary(clientId),
+            getDeliveryMetrics(clientId),
+            getWeeklyActivity(clientId),
+          ]);
+
+        if (!active) return;
+
         setStats(statsData.data);
-
-        const vehicleData = await getActiveVehicles(clientId);
         setVehicles(vehicleData.data || []);
-
-        const summaryData = await getTripSummary(clientId);
         setTripSummary(summaryData.data);
-
-        const metricsData = await getDeliveryMetrics(clientId);
         setDeliveryMetrics(metricsData.data);
+        setWeeklyActivity(weeklyData.data?.days ?? []);
       } catch (err) {
-        console.log(err);
-        setError(true);
+        console.error(err);
+        if (active) setError(true);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     fetchData();
+
+    return () => {
+      active = false;
+    };
   }, [clientId]);
 
   return {
@@ -99,6 +124,7 @@ export function useDashboard() {
     vehicles,
     tripSummary,
     deliveryMetrics,
+    weeklyActivity,
     loading,
     error,
     reload: load,
