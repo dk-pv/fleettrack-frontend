@@ -56,7 +56,7 @@ export default function TripRequestTable({
       setPendingDelete(null);
     } catch (err) {
       console.error(err);
-      // Surfaces the server's own reason (e.g. REQUEST_HAS_TRIP) rather than a generic one.
+      // Surfaces the server's own reason (e.g. "Not your request") rather than a generic one.
       toast.error(apiErrorMessage(err, "Couldn't delete this request"));
     } finally {
       setDeleting(false);

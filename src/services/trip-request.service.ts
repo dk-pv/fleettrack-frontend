@@ -88,8 +88,9 @@ export async function approveTripRequest(
 }
 
 /**
- * Delete a request. The server authorises it (ADMIN any, CLIENT only its own) and refuses
- * one that already produced a Trip (REQUEST_HAS_TRIP), so the caller surfaces that message.
+ * Delete a request. The server authorises it (ADMIN any, CLIENT only its own) and, for an
+ * approved request, deletes the Trip it produced in the same transaction — so the trips
+ * list must be treated as stale after this too.
  */
 export async function deleteTripRequest(id: string): Promise<void> {
   const res = await apiFetch(`/trip-requests/${id}`, { method: "DELETE" });
