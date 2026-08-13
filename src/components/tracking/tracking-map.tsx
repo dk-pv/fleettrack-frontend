@@ -46,9 +46,11 @@ interface TrackingMapProps {
    *  MapControls / the popup card), so a caller that doesn't need one can omit it. */
   centerTrigger?: number;
   followMode?: boolean;
-  /** `null` means "deselect" — sent when the user clicks empty map or closes the card. */
+  /** Fired on a marker click. The map only ever SELECTS — it never deselects, so nothing
+   *  the user does on the map can reset the caller's selection. Clearing it is an explicit
+   *  action elsewhere (the vehicle list's "All Vehicles"), hence the `null` in the type. */
   onVehicleSelect?: (vehicle: Vehicle | null) => void;
-  /** Render the compact popup card over the selected marker. /tracking opts in; the
+  /** Allow the compact popup card over a clicked marker. /tracking opts in; the
    *  single-vehicle /tracking/[id] route keeps its own side panel instead. */
   showVehicleCard?: boolean;
 }
@@ -801,23 +803,39 @@ export default function TrackingMap({
     setInternalFollowMode(false);
   }, []);
 
+  // Which vehicle the popup card is open FOR — deliberately separate from which vehicle is
+  // selected. Selection is owned by the page (the list sets it too); the card is a
+  // map-local concern that only a marker click opens. Keeping them apart is what lets the
+  // card close without disturbing the selection, and stops a list selection from popping
+  // the card open. Storing the id (not a boolean) also means picking a different vehicle
+  // from the list hides a stale card for free — no extra effect to keep them in sync.
+  const [cardVehicleId, setCardVehicleId] = useState<string | null>(null);
+  const cardOpen = cardVehicleId !== null && cardVehicleId === selectedVehicle?.id;
+
   // A marker click also reaches the map's own click handler in some builds, which would
-  // deselect the vehicle in the same tick it was selected. Recording the marker click and
-  // ignoring a map click that lands right behind it makes the order irrelevant.
+  // close the card in the same tick it was opened. Recording the marker click and ignoring
+  // a map click that lands right behind it makes the order irrelevant.
   const lastMarkerClickRef = useRef(0);
 
+  // The ONLY thing that opens the card. It still selects too, so clicking an unselected
+  // marker both focuses that vehicle and shows its details in one action.
   const handleMarkerClick = useCallback(
     (vehicle: Vehicle) => {
       lastMarkerClickRef.current = performance.now();
       onVehicleSelect?.(vehicle);
+      setCardVehicleId(vehicle.id);
     },
     [onVehicleSelect],
   );
 
+  // Clicking empty map dismisses the card ONLY. It used to call onVehicleSelect(null),
+  // which cleared the selection and sent the map back to fitAllVehicles — the selected
+  // vehicle must survive both this and the card's own close button. "Show all" stays an
+  // explicit action via the vehicle list.
   const handleMapClick = useCallback(() => {
     if (performance.now() - lastMarkerClickRef.current < 300) return;
-    onVehicleSelect?.(null);
-  }, [onVehicleSelect]);
+    setCardVehicleId(null);
+  }, []);
 
   if (loadError || authFailed) {
     return (
@@ -904,8 +922,11 @@ export default function TrackingMap({
 
         {/* SELECTED-VEHICLE POPUP — anchored to the marker's own LatLng, so OverlayView
             keeps it glued to the vehicle through pan, zoom and live position updates
-            rather than to a fixed screen corner. */}
+            rather than to a fixed screen corner. Gated on `cardOpen`, NOT on
+            `selectedVehicle` alone: a vehicle picked from the list is selected and
+            focused, but shows no card until its marker is clicked. */}
         {showVehicleCard &&
+          cardOpen &&
           mapReady &&
           selectedVehicle &&
           isValidCoordinate(
@@ -927,7 +948,10 @@ export default function TrackingMap({
               <VehiclePopupCard
                 vehicle={selectedVehicle}
                 onCenterMap={() => setLocalCenterTrigger((prev) => prev + 1)}
-                onClose={() => onVehicleSelect?.(null)}
+                // Closes the card and NOTHING else — the vehicle stays selected and the
+                // map stays focused on it. This used to clear the selection, which is
+                // what snapped the map back to the all-vehicles view.
+                onClose={() => setCardVehicleId(null)}
               />
             </OverlayViewF>
           )}
