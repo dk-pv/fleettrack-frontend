@@ -35,9 +35,17 @@ export default function NotificationBell() {
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
+          {/* The real unread count from the server, not the list length — the list is
+              capped at the API's page size, so notifications.length would under-report
+              once there are more unread than one page. It used to render "9+" past nine,
+              which is why a true count of 10 showed as 9+. min-w-4 + px-1 lets the badge
+              grow for a wider number instead of the count being clipped. */}
           {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-              {unreadCount > 9 ? "9+" : unreadCount}
+            <span
+              aria-label={`${unreadCount} unread notifications`}
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold tabular-nums text-white"
+            >
+              {unreadCount}
             </span>
           )}
         </button>

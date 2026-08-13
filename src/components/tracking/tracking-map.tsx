@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import {
+  FLOAT_PANE,
+  GoogleMap,
+  OverlayViewF,
+  useJsApiLoader,
+} from "@react-google-maps/api";
 import { LocateFixed, Minus, Navigation2, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   calculateBearing,
   haversineDistance,
   isValidCoordinate,
 } from "@/lib/gps-utils";
+import VehiclePopupCard from "./vehicle-popup-card";
 
 /* -------------------------------------------------- */
 /* TYPES                                              */
@@ -37,9 +42,15 @@ export interface Vehicle {
 interface TrackingMapProps {
   vehicles: Vehicle[];
   selectedVehicle: Vehicle | null;
-  centerTrigger: number;
+  /** External "re-centre on the selection" pulse. The map also has its own (see
+   *  MapControls / the popup card), so a caller that doesn't need one can omit it. */
+  centerTrigger?: number;
   followMode?: boolean;
-  onVehicleSelect?: (vehicle: Vehicle) => void;
+  /** `null` means "deselect" — sent when the user clicks empty map or closes the card. */
+  onVehicleSelect?: (vehicle: Vehicle | null) => void;
+  /** Render the compact popup card over the selected marker. /tracking opts in; the
+   *  single-vehicle /tracking/[id] route keeps its own side panel instead. */
+  showVehicleCard?: boolean;
 }
 
 /* -------------------------------------------------- */
@@ -267,17 +278,27 @@ function VehicleMarker({
       map,
       position: { lat: vehicle.latitude, lng: vehicle.longitude },
       content: container,
+      // Native hover tooltip showing the vehicle number (also the marker's aria-label).
       title: vehicle.vehicleNumber,
+      // Required for `gmp-click`. The legacy MVC "click" event enabled itself as soon as
+      // a listener was attached; the DOM event does not — without this, clicks are dead.
+      gmpClickable: true,
     });
 
     markerRef.current = marker;
 
-    const listener = marker.addListener("click", () => {
+    // AdvancedMarkerElement extends HTMLElement, so this is a real DOM event. Google
+    // deprecated `addListener("click")` on it ("[gmp-advanced-marker]: Please use
+    // addEventListener('gmp-click', ...)"). Named handler so the cleanup below removes
+    // this exact reference; the effect is keyed on [map], so it binds once per map and
+    // a re-render cannot stack duplicate listeners (onClick is read via onClickRef).
+    const handleClick = () => {
       onClickRef.current();
-    });
+    };
+    marker.addEventListener("gmp-click", handleClick);
 
     return () => {
-      listener.remove();
+      marker.removeEventListener("gmp-click", handleClick);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -408,22 +429,16 @@ function VehicleMarker({
 
 interface LiveStatusCardProps {
   vehicles: Vehicle[];
-  hasSelected: boolean;
 }
 
-function LiveStatusCard({ vehicles, hasSelected }: LiveStatusCardProps) {
+// Stays pinned bottom-left. It used to jump up to bottom-[300px] on mobile to clear the
+// selected-vehicle bottom sheet; the sheet is gone, so the position is now constant.
+function LiveStatusCard({ vehicles }: LiveStatusCardProps) {
   const moving = vehicles.filter((v) => v.status === "MOVING").length;
   const idle = vehicles.filter((v) => v.status === "IDLE").length;
 
   return (
-    <div
-      className={cn(
-        "absolute z-[40] rounded-lg bg-card px-4 py-2.5 shadow-sm border border-border select-none transition-all duration-300",
-        hasSelected
-          ? "bottom-[300px] left-3 md:bottom-4 md:left-4"
-          : "bottom-4 left-3 md:bottom-4 md:left-4",
-      )}
-    >
+    <div className="absolute bottom-4 left-3 z-[40] rounded-lg bg-card px-4 py-2.5 shadow-sm border border-border select-none md:left-4">
       <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider">
         <div className="text-center">
           <p className="text-sm font-extrabold text-success leading-none">
@@ -465,7 +480,6 @@ interface MapControlsProps {
   followMode: boolean;
   onToggleFollow: () => void;
   mapRef: React.RefObject<google.maps.Map | null>;
-  hasSelected: boolean;
 }
 
 function MapControls({
@@ -473,17 +487,9 @@ function MapControls({
   followMode,
   onToggleFollow,
   mapRef,
-  hasSelected,
 }: MapControlsProps) {
   return (
-    <div
-      className={cn(
-        "absolute z-[40] flex flex-col gap-1.5 transition-all duration-300",
-        hasSelected
-          ? "bottom-[300px] right-3 md:bottom-4 md:right-4"
-          : "bottom-4 right-3 md:bottom-4 md:right-4",
-      )}
-    >
+    <div className="absolute bottom-4 right-3 z-[40] flex flex-col gap-1.5 md:right-4">
       <button
         onClick={() =>
           mapRef.current?.setZoom(
@@ -542,9 +548,10 @@ function MapControls({
 export default function TrackingMap({
   vehicles,
   selectedVehicle,
-  centerTrigger,
+  centerTrigger = 0,
   followMode: externalFollowMode = false,
   onVehicleSelect,
+  showVehicleCard = false,
 }: TrackingMapProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
@@ -790,13 +797,28 @@ export default function TrackingMap({
     prevPositionsRef.current = nextPrev;
   }, [vehicles, headings]);
 
-  const visibleVehicles = selectedVehicle
-    ? validVehicles.filter((v) => v.id === selectedVehicle.id)
-    : validVehicles;
-
   const handleDragStart = useCallback(() => {
     setInternalFollowMode(false);
   }, []);
+
+  // A marker click also reaches the map's own click handler in some builds, which would
+  // deselect the vehicle in the same tick it was selected. Recording the marker click and
+  // ignoring a map click that lands right behind it makes the order irrelevant.
+  const lastMarkerClickRef = useRef(0);
+
+  const handleMarkerClick = useCallback(
+    (vehicle: Vehicle) => {
+      lastMarkerClickRef.current = performance.now();
+      onVehicleSelect?.(vehicle);
+    },
+    [onVehicleSelect],
+  );
+
+  const handleMapClick = useCallback(() => {
+    if (performance.now() - lastMarkerClickRef.current < 300) return;
+    onVehicleSelect?.(null);
+  }, [onVehicleSelect]);
+
   if (loadError || authFailed) {
     return (
       <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden flex flex-col items-center justify-center gap-3 bg-muted px-6 text-center">
@@ -837,10 +859,7 @@ export default function TrackingMap({
       </div>
 
       {/* STATUS CARD */}
-      <LiveStatusCard
-        vehicles={vehicles}
-        hasSelected={selectedVehicle !== null}
-      />
+      <LiveStatusCard vehicles={vehicles} />
 
       {/* MAP CONTROLS (outside GoogleMap so they remain above the map) */}
       <MapControls
@@ -848,7 +867,6 @@ export default function TrackingMap({
         followMode={followMode}
         onToggleFollow={() => setInternalFollowMode((v) => !v)}
         mapRef={mapRef}
-        hasSelected={selectedVehicle !== null}
       />
 
       {/* GOOGLE MAP */}
@@ -860,12 +878,16 @@ export default function TrackingMap({
         onLoad={handleMapLoad}
         onUnmount={handleMapUnmount}
         onDragStart={handleDragStart}
+        onClick={handleMapClick}
       >
         {/* VEHICLE MARKERS — gated on mapReady (tilesloaded) so they are only ever
-            created against an authorized, fully-rendered map. */}
+            created against an authorized, fully-rendered map. Selecting a vehicle used
+            to filter this list down to the selection alone; every marker now stays drawn
+            so a second marker is there to click when switching vehicles. The selection
+            reads through z-index (SELECTED_Z_INDEX) and the popup card below. */}
         {map &&
           mapReady &&
-          visibleVehicles.map((vehicle) => {
+          validVehicles.map((vehicle) => {
             const heading = headings[vehicle.id] ?? 0;
 
             return (
@@ -875,10 +897,40 @@ export default function TrackingMap({
                 vehicle={vehicle}
                 heading={heading}
                 isSelected={selectedVehicle?.id === vehicle.id}
-                onClick={() => onVehicleSelect?.(vehicle)}
+                onClick={() => handleMarkerClick(vehicle)}
               />
             );
           })}
+
+        {/* SELECTED-VEHICLE POPUP — anchored to the marker's own LatLng, so OverlayView
+            keeps it glued to the vehicle through pan, zoom and live position updates
+            rather than to a fixed screen corner. */}
+        {showVehicleCard &&
+          mapReady &&
+          selectedVehicle &&
+          isValidCoordinate(
+            selectedVehicle.latitude,
+            selectedVehicle.longitude,
+          ) && (
+            <OverlayViewF
+              position={{
+                lat: selectedVehicle.latitude,
+                lng: selectedVehicle.longitude,
+              }}
+              mapPaneName={FLOAT_PANE}
+              // Centre the card on the marker and lift it clear of the 40px icon.
+              getPixelPositionOffset={(width, height) => ({
+                x: -(width / 2),
+                y: -height - 30,
+              })}
+            >
+              <VehiclePopupCard
+                vehicle={selectedVehicle}
+                onCenterMap={() => setLocalCenterTrigger((prev) => prev + 1)}
+                onClose={() => onVehicleSelect?.(null)}
+              />
+            </OverlayViewF>
+          )}
       </GoogleMap>
     </div>
   );

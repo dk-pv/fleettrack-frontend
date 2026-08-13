@@ -5,7 +5,6 @@ import { socket } from "@/lib/socket";
 import { acceptVehiclePacket, mergeVehicleUpdate } from "@/lib/vehicle-update";
 import { useClientStore } from "@/store/client-store";
 import TrackingMap from "@/components/tracking/tracking-map";
-import VehicleDetails from "@/components/tracking/vehicle-details";
 import VehicleList from "@/components/tracking/vehicle-list";
 import CustomSelect from "@/components/ui/custom-select";
 import { TrackingListSkeleton } from "@/components/ui/skeletons/tracking-list-skeleton";
@@ -31,7 +30,6 @@ export default function TrackingPage() {
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | "api" | "network">(null);
-  const [centerTrigger, setCenterTrigger] = useState(0);
 
   // Fleet Owner (ADMIN) client filter — reuses the global navbar client selector.
   // ADMIN's /vehicles returns every client's vehicles; selecting a client narrows
@@ -113,10 +111,6 @@ export default function TrackingPage() {
     };
   }, []);
 
-  const handleCenterMap = () => {
-    setCenterTrigger((prev) => prev + 1);
-  };
-
   const visibleVehicles = useMemo(
     () =>
       selectedClient
@@ -168,126 +162,45 @@ export default function TrackingPage() {
     );
   }
 
+  // One layout for every breakpoint: the vehicle picker (a dropdown on mobile, the list
+  // sidebar from md up) and then the map, which takes everything left over. The three
+  // per-breakpoint blocks this replaced each mounted their own <TrackingMap>, so three
+  // Google Maps instances and three sets of markers were live at once with two hidden.
   return (
-    <div className="relative h-full overflow-hidden bg-background">
-      {/* MOBILE VIEW (< 768px / md) */}
-      <div className="flex h-full flex-col md:hidden">
-        {/* Search & Custom Dropdown Header */}
-        <div className="border-b border-border bg-background p-3.5 z-30">
-          <CustomSelect
-            value={selected?.id || ""}
-            onChange={(val) => {
-              const vehicle = vehicles.find((item) => item.id === val) || null;
-              setSelected(vehicle);
-            }}
-            options={selectOptions}
-            placeholder="Select a vehicle..."
-          />
-        </div>
-
-        {/* Map Area */}
-        <div className="relative flex-1 overflow-hidden min-h-[300px]">
-          <TrackingMap
-            vehicles={visibleVehicles}
-            selectedVehicle={selected}
-            centerTrigger={centerTrigger}
-            onVehicleSelect={(v) =>
-              setSelected(vehicles.find((item) => item.id === v.id) ?? null)
-            }
-          />
-        </div>
-
-        {/* Mobile bottom sheet drawer details */}
-        {selected && (
-          <div className="absolute bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
-            <div className="w-full bg-card rounded-t-2xl border-t border-border shadow-lg">
-              {/* Drag Handle */}
-              <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-3" />
-              <div className="max-h-[50vh] overflow-y-auto pb-8 px-4 no-scrollbar">
-                <VehicleDetails
-                  vehicle={selected}
-                  onCenterMap={handleCenterMap}
-                  onClose={() => setSelected(null)}
-                  mobile
-                />
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="flex h-full flex-col overflow-hidden bg-background md:flex-row">
+      {/* MOBILE VEHICLE PICKER (< md) — the sidebar is too wide for a phone */}
+      <div className="z-30 border-b border-border bg-background p-3.5 md:hidden">
+        <CustomSelect
+          value={selected?.id || ""}
+          onChange={(val) => {
+            setSelected(vehicles.find((item) => item.id === val) || null);
+          }}
+          options={selectOptions}
+          placeholder="Select a vehicle..."
+        />
       </div>
 
-      {/* TABLET VIEW (>= 768px and < 1280px / xl) */}
-      <div className="hidden md:flex xl:hidden h-full">
-        {/* Left Side Vehicle List */}
-        <div className="w-[260px] flex-shrink-0 border-r border-border bg-card">
-          <VehicleList
-            vehicles={visibleVehicles}
-            selected={selected}
-            onSelect={setSelected}
-          />
-        </div>
-
-        {/* Map with floating overlay details */}
-        <div className="relative flex-1 overflow-hidden">
-          <TrackingMap
-            vehicles={visibleVehicles}
-            selectedVehicle={selected}
-            centerTrigger={centerTrigger}
-            onVehicleSelect={(v) =>
-              setSelected(vehicles.find((item) => item.id === v.id) ?? null)
-            }
-          />
-
-          {/* Floating Tablet Vehicle Details */}
-          {selected && (
-            <div className="absolute right-4 bottom-4 top-4 w-[310px] z-50 animate-in fade-in-50 slide-in-from-right duration-300">
-              <div className="h-full w-full bg-card rounded-lg border border-border shadow-md flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <VehicleDetails
-                    vehicle={selected}
-                    onCenterMap={handleCenterMap}
-                    onClose={() => setSelected(null)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* VEHICLE LIST (md and up) */}
+      <div className="hidden w-[260px] flex-shrink-0 bg-card md:block xl:w-[280px]">
+        <VehicleList
+          vehicles={visibleVehicles}
+          selected={selected}
+          onSelect={setSelected}
+        />
       </div>
 
-      {/* DESKTOP VIEW (>= 1280px / xl) */}
-      <div className="hidden xl:flex h-full">
-        {/* Vehicle List */}
-        <div className="w-[280px] flex-shrink-0 border-r border-border bg-card">
-          <VehicleList
-            vehicles={visibleVehicles}
-            selected={selected}
-            onSelect={setSelected}
-          />
-        </div>
-
-        {/* Map */}
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <TrackingMap
-            vehicles={visibleVehicles}
-            selectedVehicle={selected}
-            centerTrigger={centerTrigger}
-            onVehicleSelect={(v) =>
-              setSelected(vehicles.find((item) => item.id === v.id) ?? null)
-            }
-          />
-        </div>
-
-        {/* Details Panel Sidebar */}
-        {selected && (
-          <div className="w-[320px] flex-shrink-0 border-l border-border bg-card">
-            <VehicleDetails
-              vehicle={selected}
-              onCenterMap={handleCenterMap}
-              onClose={() => setSelected(null)}
-            />
-          </div>
-        )}
+      {/* MAP — fills all remaining space; the selected vehicle's details now ride on the
+          map as a compact popup instead of a side panel. min-w-0 lets this flex child
+          shrink below its content width instead of pushing the sidebar off-screen. */}
+      <div className="relative min-h-[300px] min-w-0 flex-1 overflow-hidden">
+        <TrackingMap
+          vehicles={visibleVehicles}
+          selectedVehicle={selected}
+          onVehicleSelect={(v) =>
+            setSelected(v ? (vehicles.find((item) => item.id === v.id) ?? null) : null)
+          }
+          showVehicleCard
+        />
       </div>
     </div>
   );

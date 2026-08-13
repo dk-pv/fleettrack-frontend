@@ -110,7 +110,14 @@
   --chart-4: #6366F1;
   --chart-5: #EC4899;
 
-  color-scheme: light;
+  /* `only` forbids the BROWSER from applying its own colour transformation on top of
+     ours. Smart-TV / Android Chrome builds ship "Auto Dark Theme", which force-darkens
+     any page that advertises support for light alone — so plain `color-scheme: light`
+     was read as "this page can't do dark, darken it for the user". Dark mode escaped it
+     (it advertises dark, so the browser leaves it alone), which is exactly why dark
+     looked right on the TV and light came back dark. Nothing here is TV- or width-
+     specific: the app's theme class stays the single source of truth on every device. */
+  color-scheme: only light;
 }
 
 .dark {
@@ -165,7 +172,9 @@
   --chart-4: #818CF8;
   --chart-5: #F472B6;
 
-  color-scheme: dark;
+  /* Matches :root — `only` so a browser-level auto-theme can never re-tint our dark
+     palette either. Native widgets (scrollbars, form controls) still follow the theme. */
+  color-scheme: only dark;
 }
 
 @layer base {
