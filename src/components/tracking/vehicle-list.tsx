@@ -16,6 +16,7 @@ interface Vehicle {
   latitude: number;
   longitude: number;
   speed: number;
+  lastProviderUpdate?: string | null;
   updatedAt: string;
   client?: { id: string; name: string };
 }
@@ -80,8 +81,12 @@ export default function VehicleList({
       </div>
 
       {/* Vehicle List — min-h-0 lets this flex child shrink so it scrolls INTERNALLY
-          instead of pushing the sidebar (and the page) taller. */}
-      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3 no-scrollbar bg-background/30">
+          instead of pushing the sidebar (and the page) taller.
+
+          Uses `slim-scrollbar`, NOT `no-scrollbar`: a hidden scrollbar left a TV pointer
+          with nothing to grab and no hint that the list continued below the fold, which
+          is what made the lower vehicles unreachable there. */}
+      <div className="slim-scrollbar min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain bg-background/30 p-3">
         {/* ALL VEHICLES CARD */}
         <button
           onClick={() => onSelect(null)}

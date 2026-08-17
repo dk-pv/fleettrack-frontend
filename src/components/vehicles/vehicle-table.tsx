@@ -1,8 +1,14 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { apiFetch } from "@/lib/fetcher";
+import { downloadCsv } from "@/lib/csv";
+import {
+  VEHICLE_CSV_COLUMNS,
+  type VehicleExportRow,
+} from "@/lib/csv-exports";
 import { useAuthStore } from "@/store/auth-store";
 import VehicleStatusBadge from "./vehicle-status-badge";
 import { useRouter } from "next/navigation";
@@ -16,7 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Vehicle {
+/**
+ * The subset of GET /vehicles this table renders, widened with the telemetry/identity
+ * fields the CSV export includes. The endpoint already returns the whole Vehicle row —
+ * these were simply untyped because no column displayed them. Extends VehicleExportRow so
+ * the row type and the export's column definitions cannot drift apart.
+ */
+interface Vehicle extends VehicleExportRow {
   id: string;
   vehicleName: string;
   vehicleNumber: string;
@@ -117,6 +129,38 @@ export default function VehicleTable({
     return list;
   }, [vehicles, statusFilter, searchQuery]);
 
+  const [exporting, setExporting] = useState(false);
+
+  /**
+   * Exports `filteredVehicles` — the page's search box and this table's status filter both
+   * apply, so the sheet is what the user sees. Not a page slice: GET /vehicles returns the
+   * whole role-scoped fleet in one response and there is no pagination, so this is every
+   * matching vehicle. Built from data already in memory; nothing is re-fetched.
+   *
+   * Guarded on ADMIN as well as hidden for non-admins, so the handler cannot run for a
+   * CLIENT even if the button were ever rendered by mistake.
+   */
+  const handleExportCsv = () => {
+    if (user?.role !== "ADMIN") return;
+    if (filteredVehicles.length === 0) {
+      toast.error("No vehicles to export");
+      return;
+    }
+    try {
+      setExporting(true);
+      downloadCsv(
+        "fleettrack-vehicles.csv",
+        filteredVehicles,
+        VEHICLE_CSV_COLUMNS,
+      );
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to export vehicles");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading)
     return (
       <TableSkeleton columns={user?.role === "ADMIN" ? 7 : 6} rows={8} />
@@ -130,10 +174,25 @@ export default function VehicleTable({
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border px-4 py-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3.5">
         <h3 className="text-base font-semibold text-muted-foreground">
           All Vehicles ({filteredVehicles.length})
         </h3>
+
+        {/* ADMIN-only export, placed here rather than in the page header because the data
+            and both filters (search + status) live in this component — no lifting, and the
+            sheet always matches the rows on screen. */}
+        {user?.role === "ADMIN" && (
+          <button
+            onClick={handleExportCsv}
+            disabled={exporting}
+            title="Download the vehicles shown below as CSV"
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? "Preparing..." : "Download CSV"}
+          </button>
+        )}
       </div>
 
       {/* Table */}

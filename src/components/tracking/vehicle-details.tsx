@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { roundSpeed } from "@/lib/utils/format-speed";
+import { formatFixTime, isOffline } from "@/lib/utils/vehicle-freshness";
 import { LocateFixed, Route, X } from "lucide-react";
 interface Vehicle {
   id: string;
@@ -15,6 +16,7 @@ interface Vehicle {
   latitude: number;
   longitude: number;
   speed: number;
+  lastProviderUpdate?: string | null;
   updatedAt: string;
 }
 
@@ -31,6 +33,8 @@ export default function VehicleDetails({
   onClose,
   mobile = false,
 }: VehicleDetailsProps) {
+  const offline = isOffline(vehicle);
+
   return (
     <div
       className={`
@@ -93,12 +97,22 @@ export default function VehicleDetails({
           </div>
         </div>
 
+        {/* Offline has no current speed — the label switches to "Last speed" so the
+            number is never read as a live reading. Same rule as VehicleCard/popup. */}
         <div className="rounded-lg border border-border bg-muted/30 p-3.5">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Speed</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            {offline ? "Last speed" : "Speed"}
+          </p>
 
           <p className="mt-2 text-lg font-semibold text-foreground tracking-tight">
             {roundSpeed(vehicle.speed)} <span className="text-xs font-semibold text-muted-foreground">km/h</span>
           </p>
+
+          {offline && (
+            <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
+              Last seen {formatFixTime(vehicle)}
+            </p>
+          )}
         </div>
 
         <div className="rounded-lg border border-border bg-muted/30 p-3.5">

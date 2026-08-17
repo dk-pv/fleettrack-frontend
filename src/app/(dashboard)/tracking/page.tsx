@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { apiFetch, isApiError } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
 import { acceptVehiclePacket, mergeVehicleUpdate } from "@/lib/vehicle-update";
@@ -21,6 +22,7 @@ interface Vehicle {
   latitude: number;
   longitude: number;
   speed: number;
+  lastProviderUpdate?: string | null;
   updatedAt: string;
   client?: { id: string; name: string };
 }
@@ -39,6 +41,11 @@ export default function TrackingPage() {
   // RC11–RC13: per-vehicle high-water timestamp so duplicate / out-of-order /
   // timestamp-invalid packets are ignored. A ref — never triggers a re-render.
   const lastTimestampsRef = useRef<Record<string, number>>({});
+
+  // Collapsing the Fleet Vehicles rail to hand its width to the map. Layout-only state:
+  // it never touches `vehicles`, `selected` or the socket subscription, so collapsing
+  // cannot reload data, drop a live update or reset the map viewport.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const fetchVehicles = async () => {
     setLoading(true);
@@ -180,13 +187,56 @@ export default function TrackingPage() {
         />
       </div>
 
-      {/* VEHICLE LIST (md and up) */}
-      <div className="hidden w-[260px] flex-shrink-0 bg-card md:block xl:w-[280px]">
-        <VehicleList
-          vehicles={visibleVehicles}
-          selected={selected}
-          onSelect={setSelected}
-        />
+      {/* VEHICLE LIST (md and up).
+          h-full + min-h-0 are explicit rather than relying on flex stretch alone, so the
+          list's internal overflow always has a definite height to resolve against.
+          Collapsing animates this rail's WIDTH; the list itself is never unmounted (see
+          below), so search text, scroll position and selection all survive the toggle. */}
+      <div
+        className={`relative hidden h-full min-h-0 flex-shrink-0 bg-card transition-[width] duration-300 ease-in-out md:block ${
+          sidebarCollapsed ? "w-11" : "w-[260px] xl:w-[280px]"
+        }`}
+      >
+        {/* Collapse / expand control. Sits on the rail's inner edge, top-aligned — Google
+            Maps puts its own controls at the top-right and bottom-right of the map, so
+            nothing here overlaps them at any width. */}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed((prev) => !prev)}
+          aria-expanded={!sidebarCollapsed}
+          aria-controls="fleet-vehicles-panel"
+          title={sidebarCollapsed ? "Show Fleet Vehicles" : "Hide Fleet Vehicles"}
+          className="absolute -right-3 top-4 z-40 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+          <span className="sr-only">
+            {sidebarCollapsed ? "Show Fleet Vehicles" : "Hide Fleet Vehicles"}
+          </span>
+        </button>
+
+        {/* Kept MOUNTED while collapsed and merely clipped to zero width. Unmounting it
+            would throw away the search box's text and the list's scroll offset, and would
+            remount every VehicleCard on expand. The socket lives on the page, so live
+            updates continue regardless. */}
+        <div
+          id="fleet-vehicles-panel"
+          aria-hidden={sidebarCollapsed}
+          className={`h-full min-h-0 overflow-hidden ${
+            sidebarCollapsed ? "pointer-events-none w-0 opacity-0" : "w-full opacity-100"
+          }`}
+        >
+          <div className="h-full min-h-0 w-[260px] xl:w-[280px]">
+            <VehicleList
+              vehicles={visibleVehicles}
+              selected={selected}
+              onSelect={setSelected}
+            />
+          </div>
+        </div>
       </div>
 
       {/* MAP — fills all remaining space; the selected vehicle's details now ride on the

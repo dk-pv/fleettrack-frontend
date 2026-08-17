@@ -7,7 +7,17 @@ export async function downloadResponse(
   response: Response,
   filename: string,
 ): Promise<void> {
-  const blob = await response.blob();
+  downloadBlob(await response.blob(), filename);
+}
+
+/**
+ * Save an in-memory Blob as a downloaded file.
+ *
+ * Same object-URL → anchor-click mechanics as `downloadResponse`, split out for exports
+ * the browser builds locally (CSV) rather than fetching from the server. `downloadResponse`
+ * now delegates here, so the DOM plumbing exists in exactly one place.
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");

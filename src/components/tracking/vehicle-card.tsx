@@ -1,6 +1,7 @@
 import { Clock3, Gauge } from "lucide-react";
 
 import { formatSpeed } from "@/lib/utils/format-speed";
+import { formatFixTime, isOffline } from "@/lib/utils/vehicle-freshness";
 
 interface Vehicle {
   id: string;
@@ -13,6 +14,7 @@ interface Vehicle {
   latitude: number;
   longitude: number;
   speed: number;
+  lastProviderUpdate?: string | null;
   updatedAt: string;
 }
 
@@ -28,6 +30,7 @@ export default function VehicleCard({
   onClick,
 }: VehicleCardProps) {
   const isIdle = vehicle.status === "IDLE";
+  const offline = isOffline(vehicle);
 
   return (
     <div
@@ -71,15 +74,22 @@ export default function VehicleCard({
         </span>
       </div>
 
+      {/* An offline vehicle has no CURRENT speed — only a last known one. Showing that
+          number here unqualified is what made "OFFLINE · 69 km/h" read as live. The
+          value isn't hidden, it moves to the "Last seen" line where it belongs. */}
       <div className="mt-3 flex items-center gap-3.5 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
         <div className="flex items-center gap-1">
           <Gauge className="h-3.5 w-3.5" />
-          <span>{formatSpeed(vehicle.speed)}</span>
+          <span>{offline ? "—" : formatSpeed(vehicle.speed)}</span>
         </div>
 
         <div className="flex items-center gap-1">
           <Clock3 className="h-3.5 w-3.5" />
-          <span>{new Date(vehicle.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+          <span>
+            {offline
+              ? `Last seen ${formatFixTime(vehicle)}`
+              : formatFixTime(vehicle, true)}
+          </span>
         </div>
       </div>
     </div>

@@ -3,7 +3,8 @@
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Route as RouteIcon, Plus } from "lucide-react";
+import { Route as RouteIcon, Download, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 import { useTrips } from "@/hooks/use-trips";
 import { useTripRequests } from "@/hooks/use-trip-requests";
@@ -17,6 +18,8 @@ import {
   TRIP_SUMMARY_BUCKETS,
   TRIP_SUMMARY_BUCKET_LABELS,
 } from "@/types/trip";
+import { downloadCsv } from "@/lib/csv";
+import { TRIP_CSV_COLUMNS } from "@/lib/csv-exports";
 
 function TripsPageContent() {
   const { trips, loading, error, permissions, refetch } = useTrips();
@@ -39,6 +42,31 @@ function TripsPageContent() {
     return trips.filter((t) => statuses.includes(t.status));
   }, [trips, bucket]);
 
+  const [exporting, setExporting] = useState(false);
+
+  /**
+   * Export exactly what the table shows: `visibleTrips`, i.e. the full server-scoped list
+   * with the ?status= drill-down applied. There is no pagination here — GET /trips returns
+   * every trip the role may see in one response — so this is all matching records, not a
+   * first page. Nothing is re-fetched; the CSV is built from data already in memory.
+   */
+  const handleExportCsv = () => {
+    if (loading) return;
+    if (visibleTrips.length === 0) {
+      toast.error("No trips to export");
+      return;
+    }
+    try {
+      setExporting(true);
+      downloadCsv("fleettrack-trips.csv", visibleTrips, TRIP_CSV_COLUMNS);
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to export trips");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -56,15 +84,35 @@ function TripsPageContent() {
           </div>
         </div>
 
-        {permissions.canCreate && (
-          <button
-            onClick={() => setModalOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            Request Trip
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Trips CSV is a CLIENT export (canCreate is the CLIENT capability, the same
+              flag the Request Trip button uses), so an ADMIN sees no button here. */}
+          {permissions.canCreate && (
+            <button
+              onClick={handleExportCsv}
+              disabled={loading || exporting}
+              title={
+                loading
+                  ? "Trips are still loading"
+                  : "Download the trips shown below as CSV"
+              }
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? "Preparing..." : "Download CSV"}
+            </button>
+          )}
+
+          {permissions.canCreate && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Request Trip
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Active drill-down filter (DSH-01.3) */}

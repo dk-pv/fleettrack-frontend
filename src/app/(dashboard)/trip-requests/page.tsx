@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ClipboardList, Plus, Search } from "lucide-react";
+import { ClipboardList, Download, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { useTripRequests } from "@/hooks/use-trip-requests";
 import TripRequestTable from "@/components/trip-requests/trip-request-table";
@@ -13,6 +14,11 @@ import {
   TRIP_REQUEST_STATUSES,
   TripRequestStatus,
 } from "@/types/trip-request";
+import { downloadCsv } from "@/lib/csv";
+import {
+  ADMIN_TRIP_REQUEST_CSV_COLUMNS,
+  CLIENT_TRIP_REQUEST_CSV_COLUMNS,
+} from "@/lib/csv-exports";
 
 type StatusFilter = TripRequestStatus | "ALL";
 const FILTERS: StatusFilter[] = ["ALL", ...TRIP_REQUEST_STATUSES];
@@ -47,6 +53,42 @@ export default function TripRequestsPage() {
     });
   }, [requests, search, status]);
 
+  const [exporting, setExporting] = useState(false);
+
+  /**
+   * Exports `filtered` — the search box and status chips are honoured, so the sheet matches
+   * what the user is looking at. That is the whole matching set, not a page: the list is
+   * unpaginated (GET /trip-requests returns every request the role may see) and both
+   * filters run client-side over that full array.
+   *
+   * Server-side JWT scoping still decides WHICH requests exist here, so the CLIENT sheet
+   * can only ever contain its own requests.
+   */
+  const handleExportCsv = () => {
+    if (loading) return;
+    if (filtered.length === 0) {
+      toast.error("No trip requests to export");
+      return;
+    }
+    try {
+      setExporting(true);
+      downloadCsv(
+        isAdmin
+          ? "fleettrack-admin-trip-requests.csv"
+          : "fleettrack-trip-requests.csv",
+        filtered,
+        isAdmin
+          ? ADMIN_TRIP_REQUEST_CSV_COLUMNS
+          : CLIENT_TRIP_REQUEST_CSV_COLUMNS,
+      );
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to export trip requests");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -66,6 +108,23 @@ export default function TripRequestsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Both roles export, with role-appropriate columns: the ADMIN sheet carries a
+              Client column (its rows span every client), the CLIENT sheet omits it since
+              every row is its own. */}
+          <button
+            onClick={handleExportCsv}
+            disabled={loading || exporting}
+            title={
+              loading
+                ? "Requests are still loading"
+                : "Download the requests shown below as CSV"
+            }
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? "Preparing..." : "Download CSV"}
+          </button>
+
           {/* ADMIN-only: create a trip directly (POST /trips), distinct from the
               CLIENT request flow. */}
           {isAdmin && (

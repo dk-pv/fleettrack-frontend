@@ -8,11 +8,9 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 import { LocateFixed, Minus, Navigation2, Plus } from "lucide-react";
-import {
-  calculateBearing,
-  haversineDistance,
-  isValidCoordinate,
-} from "@/lib/gps-utils";
+// haversineDistance is still needed for move/jump detection and animation duration;
+// calculateBearing is deliberately no longer imported — the icon never rotates.
+import { haversineDistance, isValidCoordinate } from "@/lib/gps-utils";
 import VehiclePopupCard from "./vehicle-popup-card";
 
 /* -------------------------------------------------- */
@@ -29,6 +27,8 @@ export interface Vehicle {
   latitude: number;
   longitude: number;
   speed: number;
+  /** Provider GPS fix time — the real "when did this vehicle last report". */
+  lastProviderUpdate?: string | null;
   updatedAt: string;
   timestamp?: number;
   ignition?: boolean;
@@ -85,21 +85,21 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 };
 
 /* -------------------------------------------------- */
-/* HEADING (RC3 / RC4)                                */
+/* MARKER ORIENTATION                                 */
 /* -------------------------------------------------- */
 
-/** Below this the vehicle is treated as stationary/slow → keep its last heading. */
-const MIN_MOVING_SPEED_KMH = 3;
-/** Minimum displacement before a bearing is trusted (ignores GPS jitter). */
-const MIN_HEADING_DISTANCE_M = 10;
-
-/** Shortest signed angular difference from → to, normalised to (-180, 180]. */
-function shortestAngleDelta(from: number, to: number): number {
-  let d = (to - from) % 360;
-  if (d > 180) d -= 360;
-  else if (d < -180) d += 360;
-  return d;
-}
+/* The truck icon is deliberately NOT rotated.
+ *
+ * It used to be turned to the GPS bearing (derived from consecutive fixes), which made the
+ * same truck appear upside-down heading south and sideways heading east/west — the asset is
+ * drawn facing up, so any rotation reads as a broken icon rather than as direction. The
+ * bearing/heading machinery that fed that transform (calculateBearing, shortestAngleDelta,
+ * the per-vehicle heading refs and the rotate wrapper) has been removed rather than
+ * neutralised, so nothing can start rotating the icon again by accident.
+ *
+ * Direction is not lost from the UI: the marker still animates ALONG its real path between
+ * fixes, so movement direction is visible from the motion itself.
+ */
 
 /* -------------------------------------------------- */
 /* MARKER MOVEMENT (RC6 / RC7 / RC15)                 */
@@ -145,6 +145,53 @@ if (typeof window !== "undefined") {
         80%  { transform: scale(1.8); opacity: 0;   }
         100% { transform: scale(1.8); opacity: 0;   }
       }
+
+      /* Vehicle-number label shown while a pointer rests on the marker.
+       *
+       * Driven purely by :hover on the marker element rather than by JS mouse events, so
+       * it works for ANY pointing device the browser reports as hovering — laptop trackpad,
+       * desktop mouse, and a TV's remote/air-mouse cursor alike — with no device sniffing
+       * and no extra listeners.
+       *
+       * pointer-events:none is what keeps it from stealing the marker's own click: the
+       * label can never sit between the cursor and the marker, so gmp-click still fires
+       * and the existing click behaviour is untouched.
+       *
+       * Sized in rem and readable from a distance for large displays; positioned above the
+       * 40px marker so it does not cover the icon the user is aiming at.
+       */
+      .ft-marker-label {
+        position: absolute;
+        bottom: 42px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(17, 24, 39, 0.92);
+        color: #fff;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 120ms ease;
+        pointer-events: none;
+      }
+
+      .ft-marker:hover .ft-marker-label,
+      .ft-marker:focus-visible .ft-marker-label {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* A pointer-less device (touch-only phone/tablet) can never hover, so the label
+       * would be dead weight there — tapping opens the popup card instead. */
+      @media (hover: none) {
+        .ft-marker-label { display: none; }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -157,7 +204,6 @@ if (typeof window !== "undefined") {
 interface VehicleMarkerProps {
   map: google.maps.Map | null;
   vehicle: Vehicle;
-  heading: number;
   isSelected: boolean;
   onClick: () => void;
 }
@@ -165,7 +211,6 @@ interface VehicleMarkerProps {
 function VehicleMarker({
   map,
   vehicle,
-  heading,
   isSelected,
   onClick,
 }: VehicleMarkerProps) {
@@ -182,10 +227,6 @@ function VehicleMarker({
   const prevUpdateTimeRef = useRef<number | null>(null);
   // RC6: consecutive rejected-jump counter (recovery guard).
   const rejectCountRef = useRef(0);
-  // RC5: the persistent rotate wrapper (built once) + the latest heading, so a heading
-  // change only mutates the wrapper's transform instead of rebuilding the whole marker.
-  const wrapperRef = useRef<HTMLElement | null>(null);
-  const headingRef = useRef(heading);
   // RC8: keep the latest onClick in a ref so the click listener (bound once) never
   // fires a stale closure — without re-subscribing on every render.
   const onClickRef = useRef(onClick);
@@ -389,13 +430,14 @@ function VehicleMarker({
         "></span>`
         : "";
 
+    // NO transform on this wrapper — the icon's orientation is fixed (see MARKER
+    // ORIENTATION above). The label is a sibling of the icon, so it is unaffected by
+    // anything applied to the icon itself and always reads horizontally.
     el.innerHTML = `
-      <div style="
+      <div class="ft-marker" style="
         position:relative;
         width:40px;height:40px;
         display:flex;align-items:center;justify-content:center;
-        transform:rotate(${headingRef.current}deg);
-        transition:transform 0.6s ease;
       ">
         ${pulseHtml}
         <div style="
@@ -405,22 +447,12 @@ function VehicleMarker({
           display:flex;align-items:center;justify-content:center;
           overflow:hidden;
         ">
-          <img src="/cargo-truck.png" style="width:22px;height:22px;object-fit:contain;" />
+          <img src="/cargo-truck.png" alt="" style="width:22px;height:22px;object-fit:contain;" />
         </div>
+        <span class="ft-marker-label">${vehicle.vehicleNumber}</span>
       </div>
     `;
-
-    // RC5: cache the rotate wrapper so heading updates only touch its transform.
-    wrapperRef.current = el.firstElementChild as HTMLElement | null;
-  }, [vehicle.status]);
-
-  // RC5: a heading change only rotates the persistent wrapper — no DOM rebuild.
-  useEffect(() => {
-    headingRef.current = heading;
-    if (wrapperRef.current) {
-      wrapperRef.current.style.transform = `rotate(${heading}deg)`;
-    }
-  }, [heading]);
+  }, [vehicle.status, vehicle.vehicleNumber]);
 
   return null;
 }
@@ -589,13 +621,6 @@ export default function TrackingMap({
   // Google Maps instance ref
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  // Track last heading per vehicle for rotating icon
-  const headingsRef = useRef<Record<string, number>>({});
-
-  const prevPositionsRef = useRef<Record<string, { lat: number; lng: number }>>(
-    {},
-  );
-
   const validVehicles = useMemo(
     () =>
       vehicles.filter(
@@ -721,83 +746,10 @@ export default function TrackingMap({
     selectedVehicle?.longitude,
   ]);
 
-  // RC9: derive headings DURING render (was a post-commit effect that left the value
-  // one socket-tick stale) so a marker's rotation matches the same positions it's
-  // rendered at. The bearing / shortest-delta math (RC3/RC4) is unchanged — only the
-  // timing is. Previous positions + the accumulated angle are advanced post-commit in
-  // the effect below, keeping ref writes out of render.
-  /* eslint-disable react-hooks/refs -- render-time read of prev-render refs; advanced post-commit below */
-  const headings = useMemo(() => {
-    const next: Record<string, number> = {};
-
-    for (const vehicle of vehicles) {
-      const current = headingsRef.current[vehicle.id];
-
-      if (!isValidCoordinate(vehicle.latitude, vehicle.longitude)) {
-        if (current !== undefined) next[vehicle.id] = current;
-        continue;
-      }
-
-      const prev = prevPositionsRef.current[vehicle.id];
-
-      if (prev) {
-        const dist = haversineDistance(
-          prev.lat,
-          prev.lng,
-          vehicle.latitude,
-          vehicle.longitude,
-        );
-
-        // RC3: only update heading when genuinely moving (not idle / GPS jitter),
-        // so a stationary truck keeps its last heading.
-        if (
-          vehicle.speed > MIN_MOVING_SPEED_KMH &&
-          dist >= MIN_HEADING_DISTANCE_M
-        ) {
-          const bearing = calculateBearing(
-            prev.lat,
-            prev.lng,
-            vehicle.latitude,
-            vehicle.longitude,
-          );
-
-          // RC4: accumulate a continuous (unwrapped) angle via the shortest signed
-          // delta, so the rotate transition always turns the short way.
-          next[vehicle.id] =
-            current === undefined
-              ? bearing
-              : current + shortestAngleDelta(current, bearing);
-          continue;
-        }
-      }
-
-      // Not moving / no previous fix → keep the last heading.
-      if (current !== undefined) next[vehicle.id] = current;
-    }
-
-    return next;
-  }, [vehicles]);
-  /* eslint-enable react-hooks/refs */
-
-  // Advance the accumulator + previous positions AFTER commit, so the next render's
-  // derive above sees this tick's values. Vehicles that vanished drop out naturally.
-  useEffect(() => {
-    headingsRef.current = headings;
-
-    const nextPrev: Record<string, { lat: number; lng: number }> = {};
-    for (const vehicle of vehicles) {
-      if (isValidCoordinate(vehicle.latitude, vehicle.longitude)) {
-        nextPrev[vehicle.id] = {
-          lat: vehicle.latitude,
-          lng: vehicle.longitude,
-        };
-      } else {
-        const kept = prevPositionsRef.current[vehicle.id];
-        if (kept) nextPrev[vehicle.id] = kept;
-      }
-    }
-    prevPositionsRef.current = nextPrev;
-  }, [vehicles, headings]);
+  // The per-vehicle heading derivation that used to live here has been removed along with
+  // the rotating marker: nothing consumes a bearing any more, so computing one every render
+  // (and carrying headingsRef / prevPositionsRef across commits to do it) was pure dead
+  // weight. Marker movement between fixes is handled inside VehicleMarker itself.
 
   const handleDragStart = useCallback(() => {
     setInternalFollowMode(false);
@@ -905,20 +857,15 @@ export default function TrackingMap({
             reads through z-index (SELECTED_Z_INDEX) and the popup card below. */}
         {map &&
           mapReady &&
-          validVehicles.map((vehicle) => {
-            const heading = headings[vehicle.id] ?? 0;
-
-            return (
-              <VehicleMarker
-                key={vehicle.id}
-                map={map}
-                vehicle={vehicle}
-                heading={heading}
-                isSelected={selectedVehicle?.id === vehicle.id}
-                onClick={() => handleMarkerClick(vehicle)}
-              />
-            );
-          })}
+          validVehicles.map((vehicle) => (
+            <VehicleMarker
+              key={vehicle.id}
+              map={map}
+              vehicle={vehicle}
+              isSelected={selectedVehicle?.id === vehicle.id}
+              onClick={() => handleMarkerClick(vehicle)}
+            />
+          ))}
 
         {/* SELECTED-VEHICLE POPUP — anchored to the marker's own LatLng, so OverlayView
             keeps it glued to the vehicle through pan, zoom and live position updates

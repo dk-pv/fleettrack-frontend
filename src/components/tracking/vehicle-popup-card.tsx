@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LocateFixed, Route, X } from "lucide-react";
 
 import { roundSpeed } from "@/lib/utils/format-speed";
+import { formatFixTime, isOffline } from "@/lib/utils/vehicle-freshness";
 import type { Vehicle } from "./tracking-map";
 
 interface VehiclePopupCardProps {
@@ -25,6 +26,8 @@ export default function VehiclePopupCard({
   onCenterMap,
   onClose,
 }: VehiclePopupCardProps) {
+  const offline = isOffline(vehicle);
+
   // Full class strings, not `bg-${tone}/10` — Tailwind scans source text, so a class name
   // built at runtime is never generated. Same tones as VehicleCard / VehicleDetails.
   const tone =
@@ -79,12 +82,19 @@ export default function VehiclePopupCard({
           {vehicle.status}
         </span>
 
-        <p className="text-[13px] font-semibold tabular-nums text-foreground">
-          {roundSpeed(vehicle.speed)}{" "}
-          <span className="text-[10px] font-semibold text-muted-foreground">
-            km/h
-          </span>
-        </p>
+        {/* Offline = no current speed. The last reading is still available, but on the
+            "Last speed" row below where it is explicitly labelled as historic — never
+            in the live-reading slot next to the status pill. */}
+        {offline ? (
+          <p className="text-[13px] font-semibold text-muted-foreground">—</p>
+        ) : (
+          <p className="text-[13px] font-semibold tabular-nums text-foreground">
+            {roundSpeed(vehicle.speed)}{" "}
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              km/h
+            </span>
+          </p>
+        )}
       </div>
 
       {/* Facts */}
@@ -105,14 +115,21 @@ export default function VehiclePopupCard({
           </dd>
         </div>
 
+        {offline && (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="font-semibold text-muted-foreground">Last speed</dt>
+            <dd className="font-semibold tabular-nums text-foreground">
+              {roundSpeed(vehicle.speed)} km/h
+            </dd>
+          </div>
+        )}
+
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="font-semibold text-muted-foreground">Last fix</dt>
+          <dt className="font-semibold text-muted-foreground">
+            {offline ? "Last seen" : "Last fix"}
+          </dt>
           <dd className="font-semibold tabular-nums text-foreground">
-            {new Date(vehicle.updatedAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            })}
+            {formatFixTime(vehicle, !offline)}
           </dd>
         </div>
       </dl>

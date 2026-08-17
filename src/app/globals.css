@@ -214,6 +214,44 @@ body {
   scrollbar-width: none;
 }
 
+/* Always-visible slim scrollbar for panels the user must be able to scroll with a
+ * pointer alone.
+ *
+ * `.no-scrollbar` is fine for panels reachable by wheel or touch, but it is actively
+ * harmful on a list that overflows on a TV: hiding the bar removes the only thing a
+ * remote/air-mouse cursor can grab, AND removes the only visual cue that there is more
+ * content below. The Fleet Vehicles list used `.no-scrollbar`, which is why lower
+ * vehicles were unreachable on a TV while working fine on a laptop trackpad.
+ *
+ * Kept slim and theme-coloured so it stays consistent with the FleetTrack look, and wide
+ * enough (10px) to be a realistic pointer target on a large display.
+ */
+.slim-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.slim-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.slim-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.slim-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+  /* Inset the thumb without shrinking the hit area — the padding stays grabbable. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.slim-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}
+
 /* Shared page-title style — single source of truth for every main page header. */
 .page-title {
   font-size: 1.75rem;   /* ~28px */
