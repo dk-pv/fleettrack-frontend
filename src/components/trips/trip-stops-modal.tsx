@@ -35,7 +35,7 @@ interface Props {
 }
 
 const inputClass =
-  "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * Manage a trip's stops after creation, before it starts (TM-05.2). Reuses the
@@ -139,7 +139,7 @@ export default function TripStopsModal({ open, onClose, trip, onSave }: Props) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Manage Stops</DialogTitle>
+          <DialogTitle>Manage Stops</DialogTitle>
           <DialogDescription>
             Add, remove, or reorder stops for {trip.reference} ({trip.origin} →{" "}
             {trip.destination}).

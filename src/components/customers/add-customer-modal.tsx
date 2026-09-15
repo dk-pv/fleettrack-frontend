@@ -36,7 +36,7 @@ export default function AddCustomerModal({
 
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
+          <DialogTitle>
             {isEdit ? "Edit Customer" : "Add New Customer"}
           </DialogTitle>
 

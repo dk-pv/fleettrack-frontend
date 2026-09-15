@@ -147,14 +147,14 @@ export default function TripRequestsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search reference, route, vehicle…"
-            className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none focus:border-primary focus:bg-background"
+            className="h-10 w-full rounded-lg border border-input bg-muted/40 pl-10 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring focus:bg-background"
           />
         </div>
 

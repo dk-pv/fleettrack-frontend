@@ -66,7 +66,7 @@ export default function ClientStats() {
         {["Total Clients", "Active Clients"].map((label) => (
           <div
             key={label}
-            className="rounded-xl border border-border bg-card p-6"
+            className="rounded-lg border border-border bg-card p-5"
           >
             <p className="text-sm text-muted-foreground">{label}</p>
             <Skeleton className="mt-2 h-9 w-16" />
@@ -90,14 +90,14 @@ export default function ClientStats() {
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-lg border border-border bg-card p-5">
         <p className="text-sm text-muted-foreground">Total Clients</p>
-        <h2 className="text-3xl font-bold">{total}</h2>
+        <h2 className="text-2xl font-semibold tabular-nums">{total}</h2>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-lg border border-border bg-card p-5">
         <p className="text-sm text-muted-foreground">Active Clients</p>
-        <h2 className="text-3xl font-bold text-muted-foreground">—</h2>
+        <h2 className="text-2xl font-semibold text-muted-foreground">—</h2>
         <p className="mt-1 text-xs text-muted-foreground">Not tracked yet</p>
       </div>
     </div>

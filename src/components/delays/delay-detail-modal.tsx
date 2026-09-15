@@ -46,7 +46,7 @@ export default function DelayDetailModal({ open, onClose, delay }: Props) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Delay details</DialogTitle>
+          <DialogTitle>Delay details</DialogTitle>
           <DialogDescription>
             Trip {delay.trip?.reference ?? delay.tripId}
           </DialogDescription>

@@ -22,7 +22,7 @@ export default function VehiclesPage() {
       </div>
 
       {/* Search */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
+      <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center justify-between gap-4">
           {/* Search */}
           <div className="relative w-full max-w-md">
@@ -33,7 +33,7 @@ export default function VehiclesPage() {
               placeholder="Search by vehicle number, name, or driver..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded-lg border border-input bg-muted/40 pl-10 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring focus:bg-background"
             />
           </div>        
         </div>

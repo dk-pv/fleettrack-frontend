@@ -25,10 +25,10 @@ export default function FullScreenLoader({
     >
       {/* Brand */}
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Truck className="h-6 w-6" />
         </div>
-        <span className="text-2xl font-bold tracking-tight text-foreground">
+        <span className="font-heading text-2xl font-semibold tracking-tight text-foreground">
           FleetTrack
         </span>
       </div>

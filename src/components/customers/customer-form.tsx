@@ -12,7 +12,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-const inputClass = "h-10 w-full rounded-lg border px-3";
+const inputClass = "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const sectionLabel =
   "text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
@@ -185,7 +185,7 @@ export default function CustomerForm({
         onChange={(e) => setNotes(e.target.value)}
         rows={3}
         placeholder="Notes (optional)"
-        className="w-full rounded-lg border px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       <Button

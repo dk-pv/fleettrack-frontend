@@ -19,7 +19,7 @@ interface Props {
 }
 
 const modalInputClass =
-  "mt-1 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary";
+  "mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * ADMIN approve/reject controls for a PENDING request. Uses the shared ConfirmDialog for
@@ -171,7 +171,7 @@ export default function TripRequestReviewActions({
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               placeholder="Reason for rejection (required)"
-              className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </>
         }

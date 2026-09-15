@@ -54,7 +54,7 @@ export default function CustomerTripsModal({ open, onClose, customer }: Props) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[900px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Trip History</DialogTitle>
+          <DialogTitle>Trip History</DialogTitle>
           <DialogDescription>
             {customer.name} — trips placed for this customer
           </DialogDescription>

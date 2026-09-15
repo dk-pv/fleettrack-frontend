@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, Layers3 } from "lucide-react";
 import VehicleCard from "./vehicle-card";
 import EmptyState from "@/components/ui/empty-state";
+import { StatusCue } from "@/components/ui/status-chip";
 
 interface Vehicle {
   id: string;
@@ -65,7 +66,7 @@ export default function VehicleList({
     <div className="flex h-full flex-col border-r border-border bg-card">
       {/* Header */}
       <div className="border-b border-border px-4 py-4">
-        <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Fleet Vehicles</h2>
+        <h2 className="section-title text-foreground">Fleet Vehicles</h2>
 
         <div className="relative mt-3">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -75,7 +76,7 @@ export default function VehicleList({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search vehicles..."
-            className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground transition-colors focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
+            className="h-9 w-full rounded-lg border border-input bg-muted/40 pl-9 pr-3 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring focus:bg-background"
           />
         </div>
       </div>
@@ -90,9 +91,10 @@ export default function VehicleList({
         {/* ALL VEHICLES CARD */}
         <button
           onClick={() => onSelect(null)}
-          className={`w-full rounded-lg border p-3 text-left transition-colors duration-150 select-none ${
+          aria-current={selected === null ? "true" : undefined}
+          className={`w-full rounded-lg border p-3 text-left transition-colors duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             selected === null
-              ? "border-primary bg-primary/5 dark:border-primary/10"
+              ? "border-primary bg-primary/10"
               : "border-border bg-card hover:bg-muted/40"
           }`}
         >
@@ -105,7 +107,7 @@ export default function VehicleList({
               </p>
             </div>
 
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
               <Layers3 className="h-4 w-4" />
             </div>
           </div>
@@ -119,8 +121,8 @@ export default function VehicleList({
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              <span className="font-bold text-success">
+              <StatusCue tone="ok" className="text-status-ok" />
+              <span className="font-bold text-foreground">
                 {movingCount}
               </span>{" "}
               Moving
@@ -143,7 +145,7 @@ export default function VehicleList({
         ) : (
           groups.map(([clientName, list]) => (
             <div key={clientName} className="space-y-2.5">
-              <p className="px-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <p className="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {clientName} ({list.length})
               </p>
 

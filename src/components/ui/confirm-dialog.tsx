@@ -45,7 +45,7 @@ export default function ConfirmDialog({
         aria-labelledby={titleId}
         className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
-        <h2 id={titleId} className="text-lg font-semibold">
+        <h2 id={titleId} className="section-title">
           {title}
         </h2>
 
@@ -68,7 +68,7 @@ export default function ConfirmDialog({
             className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-70 ${
               confirmVariant === "primary"
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-destructive text-white hover:bg-destructive/90"
+                : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
             }`}
           >
             {loading ? loadingLabel : confirmLabel}

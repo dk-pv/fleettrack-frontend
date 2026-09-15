@@ -10,6 +10,7 @@ import FileGallery from "@/components/upload/file-gallery";
 import PodSignature from "./pod-signature";
 import { Button } from "@/components/ui/button";
 import { CardSkeleton } from "@/components/ui/skeletons/card-skeleton";
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 
 interface Props {
   tripId: string;
@@ -28,7 +29,7 @@ function formatDateTime(iso: string | null): string {
  * upload or storage code.
  */
 export default function TripPodCard({ tripId, canEdit }: Props) {
-  const { pod, loading, savePod } = usePod(tripId);
+  const { pod, loading, error, savePod } = usePod(tripId);
   const [editing, setEditing] = useState(false);
   const [recipientName, setRecipientName] = useState("");
   const [notes, setNotes] = useState("");
@@ -88,19 +89,19 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PackageCheck className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold">Proof of Delivery</h3>
           {confirmed && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${STATUS_CHIP.ok}`}>
               <CheckCircle2 className="h-3 w-3" />
               Confirmed
             </span>
           )}
         </div>
-        {canEdit && !editing && (
+        {canEdit && !editing && !error && (
           <button
             type="button"
             onClick={openEdit}
@@ -113,6 +114,12 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
 
       {loading ? (
         <div className="mt-4"><CardSkeleton /></div>
+      ) : error ? (
+        // No confirm or edit while the record failed to load: saving from that empty state
+        // would stamp a NEW delivery time and location over a delivery already confirmed.
+        <p className="mt-4 text-sm text-destructive">
+          Couldn&apos;t load proof of delivery. Reload the page to try again.
+        </p>
       ) : (
         <div className="mt-4 space-y-6">
           {/* Confirmation details / form */}
@@ -127,7 +134,7 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)}
                   placeholder="Recipient name"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               <div>
@@ -139,7 +146,7 @@ export default function TripPodCard({ tripId, canEdit }: Props) {
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
                   placeholder="Delivery notes (optional)"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               <div className="flex items-center gap-2">

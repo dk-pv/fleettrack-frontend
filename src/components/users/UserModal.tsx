@@ -57,7 +57,11 @@ export default function UserModal({
       setLoading(true);
 
       if (isEdit) {
-        await updateUser(user.id, form);
+        // An empty password means "keep the current one" (the field's own placeholder). Sent
+        // as "", it failed the API's MinLength(6) check, so every edit that did not also set
+        // a new password was rejected with a 400.
+        const { password, ...rest } = form;
+        await updateUser(user.id, password ? form : rest);
       } else {
         await createUser(form);
       }
@@ -76,15 +80,20 @@ export default function UserModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-card text-foreground border border-border p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <h2 className="mb-5 text-lg font-bold">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-modal-title"
+        className="w-full max-w-lg rounded-lg border border-border bg-card p-6 text-foreground shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto"
+      >
+        <h2 id="user-modal-title" className="mb-5 section-title">
           {isEdit ? "Edit User" : "Add User"}
         </h2>
 
         <div className="space-y-4">
           <input
-            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Name"
             value={form.name}
             onChange={(e) =>
@@ -96,7 +105,7 @@ export default function UserModal({
           />
 
           <input
-            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Email"
             value={form.email}
             onChange={(e) =>
@@ -109,7 +118,7 @@ export default function UserModal({
 
           <input
             type="password"
-            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             placeholder={
               isEdit
                 ? "Leave empty to keep password"
@@ -125,7 +134,7 @@ export default function UserModal({
           />
 
           <select
-            className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             value={form.role}
             onChange={(e) =>
               setForm({
@@ -140,13 +149,13 @@ export default function UserModal({
 
         <div className="mt-6 flex justify-end gap-3">
           <button
-            className="rounded-xl border px-5 py-2.5 text-sm font-medium"
+            className="h-9 rounded-lg border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
             onClick={onClose}
           >
             Cancel
           </button>
 
-          <Button type="submit" isLoading={loading} onClick={handleSubmit}>
+          <Button type="submit" isLoading={loading} onClick={handleSubmit} className="h-9 px-4">
             {isEdit ? "Update User" : "Create User"}
           </Button>
         </div>

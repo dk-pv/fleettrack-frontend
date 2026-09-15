@@ -134,14 +134,14 @@ export default function ClientForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Client Name"
-        className="h-10 w-full rounded-lg border px-3 text-sm"
+        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email / Username"
-        className="h-10 w-full rounded-lg border px-3 text-sm"
+        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       {!isEdit && (
@@ -151,7 +151,7 @@ export default function ClientForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="h-10 w-full rounded-lg border px-3 pr-10 text-sm"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-10"
           />
           <button
             type="button"
@@ -199,7 +199,7 @@ export default function ClientForm({
                           type="checkbox"
                           checked={selectedIds.includes(v.id)}
                           onChange={() => toggle(v.id)}
-                          className="cursor-pointer"
+                          className="h-4 w-4 shrink-0 rounded border border-input accent-primary cursor-pointer"
                         />
                         <span className="font-medium">{v.vehicleNumber}</span>
                         <span className="text-muted-foreground">{v.vehicleName}</span>

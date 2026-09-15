@@ -42,7 +42,7 @@ export default function DelaysPage() {
   );
 
   const selectClass =
-    "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+    "h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <div className="space-y-6">

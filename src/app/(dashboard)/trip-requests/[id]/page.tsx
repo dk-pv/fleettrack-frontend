@@ -14,6 +14,7 @@ import { useTripRequests } from "@/hooks/use-trip-requests";
 import { DetailSkeleton } from "@/components/ui/skeletons/detail-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import TripRequestStatusBadge from "@/components/trip-requests/trip-request-status-badge";
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 import TripRequestReviewActions from "@/components/trip-requests/trip-request-review-actions";
 import { TripRequestStatus } from "@/types/trip-request";
 
@@ -46,7 +47,7 @@ function Field({
   );
 }
 
-const panel = "rounded-xl border border-border bg-card p-5";
+const panel = "rounded-lg border border-border bg-card p-5";
 
 export default function TripRequestDetailPage() {
   const params = useParams();
@@ -76,7 +77,7 @@ export default function TripRequestDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Trip Requests
         </Link>
-        <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">
+        <div className="rounded-lg border border-border bg-card p-10 text-center text-muted-foreground">
           Trip request not found
         </div>
       </div>
@@ -116,7 +117,7 @@ export default function TripRequestDetailPage() {
 
       {/* Pending banner */}
       {isPending && (
-        <div className="rounded-xl border border-warning/20 bg-warning/10 px-5 py-4 text-sm text-warning">
+        <div className={`rounded-lg border px-5 py-4 text-sm ${STATUS_CHIP.attn}`}>
           {isAdmin
             ? "This request is awaiting your review."
             : "This request is waiting for admin review."}
@@ -126,7 +127,7 @@ export default function TripRequestDetailPage() {
       {/* Admin review controls (ADMIN + PENDING only) */}
       {isAdmin && isPending && (
         <div className={panel}>
-          <h3 className="mb-4 font-semibold">Review</h3>
+          <h3 className="mb-4 text-sm font-semibold">Review</h3>
           <TripRequestReviewActions
             request={request}
             onApprove={(driver) => approve(request.id, driver)}
@@ -139,8 +140,8 @@ export default function TripRequestDetailPage() {
         {/* Request information */}
         <div className={panel}>
           <div className="mb-4 flex items-center gap-2">
-            <Info className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Request information</h3>
+            <Info className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Request information</h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Reference" value={request.reference ?? "—"} />
@@ -170,12 +171,14 @@ export default function TripRequestDetailPage() {
         {/* Route */}
         <div className={panel}>
           <div className="mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-red-500" />
-            <h3 className="font-semibold">Route</h3>
+            <MapPin className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Route</h3>
           </div>
+          {/* The route map's shape language: a filled disc for the origin, a neutral disc per
+              stop, a hollow ring for the destination. Hue never tells them apart. */}
           <ol className="space-y-3">
             <li className="flex gap-3">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
+              <span aria-hidden className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-foreground" />
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Origin
@@ -183,9 +186,10 @@ export default function TripRequestDetailPage() {
                 <p className="text-sm font-medium">{request.origin}</p>
               </div>
             </li>
-            {request.stops.map((s, i) => (
+            {/* stops is null on a request stored without one; the UI always sends [] */}
+            {(request.stops ?? []).map((s, i) => (
               <li key={i} className="flex gap-3">
-                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-muted-foreground/40" />
+                <span aria-hidden className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-status-neutral" />
                 <div>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Stop {i + 1}
@@ -195,7 +199,7 @@ export default function TripRequestDetailPage() {
               </li>
             ))}
             <li className="flex gap-3">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-success" />
+              <span aria-hidden className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-foreground" />
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Destination
@@ -209,8 +213,8 @@ export default function TripRequestDetailPage() {
         {/* Schedule */}
         <div className={panel}>
           <div className="mb-4 flex items-center gap-2">
-            <CalendarClock className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold">Schedule</h3>
+            <CalendarClock className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Schedule</h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Scheduled start" value={fmt(request.scheduledStart)} />
@@ -229,7 +233,7 @@ export default function TripRequestDetailPage() {
         <div className={panel}>
           <div className="mb-4 flex items-center gap-2">
             <Info className="h-5 w-5 text-muted-foreground" />
-            <h3 className="font-semibold">Additional information</h3>
+            <h3 className="text-sm font-semibold">Additional information</h3>
           </div>
           <div className="space-y-4">
             <Field label="Notes" value={request.notes ?? "—"} />
@@ -242,8 +246,8 @@ export default function TripRequestDetailPage() {
       {!isPending && (
         <div className={panel}>
           <div className="mb-4 flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Review information</h3>
+            <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Review information</h3>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field

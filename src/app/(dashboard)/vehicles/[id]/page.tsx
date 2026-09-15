@@ -7,9 +7,6 @@ import {
   Cpu,
   Activity,
   ArrowLeft,
-  Radio,
-  Route as RouteIcon,
-  Wifi,
   FileDown,
 } from "lucide-react";
 
@@ -157,7 +154,11 @@ export default function VehicleDetailPage() {
   }
 
   if (!vehicle) {
-    return <div className="p-6">Vehicle not found</div>;
+    return (
+      <div className="rounded-lg border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+        Vehicle not found
+      </div>
+    );
   }
 
   return (
@@ -196,11 +197,11 @@ export default function VehicleDetailPage() {
       {/* Info Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {/* Driver */}
-        <div className="rounded-xl border border-border bg-background p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center gap-3">
-            <User className="h-5 w-5 text-blue-600" />
+            <User className="h-5 w-5 text-muted-foreground" />
 
-            <h3 className="font-semibold">Driver</h3>
+            <h3 className="text-sm font-semibold">Driver</h3>
           </div>
 
           <p className="mt-4 break-all text-lg font-semibold">
@@ -209,24 +210,24 @@ export default function VehicleDetailPage() {
         </div>
 
         {/* GPS */}
-        <div className="rounded-xl border border-border bg-background p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center gap-3">
-            <Cpu className="h-5 w-5 text-green-600" />
+            <Cpu className="h-5 w-5 text-muted-foreground" />
 
-            <h3 className="font-semibold">GPS Device</h3>
+            <h3 className="text-sm font-semibold">GPS Device</h3>
           </div>
 
-          <p className="mt-4 break-all text-xl font-semibold">
+          <p className="mt-4 break-all font-mono text-xl font-semibold">
             {vehicle.gpsDeviceId}
           </p>
         </div>
 
         {/* Client */}
         {user?.role === "ADMIN" && (
-          <div className="rounded-xl border border-border bg-background p-5">
+          <div className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-center gap-3">
-              <Car className="h-5 w-5 text-yellow-600" />
-              <h3 className="font-semibold">Client</h3>
+              <Car className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">Client</h3>
             </div>
 
             <p className="mt-4 break-all text-xl font-semibold">
@@ -236,72 +237,18 @@ export default function VehicleDetailPage() {
         )}
       </div>
 
-      {/* Live Stats Bar */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {/* Active Vehicles */}
-        <div className="rounded-xl border border-border bg-background p-5">
-          <div className="flex items-center gap-3">
-            <Radio className="h-5 w-5 text-green-600" />
-
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Active Now
-            </h3>
-          </div>
-
-          <h2 className="mt-4 text-2xl font-semibold">12</h2>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            Vehicles currently active
-          </p>
-        </div>
-
-        {/* Total Distance */}
-        <div className="rounded-xl border border-border bg-background p-5">
-          <div className="flex items-center gap-3">
-            <RouteIcon className="h-5 w-5 text-blue-600" />
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Total Distance
-            </h3>
-          </div>
-
-          <h2 className="mt-4 text-2xl font-semibold">245 km</h2>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            Distance travelled today
-          </p>
-        </div>
-
-        {/* Live Updates */}
-        <div className="rounded-xl border border-border bg-background p-5">
-          <div className="flex items-center gap-3">
-            <Wifi className="h-5 w-5 text-yellow-600" />
-
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Live Updates
-            </h3>
-          </div>
-
-          <div className="mt-4 flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-green-500" />
-
-            <h2 className="text-xl font-semibold">Connected</h2>
-          </div>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            GPS updates active
-          </p>
-        </div>
-      </div>
-
-      {/* Location + Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      {/* Location + Stats. An "Active Now / Total Distance / Live Updates" bar and a "Current
+          Trip Summary" card used to sit here, printing hardcoded values (12, 245 km, 5h 22m,
+          29 May 2026) and a static "Connected" as if they were this vehicle's live data.
+          Nothing on this page fetches those numbers, so they are removed, not left to mislead. */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {/* Location */}
 
-        <div className="rounded-xl border border-border bg-background p-4 md:p-6">
+        <div className="rounded-lg border border-border bg-card p-4 md:p-5">
           <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 text-red-500" />
+            <MapPin className="h-5 w-5 text-muted-foreground" />
 
-            <h3 className="text-lg font-semibold">Live Vehicle Location</h3>
+            <h3 className="section-title">Live Vehicle Location</h3>
           </div>
 
           <div className="mt-6">
@@ -314,7 +261,7 @@ export default function VehicleDetailPage() {
                 />
               </div>
             ) : (
-              <div className="flex h-[320px] flex-col md:h-[420px] items-center justify-center rounded-xl border border-dashed border-border text-center">
+              <div className="flex h-[320px] flex-col md:h-[420px] items-center justify-center rounded-lg border border-dashed border-border text-center">
                 <MapPin className="h-8 w-8 text-muted-foreground" />
 
                 <p className="mt-3 text-sm font-medium">
@@ -332,24 +279,24 @@ export default function VehicleDetailPage() {
             <div>
               <p className="text-sm text-muted-foreground">Latitude</p>
 
-              <h4 className="mt-1 text-sm font-semibold">{vehicle.latitude}</h4>
+              <h4 className="mt-1 font-mono text-sm font-semibold tabular-nums">{vehicle.latitude}</h4>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Longitude</p>
 
-              <h4 className="mt-1 text-sm font-semibold">
+              <h4 className="mt-1 font-mono text-sm font-semibold tabular-nums">
                 {vehicle.longitude}
               </h4>
             </div>
           </div>
         </div>
         {/* Speed */}
-        <div className="rounded-xl border border-border bg-background p-4 md:p-6">
+        <div className="rounded-lg border border-border bg-card p-4 md:p-5">
           <div className="flex items-center gap-3">
-            <Activity className="h-5 w-5 text-green-600" />
+            <Activity className="h-5 w-5 text-muted-foreground" />
 
-            <h3 className="text-lg font-semibold">Live Statistics</h3>
+            <h3 className="section-title">Live Statistics</h3>
           </div>
 
           <div className="mt-6">
@@ -364,17 +311,20 @@ export default function VehicleDetailPage() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href={`/tracking/${vehicle.id}`}
-              className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg bg-[#0f172a] px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
+              className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Track Live
             </Link>
 
-            <Link
-              href="/trips"
-              className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg border border-border px-5 py-3 text-sm font-medium"
-            >
-              Trips
-            </Link>
+            {/* Trip pages are CLIENT-only (lib/role-routes.ts); for an ADMIN this bounced. */}
+            {user?.role === "CLIENT" && (
+              <Link
+                href="/trips"
+                className="flex h-11 w-full items-center justify-center sm:w-auto rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Trips
+              </Link>
+            )}
 
             <button
               onClick={downloadReport}
@@ -388,44 +338,6 @@ export default function VehicleDetailPage() {
           </div>
         </div>
 
-        {/* Trip Summary */}
-        <div className="rounded-xl border border-border bg-background p-4 md:p-6">
-          <div className="flex items-center gap-3">
-            <Activity className="h-5 w-5 text-blue-600" />
-
-            <h3 className="text-lg font-semibold">Current Trip Summary</h3>
-          </div>
-
-          <div className="mt-6 space-y-5">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Distance Travelled
-              </p>
-
-              <h4 className="mt-1 text-xl font-semibold">245 km</h4>
-            </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground">Running Time</p>
-
-              <h4 className="mt-1 text-xl font-semibold">5h 22m</h4>
-            </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground">Idle Time</p>
-
-              <h4 className="mt-1 text-xl font-semibold">1h 10m</h4>
-            </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground">Trip Started</p>
-
-              <h4 className="mt-1 text-lg font-semibold">
-                29 May 2026 • 08:30 AM
-              </h4>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ export function TableSkeleton({ rows = 6, columns = 5 }: TableSkeletonProps) {
             {Array.from({ length: rows }).map((_, r) => (
               <tr key={r} className="border-b border-border last:border-none">
                 {Array.from({ length: columns }).map((_, c) => (
-                  <td key={c} className="px-4 py-3.5">
+                  <td key={c} className="px-4 py-3">
                     <Skeleton className="h-4 w-full max-w-[140px]" />
                   </td>
                 ))}
@@ -52,7 +52,7 @@ export function TableSkeletonRows({ rows = 4, columns = 5 }: TableSkeletonProps)
       {Array.from({ length: rows }).map((_, r) => (
         <tr key={r} className="border-b border-border last:border-none">
           {Array.from({ length: columns }).map((_, c) => (
-            <td key={c} className="px-4 py-3.5">
+            <td key={c} className="px-4 py-3">
               <Skeleton className="h-4 w-full max-w-[140px]" />
             </td>
           ))}

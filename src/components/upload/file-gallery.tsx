@@ -27,7 +27,7 @@ export default function FileGallery({
   title,
   emptyLabel = "No files uploaded",
 }: Props) {
-  const { files, loading, reload, remove } = useUploads(tripId, category);
+  const { files, loading, error, reload, remove } = useUploads(tripId, category);
 
   return (
     <div>
@@ -46,6 +46,8 @@ export default function FileGallery({
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Skeleton className="h-24 w-full rounded-lg" />
         </div>
+      ) : error ? (
+        <p className="mt-3 text-sm text-destructive">Couldn&apos;t load files.</p>
       ) : files.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">{emptyLabel}</p>
       ) : (

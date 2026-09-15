@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { AppNotification, NotificationType } from "@/types/notification";
+import { STATUS_CHIP, type StatusTone } from "@/components/ui/status-chip";
 
 interface Props {
   notification: AppNotification;
@@ -29,14 +30,20 @@ const ICON: Record<NotificationType, LucideIcon> = {
   TRIP_REQUEST_REJECTED: XCircle,
 };
 
-const ICON_TONE: Record<NotificationType, string> = {
-  TRIP_STARTED: "text-blue-600 bg-blue-500/10",
-  TRIP_DELAYED: "text-orange-600 bg-orange-500/10",
-  TRIP_COMPLETED: "text-success bg-success/10",
-  POD_UPLOADED: "text-primary bg-primary/10",
-  TRIP_REQUESTED: "text-primary bg-primary/10",
-  TRIP_REQUEST_APPROVED: "text-success bg-success/10",
-  TRIP_REQUEST_REJECTED: "text-destructive bg-destructive/10",
+/**
+ * Notification type → status tone. TRIP_COMPLETED is neutral, not green, for the same
+ * reason the trip badge is: finishing is terminal, not good news. The icon itself is
+ * already a non-colour cue here (CheckCircle2, XCircle, ThumbsUp…), so the tile only
+ * has to carry the tone.
+ */
+const ICON_TONE: Record<NotificationType, StatusTone> = {
+  TRIP_STARTED: "signal",
+  TRIP_DELAYED: "attn",
+  TRIP_COMPLETED: "neutral",
+  POD_UPLOADED: "neutral",
+  TRIP_REQUESTED: "neutral",
+  TRIP_REQUEST_APPROVED: "ok",
+  TRIP_REQUEST_REJECTED: "fault",
 };
 
 /**
@@ -82,7 +89,7 @@ export default function NotificationItem({ notification, onMarkRead }: Props) {
       }`}
     >
       <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${ICON_TONE[notification.type]}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${STATUS_CHIP[ICON_TONE[notification.type]]}`}
       >
         <Icon className="h-4.5 w-4.5" />
       </div>
@@ -91,7 +98,10 @@ export default function NotificationItem({ notification, onMarkRead }: Props) {
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold">{notification.title}</p>
           {!notification.read && (
-            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+            <>
+              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+              <span className="sr-only">Unread</span>
+            </>
           )}
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">

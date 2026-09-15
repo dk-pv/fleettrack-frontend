@@ -137,29 +137,25 @@ export default function ClientTable({ searchQuery = "", refreshKey = 0 }: Props)
               filtered.map((client) => (
                 <tr
                   key={client.id}
-                  className="
-                    border-b border-border
-                    hover:bg-muted/40
-                    transition-colors
-                  "
+                  className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-4 py-3.5 font-semibold text-sm">{client.name}</td>
+                  <td className="px-4 py-3 font-semibold text-sm">{client.name}</td>
 
-                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
                     {client.email}
                   </td>
 
-                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
                     {new Date(client.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <div className="flex gap-4">
                       <AddClientModal
                         editUser={client}
                         onSuccess={() => load(true)}
                       >
-                        <button className="text-primary text-sm font-medium hover:underline">
+                        <button className="text-sm font-medium text-primary-ink hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                           Edit
                         </button>
                       </AddClientModal>

@@ -44,6 +44,10 @@ export function useOverlapCheck(
     new Date(scheduledEnd) > new Date(scheduledStart);
 
   useEffect(() => {
+    // A slower response for a PREVIOUS resource or window must not overwrite the current one:
+    // a stale conflict could block submit, and a stale "available" could hide a real clash.
+    let active = true;
+
     // Inlined (not a shared callback) to satisfy the no-setState-in-effect rule.
     async function run() {
       if (!enabled) {
@@ -69,16 +73,19 @@ export function useOverlapCheck(
                 excludeTripId,
                 clientId,
               });
-        setConflicts(res.conflicts);
+        if (active) setConflicts(res.conflicts);
       } catch (err) {
         console.log(err);
-        setConflicts([]);
+        if (active) setConflicts([]);
       } finally {
-        setChecking(false);
+        if (active) setChecking(false);
       }
     }
 
     run();
+    return () => {
+      active = false;
+    };
   }, [
     resource,
     resourceId,

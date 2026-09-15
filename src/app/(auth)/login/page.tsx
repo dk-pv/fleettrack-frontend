@@ -132,7 +132,7 @@ export default function LoginPage() {
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-border accent-primary"
+                  className="h-4 w-4 shrink-0 rounded border border-input accent-primary"
                 />
                 Remember me
               </label>

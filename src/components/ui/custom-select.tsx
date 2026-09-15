@@ -4,6 +4,11 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  STATUS_CHIP,
+  StatusCue,
+  type StatusTone,
+} from "@/components/ui/status-chip";
 
 export interface CustomSelectOption {
   value: string;
@@ -198,27 +203,19 @@ export default function CustomSelect({
     const isMoving = status === "MOVING";
     const isIdle = status === "IDLE";
     
+    // Branch order preserved exactly, including the fall-through to OK for an
+    // unrecognised status — this picker only lists vehicles the page already accepted.
+    const tone: StatusTone =
+      status === "OFFLINE" ? "fault" : isIdle ? "attn" : "ok";
+
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border",
-          status === "OFFLINE"
-            ? "bg-destructive/10 text-destructive border-destructive/15"
-            : isIdle
-              ? "bg-warning/10 text-warning border-warning/15"
-              : "bg-success/10 text-success border-success/15"
+          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase border",
+          STATUS_CHIP[tone]
         )}
       >
-        <span
-          className={cn(
-            "h-1 w-1 rounded-full",
-            status === "OFFLINE"
-              ? "bg-destructive"
-              : isIdle
-                ? "bg-warning"
-                : "bg-success"
-          )}
-        />
+        <StatusCue tone={tone} />
         {status}
       </span>
     );
@@ -234,7 +231,7 @@ export default function CustomSelect({
         width: `${coords.width}px`,
       }}
       className={cn(
-        "z-[100] flex flex-col rounded-xl border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden transition-all duration-100",
+        "z-[100] flex flex-col rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden transition-all duration-100",
         coords.placement === "top"
           ? "animate-in slide-in-from-bottom-2 duration-100 origin-bottom"
           : "animate-in slide-in-from-top-2 duration-100 origin-top"
@@ -253,7 +250,7 @@ export default function CustomSelect({
             setHighlightedIndex(0);
           }}
           placeholder="Search items..."
-          className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-8 text-[16px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-8 text-[16px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring"
         />
         {search && (
           <button
@@ -325,8 +322,8 @@ export default function CustomSelect({
         onClick={() => setIsOpen((prev) => !prev)}
         onKeyDown={handleKeyDown}
         className={cn(
-          "flex h-11 w-full items-center justify-between rounded-xl border border-border bg-card px-4 text-[16px] font-medium shadow-xs outline-none transition-all hover:bg-muted/40 cursor-pointer select-none",
-          isOpen && "border-primary ring-2 ring-primary/20",
+          "flex h-11 w-full items-center justify-between rounded-lg border border-input bg-card px-4 text-[16px] font-medium outline-none transition-colors hover:bg-muted/40 cursor-pointer select-none focus:border-ring focus:ring-2 focus:ring-ring",
+          isOpen && "border-ring ring-2 ring-ring",
           className
         )}
       >

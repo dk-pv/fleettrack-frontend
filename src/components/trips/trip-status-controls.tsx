@@ -50,7 +50,7 @@ export default function TripStatusControls({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Status</h3>
         <TripStatusBadge status={trip.status} />

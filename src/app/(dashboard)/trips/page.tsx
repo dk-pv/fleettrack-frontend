@@ -7,7 +7,7 @@ import { Route as RouteIcon, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTrips } from "@/hooks/use-trips";
-import { useTripRequests } from "@/hooks/use-trip-requests";
+import { createTripRequest } from "@/services/trip-request.service";
 import TripTable from "@/components/trips/trip-table";
 import TripFormModal from "@/components/trips/trip-form-modal";
 import { PageHeaderSkeleton } from "@/components/ui/skeletons/page-header-skeleton";
@@ -23,16 +23,19 @@ import { TRIP_CSV_COLUMNS } from "@/lib/csv-exports";
 
 function TripsPageContent() {
   const { trips, loading, error, permissions, refetch } = useTrips();
-  // CLIENT trip creation now submits a trip REQUEST for admin approval (no Trip is
-  // created directly) — the same form, routed through the trip-requests workflow.
-  const { create: createTripRequest } = useTripRequests();
+  // CLIENT trip creation submits a trip REQUEST for admin approval (no Trip is created
+  // directly) — the same form, routed through the trip-requests workflow. The service is
+  // called directly: the hook used before also loaded GET /trip-requests on every visit to
+  // this page and again after each submit, and nothing on this page shows that list.
   const [modalOpen, setModalOpen] = useState(false);
 
   // Drill-down from the dashboard (DSH-01.3): ?status=<bucket> narrows the list.
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status");
   const bucket =
-    statusParam && statusParam in TRIP_SUMMARY_BUCKETS
+    // An OWN key only: `?status=toString` matched through the prototype and crashed the filter.
+    statusParam &&
+    Object.prototype.hasOwnProperty.call(TRIP_SUMMARY_BUCKETS, statusParam)
       ? (statusParam as TripSummaryBucket)
       : null;
 

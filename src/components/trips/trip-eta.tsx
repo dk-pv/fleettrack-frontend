@@ -3,6 +3,7 @@
 import { TripEta } from "@/types/trip";
 import { formatEtaDuration } from "@/lib/trip-eta";
 import { formatSpeed } from "@/lib/utils/format-speed";
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 
 interface Props {
   eta: TripEta | null;
@@ -24,15 +25,15 @@ function arrivalTime(iso: string) {
  */
 export default function TripEtaCard({ eta, live = false }: Props) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold">Estimated arrival</h3>
           {live && eta && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${STATUS_CHIP.signal}`}>
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-full w-full rounded-full bg-success" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
+                <span className="relative inline-flex h-full w-full rounded-full bg-current" />
               </span>
               Live
             </span>

@@ -55,21 +55,17 @@ export default function UserTable({
               users.map((user) => (
                 <tr
                   key={user.id}
-                  className="
-                    border-b border-border
-                    transition-colors
-                    hover:bg-muted/40
-                  "
+                  className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-4 py-3.5 text-sm font-semibold text-foreground">
+                  <td className="px-4 py-3 text-sm font-semibold text-foreground">
                     {user.name}
                   </td>
 
-                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
                     {user.email}
                   </td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <span
                       className={`
                         inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide
@@ -84,13 +80,13 @@ export default function UserTable({
                     </span>
                   </td>
 
-                  <td className="px-4 py-3.5 text-sm text-muted-foreground">
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
                     {new Date(
                       user.createdAt
                     ).toLocaleDateString()}
                   </td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <div className="flex gap-4">
                       <button
                         onClick={() => onEdit(user)}

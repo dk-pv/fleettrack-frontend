@@ -35,7 +35,7 @@ export default function CustomersPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
+      <div className="rounded-lg border border-border bg-card p-5">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
@@ -44,7 +44,7 @@ export default function CustomersPage() {
             placeholder="Search customers by name, email, type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
+            className="h-10 w-full rounded-lg border border-input bg-muted/40 pl-10 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring focus:bg-background"
           />
         </div>
       </div>

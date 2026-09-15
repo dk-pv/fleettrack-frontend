@@ -12,6 +12,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import NotificationItem from "./notification-item";
 import EmptyState from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthStore } from "@/store/auth-store";
 
 const PREVIEW_COUNT = 6;
 
@@ -24,6 +25,7 @@ const PREVIEW_COUNT = 6;
 export default function NotificationBell() {
   const { notifications, unreadCount, loading, error, markRead, markAllRead } =
     useNotifications();
+  const { user } = useAuthStore();
 
   const preview = notifications.slice(0, PREVIEW_COUNT);
 
@@ -31,7 +33,7 @@ export default function NotificationBell() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
@@ -43,7 +45,7 @@ export default function NotificationBell() {
           {unreadCount > 0 && (
             <span
               aria-label={`${unreadCount} unread notifications`}
-              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold tabular-nums text-white"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold tabular-nums text-destructive-foreground"
             >
               {unreadCount}
             </span>
@@ -90,14 +92,18 @@ export default function NotificationBell() {
           )}
         </div>
 
-        <div className="border-t border-border">
-          <Link
-            href="/notifications"
-            className="block px-4 py-2.5 text-center text-xs font-medium text-primary hover:bg-muted/60"
-          >
-            View all notifications
-          </Link>
-        </div>
+        {/* The notifications page is CLIENT-only (lib/role-routes.ts); for an ADMIN this link
+            bounced straight back to the dashboard. */}
+        {user?.role === "CLIENT" && (
+          <div className="border-t border-border">
+            <Link
+              href="/notifications"
+              className="block px-4 py-2.5 text-center text-xs font-medium text-primary hover:bg-muted/60"
+            >
+              View all notifications
+            </Link>
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

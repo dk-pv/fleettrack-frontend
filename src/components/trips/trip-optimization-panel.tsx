@@ -30,7 +30,7 @@ export default function TripOptimizationPanel({
   const improved = distanceSaved > 1; // more than a metre
 
   return (
-    <div className="mt-3 rounded-xl border border-border bg-muted/30 p-4">
+    <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Route optimization</h4>
         <button
@@ -43,7 +43,7 @@ export default function TripOptimizationPanel({
       </div>
 
       {improved ? (
-        <p className="mt-1 text-sm font-medium text-success">
+        <p className="mt-1 text-sm font-medium text-status-ok-ink">
           Reordered stops save {km(distanceSaved)} km (~{timeSaved} min · {pct}%
           shorter).
         </p>

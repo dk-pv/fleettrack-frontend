@@ -13,7 +13,7 @@ import { ErrorState } from "@/components/ui/error-state";
 const th =
   "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
-  "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  "h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 function BucketTable({
   title,
@@ -53,8 +53,8 @@ function BucketTable({
                   className="border-b border-border last:border-none"
                 >
                   <td className="px-4 py-3">{bucket.label}</td>
-                  <td className="px-4 py-3 text-right">{bucket.count}</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">
+                  <td className="px-4 py-3 text-right tabular-nums">{bucket.count}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                     {bucket.totalMinutes}
                   </td>
                 </tr>

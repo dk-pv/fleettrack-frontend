@@ -1,22 +1,7 @@
-import { TableSkeleton } from "@/components/ui/skeletons/table-skeleton";
+import { TrackingPageSkeleton } from "@/components/ui/skeletons/tracking-list-skeleton";
 
+// The same frame as the page's own loading state, so navigating in shows one skeleton
+// instead of a page header and table that the full-bleed map then replaces.
 export default function Loading() {
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="h-10 w-48 bg-muted animate-pulse rounded-md mb-2"></div>
-          <div className="h-5 w-64 bg-muted animate-pulse rounded-md"></div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <TableSkeleton rows={5} />
-        </div>
-        <div className="lg:col-span-2">
-           <div className="h-[600px] w-full bg-muted animate-pulse rounded-xl" />
-        </div>
-      </div>
-    </div>
-  );
+  return <TrackingPageSkeleton />;
 }

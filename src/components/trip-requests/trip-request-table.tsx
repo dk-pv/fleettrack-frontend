@@ -17,7 +17,8 @@ interface Props {
   showClient: boolean;
   /**
    * Delete a request. Omitted → no delete control is rendered. The server is the real
-   * authority (ADMIN any, CLIENT only its own, never one that already made a Trip).
+   * authority (ADMIN any, CLIENT only its own). Deleting an APPROVED request also deletes
+   * the Trip it created, in the same transaction; the confirm dialog says so.
    */
   onDelete?: (request: TripRequest) => Promise<void>;
 }
@@ -97,7 +98,7 @@ export default function TripRequestTable({
       <div className="font-medium">{r.origin}</div>
       <div className="mt-0.5 text-muted-foreground">
         to {r.destination}
-        {r.stops.length > 0 &&
+        {(r.stops?.length ?? 0) > 0 &&
           ` · ${r.stops.length} stop${r.stops.length > 1 ? "s" : ""}`}
       </div>
     </>
@@ -125,42 +126,42 @@ export default function TripRequestTable({
               {requests.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
+                  className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-4 py-3.5 font-medium">
+                  <td className="px-4 py-3 font-medium">
                     <Link
                       href={`/trip-requests/${r.id}`}
-                      className="text-primary hover:underline"
+                      className="font-mono text-primary-ink hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {r.reference ?? "—"}
                     </Link>
                   </td>
 
                   {showClient && (
-                    <td className="px-4 py-3.5 text-muted-foreground">
+                    <td className="px-4 py-3 text-muted-foreground">
                       {r.client.name}
                     </td>
                   )}
 
-                  <td className="px-4 py-3.5">{routeCell(r)}</td>
+                  <td className="px-4 py-3">{routeCell(r)}</td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 font-mono text-muted-foreground">
                     {r.vehicle?.vehicleNumber ?? "—"}
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {fmtDateTime(r.scheduledStart)}
                   </td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <TripRequestStatusBadge status={r.status} />
                   </td>
 
-                  <td className="px-4 py-3.5 text-right">
+                  <td className="px-4 py-3 text-right tabular-nums">
                     <div className="inline-flex items-center gap-4">
                       <Link
                         href={`/trip-requests/${r.id}`}
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                        className="inline-flex items-center gap-1 text-primary-ink hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <Eye className="h-4 w-4" />
                         View
@@ -184,7 +185,7 @@ export default function TripRequestTable({
             className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/40"
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="font-semibold">{r.reference ?? "—"}</span>
+              <span className="font-mono font-semibold">{r.reference ?? "—"}</span>
               <TripRequestStatusBadge status={r.status} />
             </div>
 
@@ -213,7 +214,11 @@ export default function TripRequestTable({
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete Trip Request"
-        description="Are you sure you want to delete this trip request?"
+        description={
+          pendingDelete?.tripId
+            ? "This request was approved, so deleting it also permanently deletes the trip it created, with that trip's costs, proof of delivery and files."
+            : "Are you sure you want to delete this trip request?"
+        }
         confirmLabel="Delete"
         loadingLabel="Deleting..."
         loading={deleting}

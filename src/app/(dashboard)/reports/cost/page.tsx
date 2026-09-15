@@ -20,8 +20,8 @@ function formatVariance(value: number): string {
 }
 
 function varianceClass(value: number): string {
-  if (value > 0) return "text-destructive";
-  if (value < 0) return "text-success";
+  if (value > 0) return "text-status-fault-ink";
+  if (value < 0) return "text-status-ok-ink";
   return "text-muted-foreground";
 }
 
@@ -32,7 +32,7 @@ function titleCase(value: string): string {
 const th =
   "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
-  "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  "h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function CostReportPage() {
   const { report, filter, setFilter, loading, error } = useCostReport();
@@ -118,7 +118,7 @@ export default function CostReportPage() {
             Estimated
           </p>
           <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {formatMoney(report.totals.estimatedTotal)}
+            {loading ? "…" : error ? "—" : formatMoney(report.totals.estimatedTotal)}
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-5">
@@ -126,7 +126,7 @@ export default function CostReportPage() {
             Actual
           </p>
           <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {formatMoney(report.totals.actualTotal)}
+            {loading ? "…" : error ? "—" : formatMoney(report.totals.actualTotal)}
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-5">
@@ -138,7 +138,7 @@ export default function CostReportPage() {
               report.totals.variance,
             )}`}
           >
-            {formatVariance(report.totals.variance)}
+            {loading ? "…" : error ? "—" : formatVariance(report.totals.variance)}
           </p>
         </div>
       </div>
@@ -162,10 +162,10 @@ export default function CostReportPage() {
               {report.byComponent.map((c) => (
                 <tr key={c.component} className="border-b border-border last:border-none">
                   <td className="px-4 py-3">{titleCase(c.component)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right tabular-nums">
                     {formatMoney(c.estimated)}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right tabular-nums">
                     {formatMoney(c.actual)}
                   </td>
                   <td
@@ -230,19 +230,19 @@ export default function CostReportPage() {
                 report.rows.map((row) => (
                   <tr
                     key={row.tripId}
-                    className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
+                    className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                   >
-                    <td className="px-4 py-3 font-medium">{row.reference}</td>
+                    <td className="px-4 py-3 font-mono font-medium">{row.reference}</td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {row.origin} → {row.destination}
                     </td>
                     <td className="px-4 py-3">
                       <TripStatusBadge status={row.status} />
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right tabular-nums">
                       {formatMoney(row.estimatedTotal)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right tabular-nums">
                       {formatMoney(row.actualTotal)}
                     </td>
                     <td

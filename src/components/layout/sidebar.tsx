@@ -188,15 +188,21 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
+      // NOT purely visual — flagged in the Phase 2D report. The active row is already
+      // identifiable without colour (the 4px rail plus font-medium), but only visually;
+      // this is what announces it to a screen reader. Nothing reads this attribute, so
+      // navigation behaviour is unaffected.
+      aria-current={active ? "page" : undefined}
       className={`
         relative flex h-10 items-center gap-3.5 rounded-lg px-3.5
         transition-all duration-200 group/navlink
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
 
         ${indent ? "lg:pl-11" : ""}
 
         ${
           active
-            ? "bg-primary/10 text-primary font-medium"
+            ? "bg-primary/10 text-primary-ink font-medium"
             : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
         }
       `}
@@ -206,7 +212,7 @@ function NavLink({
         <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
       )}
 
-      <Icon className={`h-5 w-5 min-w-[20px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
+      <Icon className={`h-5 w-5 min-w-[20px] transition-transform duration-200 group-hover/navlink:scale-105 ${active ? "text-primary-ink" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
 
       <span
         className={`
@@ -247,7 +253,7 @@ export default function Sidebar({
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-[90] bg-black/40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -280,9 +286,9 @@ export default function Sidebar({
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-5 h-16">
+        <div className="flex items-center justify-between border-b border-border px-4 py-5 h-16">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform duration-300 hover:scale-105">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-300 hover:scale-105">
               <Truck className="h-5 w-5" />
             </div>
 
@@ -299,7 +305,7 @@ export default function Sidebar({
 
           {/* Mobile Close */}
           <button
-            className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -329,10 +335,11 @@ export default function Sidebar({
                       className={`
                         relative flex h-10 w-full items-center gap-3.5 rounded-lg px-3.5
                         transition-all duration-200 group/navlink
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
 
                         ${
                           onReportsRoute
-                            ? "bg-primary/10 text-primary font-medium"
+                            ? "bg-primary/10 text-primary-ink font-medium"
                             : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                         }
                       `}
@@ -342,7 +349,7 @@ export default function Sidebar({
                         <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-primary" />
                       )}
 
-                      <Icon className={`h-5 w-5 min-w-[20px] transition-transform duration-200 group-hover/navlink:scale-105 ${onReportsRoute ? "text-primary" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
+                      <Icon className={`h-5 w-5 min-w-[20px] transition-transform duration-200 group-hover/navlink:scale-105 ${onReportsRoute ? "text-primary-ink" : "text-muted-foreground group-hover/navlink:text-foreground"}`} />
 
                       <span
                         className={`
@@ -410,7 +417,7 @@ export default function Sidebar({
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border px-5 py-4 flex items-center justify-between">
+        <div className="border-t border-border px-4 py-4 flex items-center justify-between">
           <p
             className={`
               text-xs text-muted-foreground font-semibold uppercase tracking-wider

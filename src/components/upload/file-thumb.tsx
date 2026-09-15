@@ -63,7 +63,7 @@ export default function FileThumb({ file, canDelete, onDelete }: Props) {
   };
 
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-border bg-muted/30">
+    <div className="group relative overflow-hidden rounded-lg border border-border bg-muted/30">
       <div className="flex h-28 w-full items-center justify-center">
         {isImage ? (
           failed ? (

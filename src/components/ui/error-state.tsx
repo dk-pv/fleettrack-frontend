@@ -19,7 +19,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+          className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Try again
         </button>

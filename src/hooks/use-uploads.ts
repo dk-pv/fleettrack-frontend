@@ -12,6 +12,8 @@ import { FileAsset, FileCategory } from "@/types/upload";
 export function useUploads(tripId: string, category: FileCategory) {
   const [files, setFiles] = useState<FileAsset[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed list must not read as "no files", which is what every consumer used to render.
+  const [error, setError] = useState(false);
 
   // Inlined async load (no-setState-in-effect lint rule); reload on trip/category change.
   useEffect(() => {
@@ -21,9 +23,13 @@ export function useUploads(tripId: string, category: FileCategory) {
       try {
         setLoading(true);
         const data = await listFiles(tripId, category);
-        if (active) setFiles(data);
+        if (active) {
+          setFiles(data);
+          setError(false);
+        }
       } catch (err) {
         console.log(err);
+        if (active) setError(true);
       } finally {
         if (active) setLoading(false);
       }
@@ -40,8 +46,10 @@ export function useUploads(tripId: string, category: FileCategory) {
     try {
       const data = await listFiles(tripId, category);
       setFiles(data);
+      setError(false);
     } catch (err) {
       console.log(err);
+      setError(true);
     }
   };
 
@@ -59,5 +67,5 @@ export function useUploads(tripId: string, category: FileCategory) {
     }
   };
 
-  return { files, loading, reload, remove };
+  return { files, loading, error, reload, remove };
 }

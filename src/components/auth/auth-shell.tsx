@@ -21,35 +21,32 @@ export default function AuthShell({
   return (
     <div className="flex min-h-dvh">
       {/* Brand panel */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-primary/80 p-12 text-primary-foreground lg:flex">
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-foreground/10 blur-3xl" />
-        <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-primary-foreground/5 blur-3xl" />
-
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground lg:flex">
         <div className="relative flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-foreground/15">
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary-foreground/15">
             <Truck className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">FleetTrack</h1>
-            <p className="mt-1 text-primary-foreground/70">
+            <h1 className="font-heading text-3xl font-semibold tracking-tight">FleetTrack</h1>
+            <p className="mt-1 text-primary-foreground/85">
               GPS Fleet Monitoring Platform
             </p>
           </div>
         </div>
 
         <div className="relative max-w-md">
-          <h2 className="text-4xl font-bold leading-tight">
+          <h2 className="font-heading text-4xl font-semibold leading-tight tracking-tight">
             Manage Your Fleet
             <br />
             Smarter &amp; Faster
           </h2>
-          <p className="mt-6 text-lg leading-8 text-primary-foreground/80">
+          <p className="mt-6 text-lg leading-8 text-primary-foreground/85">
             Monitor vehicles, manage drivers, track live locations and optimize
             fleet operations from one unified dashboard.
           </p>
         </div>
 
-        <p className="relative text-sm text-primary-foreground/60">
+        <p className="relative text-sm text-primary-foreground/85">
           © 2026 FleetTrack. All rights reserved.
         </p>
       </div>
@@ -57,9 +54,9 @@ export default function AuthShell({
       {/* Form panel */}
       <div className="flex w-full items-center justify-center p-6 sm:p-10 lg:w-1/2">
         <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+          <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              <h2 className="page-title">
                 {title}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>

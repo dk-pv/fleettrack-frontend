@@ -28,8 +28,8 @@ function formatVariance(value: number): string {
 
 /** Over budget (actual > estimated) reads red; under budget reads green. */
 function varianceClass(value: number): string {
-  if (value > 0) return "text-destructive";
-  if (value < 0) return "text-success";
+  if (value > 0) return "text-status-fault-ink";
+  if (value < 0) return "text-status-ok-ink";
   return "text-muted-foreground";
 }
 
@@ -43,12 +43,13 @@ function varianceClass(value: number): string {
  * section below holds receipts not tied to a component (TCM-03.1).
  */
 export default function TripCostCard({ tripId, canEdit }: Props) {
-  const { cost, variance, loading, saveCost } = useTripCost(tripId);
+  const { cost, variance, loading, error, saveCost } = useTripCost(tripId);
   const [editOpen, setEditOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const {
     files: receipts,
+    error: receiptsError,
     reload: reloadReceipts,
     remove: removeReceipt,
   } = useUploads(tripId, "RECEIPT");
@@ -60,13 +61,15 @@ export default function TripCostCard({ tripId, canEdit }: Props) {
     setExpanded((cur) => (cur === key ? null : key));
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wallet className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold">Costs</h3>
         </div>
-        {canEdit && (
+        {/* No editing while the load failed: the form would open on zeros, and saving would
+            overwrite the stored costs with them. */}
+        {canEdit && !error && (
           <button
             onClick={() => setEditOpen(true)}
             className="text-sm font-medium text-primary hover:underline"
@@ -78,6 +81,10 @@ export default function TripCostCard({ tripId, canEdit }: Props) {
 
       {loading ? (
         <p className="mt-4 text-sm text-muted-foreground">Loading costs...</p>
+      ) : error ? (
+        <p className="mt-4 text-sm text-destructive">
+          Couldn&apos;t load costs. Reload the page to try again.
+        </p>
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
@@ -203,7 +210,11 @@ export default function TripCostCard({ tripId, canEdit }: Props) {
             />
           )}
         </div>
-        {generalReceipts.length === 0 ? (
+        {receiptsError ? (
+          <p className="mt-3 text-sm text-destructive">
+            Couldn&apos;t load receipts.
+          </p>
+        ) : generalReceipts.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
             No general receipts uploaded
           </p>

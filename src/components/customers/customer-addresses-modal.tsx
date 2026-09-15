@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 import { Plus } from "lucide-react";
 
 import {
@@ -122,7 +124,7 @@ export default function CustomerAddressesModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Addresses</DialogTitle>
+          <DialogTitle>Addresses</DialogTitle>
           <DialogDescription>
             {customer.name} — pickup &amp; delivery address book
           </DialogDescription>
@@ -136,7 +138,7 @@ export default function CustomerAddressesModal({
                 onClick={() => setFilter(t)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                   filter === t
-                    ? "bg-primary text-white"
+                    ? "bg-primary text-primary-foreground"
                     : "border border-border hover:bg-muted"
                 }`}
               >
@@ -190,7 +192,7 @@ export default function CustomerAddressesModal({
             </p>
           ) : (
             filtered.map((a) => (
-              <div key={a.id} className="rounded-xl border border-border p-3">
+              <div key={a.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -199,7 +201,9 @@ export default function CustomerAddressesModal({
                         {a.kind}
                       </span>
                       {a.isDefault && (
-                        <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase text-success">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_CHIP.ok}`}
+                        >
                           Default
                         </span>
                       )}
@@ -229,7 +233,7 @@ export default function CustomerAddressesModal({
                       <>
                         <button
                           onClick={() => handleDelete(a.id)}
-                          className="text-sm font-medium text-red-500 hover:underline"
+                          className="text-sm font-medium text-status-fault-ink hover:underline"
                         >
                           Confirm
                         </button>
@@ -243,7 +247,7 @@ export default function CustomerAddressesModal({
                     ) : (
                       <button
                         onClick={() => setConfirmId(a.id)}
-                        className="text-sm font-medium text-red-500 hover:underline"
+                        className="text-sm font-medium text-status-fault-ink hover:underline"
                       >
                         Delete
                       </button>

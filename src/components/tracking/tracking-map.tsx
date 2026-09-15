@@ -12,6 +12,7 @@ import { LocateFixed, Minus, Navigation2, Plus } from "lucide-react";
 // calculateBearing is deliberately no longer imported — the icon never rotates.
 import { haversineDistance, isValidCoordinate } from "@/lib/gps-utils";
 import VehiclePopupCard from "./vehicle-popup-card";
+import { StatusCue } from "@/components/ui/status-chip";
 
 /* -------------------------------------------------- */
 /* TYPES                                              */
@@ -146,6 +147,68 @@ if (typeof window !== "undefined") {
         100% { transform: scale(1.8); opacity: 0;   }
       }
 
+      /* MARKER. Google draws the basemap light in BOTH app themes, so these colours are
+       * fixed rather than themed: the light-theme status hues, the only steps that clear
+       * 3:1 against every default roadmap fill (worst case, water: moving 3.10, idle 3.08,
+       * offline 4.03, selected 4.56). This DOM is built with innerHTML outside React, which
+       * makes it the one documented place in the app that carries raw hex.
+       *
+       * State rides on the ring's STYLE as well as its colour (WCAG 1.4.1): solid for
+       * moving, dashed for idle, dotted with a faded icon for offline. */
+      .ft-marker {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ft-marker--moving  { --ft-ring: #1A7F4B; }
+      .ft-marker--idle    { --ft-ring: #9A6400; }
+      .ft-marker--offline { --ft-ring: #B3261E; }
+
+      .ft-marker-disc {
+        box-sizing: border-box;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #FFFFFF;
+        border: 3px solid var(--ft-ring);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .ft-marker--idle .ft-marker-disc    { border-style: dashed; }
+      .ft-marker--offline .ft-marker-disc { border-style: dotted; }
+      .ft-marker--offline .ft-marker-disc img { opacity: 0.45; }
+
+      .ft-marker-pulse {
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 2px solid var(--ft-ring);
+        animation: pulse-ring 1.5s ease-out infinite;
+        pointer-events: none;
+      }
+
+      /* Selected: a second ring OUTSIDE the status ring, in the FleetTrack signal, with a
+       * white gap between so the two never merge into one colour. It marks selection only;
+       * the status ring underneath is unchanged. */
+      [data-ft-selected] .ft-marker-disc {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 2px #FFFFFF, 0 0 0 5px #A3175E;
+      }
+
+      /* The pulse is an infinite animation, exactly what reduced motion asks us to drop.
+       * Hidden rather than frozen: a still 52px ring would read as a selection ring. */
+      @media (prefers-reduced-motion: reduce) {
+        .ft-marker-pulse { display: none; }
+      }
+
       /* Vehicle-number label shown while a pointer rests on the marker.
        *
        * Driven purely by :hover on the marker element rather than by JS mouse events, so
@@ -162,19 +225,22 @@ if (typeof window !== "undefined") {
        */
       .ft-marker-label {
         position: absolute;
-        bottom: 42px;
+        bottom: 48px;
         left: 50%;
         transform: translateX(-50%);
         padding: 3px 8px;
         border-radius: 6px;
-        background: rgba(17, 24, 39, 0.92);
-        color: #fff;
+        /* Map chrome tokens: the same fixed dark layer as the map controls and the popup,
+         * with the registration set in the identifier face. */
+        background: var(--chrome-bg);
+        border: 1px solid var(--chrome-line);
+        color: var(--chrome-fg);
+        font-family: var(--font-mono);
         font-size: 0.8125rem;
-        font-weight: 700;
+        font-weight: 600;
         line-height: 1.2;
         letter-spacing: 0.02em;
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
         opacity: 0;
         visibility: hidden;
         transition: opacity 120ms ease;
@@ -406,6 +472,9 @@ function VehicleMarker({
     const marker = markerRef.current;
     if (!marker) return;
     marker.zIndex = isSelected ? SELECTED_Z_INDEX : baseZIndex(vehicle.latitude);
+    // Styling hook for the selection ring. It sits on the persistent container rather than
+    // inside the innerHTML below, so a status rebuild can never drop it.
+    elementRef.current?.toggleAttribute("data-ft-selected", isSelected);
   }, [isSelected, vehicle.latitude]);
 
   // RC5: rebuild the marker's DOM only when status changes (color / pulse). Heading
@@ -414,39 +483,25 @@ function VehicleMarker({
     const el = elementRef.current;
     if (!el) return;
 
-    const color =
+    // Branch order unchanged: MOVING, then IDLE, and every other status draws as offline.
+    // Each state's ring colour and ring style live in the injected stylesheet above.
+    const state =
       vehicle.status === "MOVING"
-        ? "#10b981"
+        ? "moving"
         : vehicle.status === "IDLE"
-          ? "#f59e0b"
-          : "#ef4444";
+          ? "idle"
+          : "offline";
 
     const pulseHtml =
-      vehicle.status === "MOVING"
-        ? `<span style="
-          position:absolute;top:-6px;left:-6px;width:52px;height:52px;
-          border-radius:50%;border:2px solid ${color};
-          animation:pulse-ring 1.5s ease-out infinite;pointer-events:none;
-        "></span>`
-        : "";
+      state === "moving" ? `<span class="ft-marker-pulse"></span>` : "";
 
     // NO transform on this wrapper — the icon's orientation is fixed (see MARKER
     // ORIENTATION above). The label is a sibling of the icon, so it is unaffected by
     // anything applied to the icon itself and always reads horizontally.
     el.innerHTML = `
-      <div class="ft-marker" style="
-        position:relative;
-        width:40px;height:40px;
-        display:flex;align-items:center;justify-content:center;
-      ">
+      <div class="ft-marker ft-marker--${state}">
         ${pulseHtml}
-        <div style="
-          width:36px;height:36px;border-radius:50%;
-          background:white;
-          box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 2px ${color};
-          display:flex;align-items:center;justify-content:center;
-          overflow:hidden;
-        ">
+        <div class="ft-marker-disc">
           <img src="/cargo-truck.png" alt="" style="width:22px;height:22px;object-fit:contain;" />
         </div>
         <span class="ft-marker-label">${vehicle.vehicleNumber}</span>
@@ -467,40 +522,45 @@ interface LiveStatusCardProps {
 
 // Stays pinned bottom-left. It used to jump up to bottom-[300px] on mobile to clear the
 // selected-vehicle bottom sheet; the sheet is gone, so the position is now constant.
+// bottom-8, like the map controls, keeps Google's logo and attribution strip uncovered.
 function LiveStatusCard({ vehicles }: LiveStatusCardProps) {
   const moving = vehicles.filter((v) => v.status === "MOVING").length;
   const idle = vehicles.filter((v) => v.status === "IDLE").length;
 
+  // Map chrome: fixed dark in both themes, border-led, no shadow. The counts stay in ink with
+  // tabular figures (they tick with live updates); each status rides on the cue by its label.
   return (
-    <div className="absolute bottom-4 left-3 z-[40] rounded-lg bg-card px-4 py-2.5 shadow-sm border border-border select-none md:left-4">
-      <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider">
-        <div className="text-center">
-          <p className="text-sm font-extrabold text-success leading-none">
+    <div className="absolute bottom-8 left-3 z-[40] select-none rounded-lg border border-chrome-line bg-chrome-bg px-4 py-2.5 text-chrome-fg md:left-4">
+      <div className="flex items-center gap-4">
+        <div>
+          <p className="font-heading text-base font-semibold leading-none tabular-nums">
             {moving}
           </p>
-          <p className="text-[9px] text-muted-foreground font-bold mt-1">
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-chrome-fg-dim">
+            <StatusCue tone="ok" className="text-status-ok" />
             Moving
           </p>
         </div>
 
-        <div className="h-6 w-px bg-border" />
+        <div className="h-8 w-px bg-chrome-line" />
 
-        <div className="text-center">
-          <p className="text-sm font-extrabold text-warning leading-none">
+        <div>
+          <p className="font-heading text-base font-semibold leading-none tabular-nums">
             {idle}
           </p>
-          <p className="text-[9px] text-muted-foreground font-bold mt-1">
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-chrome-fg-dim">
+            <StatusCue tone="attn" className="text-status-attn" />
             Idle
           </p>
         </div>
 
-        <div className="h-6 w-px bg-border" />
+        <div className="h-8 w-px bg-chrome-line" />
 
-        <div className="text-center">
-          <p className="text-sm font-extrabold text-foreground leading-none">
+        <div>
+          <p className="font-heading text-base font-semibold leading-none tabular-nums">
             {vehicles.length}
           </p>
-          <p className="text-[9px] text-muted-foreground font-bold mt-1">
+          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-chrome-fg-dim">
             Total
           </p>
         </div>
@@ -516,6 +576,13 @@ interface MapControlsProps {
   mapRef: React.RefObject<google.maps.Map | null>;
 }
 
+// The same chrome layer. The focus ring is drawn INSIDE each control, so it is measured
+// against the chrome fill it sits on (6.28:1) instead of whatever tile is under the control.
+const MAP_CONTROL =
+  "flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset";
+const MAP_CONTROL_IDLE =
+  "border-chrome-line bg-chrome-bg text-chrome-fg hover:bg-chrome-bg-2 focus-visible:ring-chrome-signal";
+
 function MapControls({
   onLocate,
   followMode,
@@ -523,14 +590,14 @@ function MapControls({
   mapRef,
 }: MapControlsProps) {
   return (
-    <div className="absolute bottom-4 right-3 z-[40] flex flex-col gap-1.5 md:right-4">
+    <div className="absolute bottom-8 right-3 z-[40] flex flex-col gap-1.5 md:right-4">
       <button
         onClick={() =>
           mapRef.current?.setZoom(
             (mapRef.current.getZoom() ?? DEFAULT_ZOOM) + 1,
           )
         }
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        className={`${MAP_CONTROL} ${MAP_CONTROL_IDLE}`}
         title="Zoom in"
       >
         <Plus className="h-4 w-4" />
@@ -542,7 +609,7 @@ function MapControls({
             (mapRef.current.getZoom() ?? DEFAULT_ZOOM) - 1,
           )
         }
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        className={`${MAP_CONTROL} ${MAP_CONTROL_IDLE}`}
         title="Zoom out"
       >
         <Minus className="h-4 w-4" />
@@ -550,7 +617,7 @@ function MapControls({
 
       <button
         onClick={onLocate}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-card border border-border hover:bg-muted/80 text-foreground transition-all cursor-pointer shadow-sm outline-none"
+        className={`${MAP_CONTROL} ${MAP_CONTROL_IDLE}`}
         title="Center on vehicle"
       >
         <LocateFixed className="h-4 w-4" />
@@ -558,18 +625,17 @@ function MapControls({
 
       <button
         onClick={onToggleFollow}
-        className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-all cursor-pointer shadow-sm outline-none ${
+        className={`${MAP_CONTROL} ${
           followMode
-            ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
-            : "bg-card border-border hover:bg-muted/80 text-foreground"
+            ? "border-chrome-signal bg-chrome-signal text-chrome-bg hover:bg-chrome-signal/90 focus-visible:ring-chrome-bg"
+            : MAP_CONTROL_IDLE
         }`}
         title={
           followMode ? "Following vehicle (click to stop)" : "Follow vehicle"
         }
       >
-        <Navigation2
-          className={`h-4 w-4 ${followMode ? "fill-white text-primary-foreground" : "text-foreground"}`}
-        />
+        {/* Filled while following, outlined when not, so the state survives without colour. */}
+        <Navigation2 className={`h-4 w-4 ${followMode ? "fill-current" : ""}`} />
       </button>
     </div>
   );
@@ -802,7 +868,7 @@ export default function TrackingMap({
         </p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-1 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/80 transition-all cursor-pointer shadow-sm outline-none"
+          className="mt-1 cursor-pointer rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Retry
         </button>
@@ -820,10 +886,11 @@ export default function TrackingMap({
 
   return (
     <div className="relative h-full min-h-[300px] md:min-h-[350px] w-full overflow-hidden">
-      {/* LIVE BADGE */}
-      <div className="absolute right-4 top-4 z-[40] flex items-center gap-2 rounded-lg bg-card px-3 py-1.5 shadow-sm border border-border">
-        <span className="h-2 w-2 rounded-full bg-success" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">
+      {/* LIVE BADGE — map chrome. Live is the FleetTrack signal: magenta with the diamond
+          cue, never the green that means MOVING. */}
+      <div className="absolute right-4 top-4 z-[40] flex items-center gap-2 rounded-lg border border-chrome-line bg-chrome-bg px-3 py-1.5">
+        <StatusCue tone="signal" className="text-chrome-signal" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-chrome-fg">
           Live Tracking
         </span>
       </div>
@@ -886,10 +953,12 @@ export default function TrackingMap({
                 lng: selectedVehicle.longitude,
               }}
               mapPaneName={FLOAT_PANE}
-              // Centre the card on the marker and lift it clear of the 40px icon.
+              // Centre the card on the marker and lift it clear of it. The marker is anchored at
+              // its bottom edge, so it rises 40px above this point and its selection ring 5px
+              // more; at the old 30px the card sat over the very ring it describes.
               getPixelPositionOffset={(width, height) => ({
                 x: -(width / 2),
-                y: -height - 30,
+                y: -height - 56,
               })}
             >
               <VehiclePopupCard

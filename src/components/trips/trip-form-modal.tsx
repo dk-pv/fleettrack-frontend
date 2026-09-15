@@ -50,7 +50,7 @@ interface Props {
 }
 
 const inputClass =
-  "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function TripFormModal({
   open,
@@ -70,14 +70,23 @@ export default function TripFormModal({
 
   // Client list for the ADMIN selector — fetched only in admin mode so a CLIENT never
   // hits the ADMIN-only /clients endpoint.
-  const { clients, loading: clientsLoading } = useClients(isAdmin);
+  const { clients, loading: clientsLoading } = useClients(isAdmin && open);
 
   // `drivers` is deliberately not read: the driver is typed in (ADMIN) or assigned at
   // approval, so there is no driver list to select from any more.
-  const { vehicles, loading: optionsLoading } =
-    useTripOptions(selectedClientId);
-  const { customers, loading: customersLoading } =
-    useCustomerOptions(selectedClientId);
+  //
+  // Options load only while the form is OPEN, and in admin mode only once a client is picked.
+  // The modal stays mounted on its page, so these used to run on every page visit, and an
+  // ADMIN with no client selected got a guaranteed 400 from /trips/drivers and /customers.
+  const optionsEnabled = open && (!isAdmin || !!adminClientId);
+  const { vehicles, loading: optionsLoading } = useTripOptions(
+    selectedClientId,
+    optionsEnabled,
+  );
+  const { customers, loading: customersLoading } = useCustomerOptions(
+    selectedClientId,
+    optionsEnabled,
+  );
   const {
     points: routePoints,
     loading: routeLoading,
@@ -275,7 +284,7 @@ export default function TripFormModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
+          <DialogTitle>
             {isAdmin ? "Create Trip" : "Request Trip"}
           </DialogTitle>
           <DialogDescription>
@@ -569,7 +578,7 @@ export default function TripFormModal({
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Any special instructions"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
@@ -615,7 +624,7 @@ export default function TripFormModal({
                 vehicleOverlap.hasOverlap ||
                 (isAdmin && !adminClientId)
               }
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
             >
               {submitting
                 ? isAdmin

@@ -1,4 +1,5 @@
 import { OverlapConflict } from "@/types/trip";
+import { STATUS_CHIP, StatusCue } from "@/components/ui/status-chip";
 
 function formatWindow(startISO: string, endISO: string) {
   const opts: Intl.DateTimeFormatOptions = {
@@ -45,13 +46,13 @@ export default function OverlapNotice({
 
   if (hasOverlap) {
     return (
-      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
-        <p className="text-sm font-medium text-destructive">
+      <div className={`rounded-lg border p-3 ${STATUS_CHIP.fault}`}>
+        <p className="text-sm font-medium">
           This {resource} is already booked for an overlapping schedule:
         </p>
         <ul className="mt-2 space-y-1">
           {conflicts.map((c) => (
-            <li key={c.tripId} className="text-xs text-destructive/90">
+            <li key={c.tripId} className="text-xs opacity-90">
               {c.reference} · {formatWindow(c.scheduledStart, c.scheduledEnd)} ·{" "}
               {c.status}
             </li>
@@ -62,8 +63,8 @@ export default function OverlapNotice({
   }
 
   return (
-    <p className="flex items-center gap-1.5 text-xs font-medium text-success">
-      <span className="h-1.5 w-1.5 rounded-full bg-success" />
+    <p className="flex items-center gap-1.5 text-xs font-medium text-status-ok-ink">
+      <StatusCue tone="ok" className="text-status-ok" />
       {label} is available for this schedule.
     </p>
   );

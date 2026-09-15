@@ -269,7 +269,7 @@ export default function Navbar({
       <div className="flex items-center gap-3">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="h-4 w-4" />
         </button>
@@ -280,7 +280,7 @@ export default function Navbar({
             <input
               type="text"
               placeholder="Search dashboard..."
-              className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-9 w-full rounded-lg border border-input bg-muted/40 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
         </div>
@@ -290,7 +290,7 @@ export default function Navbar({
         {user?.role === "ADMIN" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
+              <button className="flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 {selectedClient?.name || "All Clients"}
               </button>
             </DropdownMenuTrigger>
@@ -324,7 +324,7 @@ export default function Navbar({
                       e.preventDefault();
                       loadClients();
                     }}
-                    className="cursor-pointer text-xs font-medium text-primary"
+                    className="cursor-pointer text-xs font-medium text-primary-ink"
                   >
                     Retry
                   </DropdownMenuItem>
@@ -342,8 +342,8 @@ export default function Navbar({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex h-9 items-center gap-2.5 rounded-lg border border-border px-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            <button className="flex h-9 items-center gap-2.5 rounded-lg border border-border px-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary-ink">
                 {getInitials()}
               </div>
 

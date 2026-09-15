@@ -8,8 +8,7 @@ import { useClientStore } from "@/store/client-store";
 import TrackingMap from "@/components/tracking/tracking-map";
 import VehicleList from "@/components/tracking/vehicle-list";
 import CustomSelect from "@/components/ui/custom-select";
-import { TrackingListSkeleton } from "@/components/ui/skeletons/tracking-list-skeleton";
-import { MapSkeleton } from "@/components/ui/skeletons/map-skeleton";
+import { TrackingPageSkeleton } from "@/components/ui/skeletons/tracking-list-skeleton";
 
 interface Vehicle {
   id: string;
@@ -139,16 +138,7 @@ export default function TrackingPage() {
   }, [visibleVehicles]);
 
   if (loading) {
-    return (
-      <div className="flex h-full">
-        <div className="hidden w-[280px] flex-shrink-0 border-r border-border md:block">
-          <TrackingListSkeleton />
-        </div>
-        <div className="flex-1 p-3">
-          <MapSkeleton />
-        </div>
-      </div>
-    );
+    return <TrackingPageSkeleton />;
   }
 
   if (error) {
@@ -161,7 +151,7 @@ export default function TrackingPage() {
         </p>
         <button
           onClick={fetchVehicles}
-          className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/80 transition-all cursor-pointer shadow-sm outline-none"
+          className="cursor-pointer rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Try again
         </button>
@@ -199,14 +189,16 @@ export default function TrackingPage() {
       >
         {/* Collapse / expand control. Sits on the rail's inner edge, top-aligned — Google
             Maps puts its own controls at the top-right and bottom-right of the map, so
-            nothing here overlaps them at any width. */}
+            nothing here overlaps them at any width. It straddles the rail and the map, so
+            it wears the map chrome: a fixed dark fill that reads against both, with its
+            focus ring drawn inside. */}
         <button
           type="button"
           onClick={() => setSidebarCollapsed((prev) => !prev)}
           aria-expanded={!sidebarCollapsed}
           aria-controls="fleet-vehicles-panel"
           title={sidebarCollapsed ? "Show Fleet Vehicles" : "Hide Fleet Vehicles"}
-          className="absolute -right-3 top-4 z-40 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute -right-3 top-4 z-40 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-chrome-line bg-chrome-bg text-chrome-fg-dim outline-none transition-colors hover:bg-chrome-bg-2 hover:text-chrome-fg focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-chrome-signal"
         >
           {sidebarCollapsed ? (
             <ChevronRight className="h-4 w-4" />

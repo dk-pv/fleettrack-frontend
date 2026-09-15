@@ -1,6 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 
 import { ROUTE_DEVIATION_THRESHOLD_M, TripProgress } from "@/types/trip";
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 
 interface Props {
   progress: TripProgress | null;
@@ -19,10 +20,10 @@ export default function TripDeviationAlert({ progress }: Props) {
   if (!progress?.isDeviating) return null;
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4">
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+    <div className={`flex items-start gap-3 rounded-lg border p-4 ${STATUS_CHIP.attn}`}>
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
       <div>
-        <p className="text-sm font-semibold text-warning">
+        <p className="text-sm font-semibold">
           Route deviation detected
         </p>
         <p className="mt-0.5 text-sm text-muted-foreground">

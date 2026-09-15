@@ -21,7 +21,7 @@ interface Props {
  * Existing signatures are listed with the reused useUploads hook + FileThumb.
  */
 export default function PodSignature({ tripId, canEdit }: Props) {
-  const { files, loading, reload, remove } = useUploads(tripId, "POD_SIGNATURE");
+  const { files, loading, error, reload, remove } = useUploads(tripId, "POD_SIGNATURE");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [dirty, setDirty] = useState(false);
@@ -109,6 +109,10 @@ export default function PodSignature({ tripId, canEdit }: Props) {
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Skeleton className="h-24 w-full rounded-lg" />
         </div>
+      ) : error ? (
+        <p className="mt-3 text-sm text-destructive">
+          Couldn&apos;t load the signature.
+        </p>
       ) : files.length === 0 ? (
         !canEdit && (
           <p className="mt-3 text-sm text-muted-foreground">

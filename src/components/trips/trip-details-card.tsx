@@ -5,6 +5,7 @@ import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Trip } from "@/types/trip";
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 
 interface Props {
   trip: Trip;
@@ -56,9 +57,9 @@ export default function TripDetailsCard({
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="space-y-4 rounded-lg border border-border bg-card p-5">
       <div>
-        <h2 className="text-lg font-semibold">{trip.reference}</h2>
+        <h2 className="section-title font-mono">{trip.reference}</h2>
         <p className="text-sm text-muted-foreground">
           {trip.origin} → {trip.destination}
         </p>
@@ -112,7 +113,7 @@ export default function TripDetailsCard({
                           ? `Reached — ${stop.completedBy}`
                           : "Reached"
                       }
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400"
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_CHIP.ok}`}
                     >
                       <Check className="h-3 w-3" />
                       Reached

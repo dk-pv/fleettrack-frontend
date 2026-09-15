@@ -1,6 +1,7 @@
 "use client";
 
 import { TripProgress } from "@/types/trip";
+import { STATUS_CHIP } from "@/components/ui/status-chip";
 
 interface Props {
   progress: TripProgress | null;
@@ -18,15 +19,15 @@ export default function TripProgressCard({ progress, live = false }: Props) {
   const pct = Math.max(0, Math.min(100, progress.percentage));
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold">Route progress</h3>
           {live && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${STATUS_CHIP.signal}`}>
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-full w-full rounded-full bg-success" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
+                <span className="relative inline-flex h-full w-full rounded-full bg-current" />
               </span>
               Live
             </span>

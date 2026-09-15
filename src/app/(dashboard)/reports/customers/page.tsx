@@ -12,7 +12,7 @@ import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 const th =
   "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
-  "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  "h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function CustomerReportPage() {
   const { report, filter, setFilter, loading, error } = useCustomerReport();
@@ -116,7 +116,9 @@ export default function CustomerReportPage() {
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {card.label}
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{card.value}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {loading ? "…" : error ? "—" : card.value}
+            </p>
           </div>
         ))}
       </div>
@@ -175,7 +177,7 @@ export default function CustomerReportPage() {
                 report.rows.map((row) => (
                   <tr
                     key={row.customerId}
-                    className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
+                    className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                   >
                     <td className="px-4 py-3 font-medium">
                       {row.customerName ?? row.customerId}
@@ -183,22 +185,22 @@ export default function CustomerReportPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {row.customerType ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right tabular-nums">
                       {row.totalDeliveries}
                     </td>
-                    <td className="px-4 py-3 text-right">{row.completed}</td>
-                    <td className="px-4 py-3 text-right">{row.active}</td>
-                    <td className="px-4 py-3 text-right">{row.cancelled}</td>
-                    <td className="px-4 py-3 text-right">{row.onTime}</td>
-                    <td className="px-4 py-3 text-right">{row.delayed}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right tabular-nums">{row.completed}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.active}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.cancelled}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.onTime}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.delayed}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
                       {row.completionRate}%
                     </td>
-                    <td className="px-4 py-3 text-right">{row.onTimeRate}%</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums">{row.onTimeRate}%</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.totalDistanceKm}
                     </td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.avgDurationMins}
                     </td>
                   </tr>

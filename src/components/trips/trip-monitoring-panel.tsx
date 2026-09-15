@@ -43,10 +43,10 @@ export default function TripMonitoringPanel({
   const showEta = trip.status !== TripStatus.CANCELLED;
 
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-card/50 p-4 shadow-sm sm:p-5">
+    <section className="space-y-4 rounded-lg border border-border bg-card/50 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Trip monitoring</h2>
+          <h2 className="section-title">Trip monitoring</h2>
           <TripStatusBadge status={trip.status} />
         </div>
 

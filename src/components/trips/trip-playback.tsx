@@ -49,7 +49,7 @@ export default function TripPlayback({ tripId, route }: Props) {
       />
 
       {hasPlayback && current && (
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Route playback</h3>
             <span className="text-xs text-muted-foreground">
@@ -62,7 +62,7 @@ export default function TripPlayback({ tripId, route }: Props) {
               type="button"
               onClick={toggle}
               aria-label={isPlaying ? "Pause playback" : "Play playback"}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white transition hover:opacity-90"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:opacity-90"
             >
               {isPlaying ? (
                 <Pause className="h-4 w-4" />

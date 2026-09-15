@@ -135,33 +135,33 @@ export default function CustomerTable({
               filtered.map((customer) => (
                 <tr
                   key={customer.id}
-                  className="border-b border-border transition-colors hover:bg-muted/40"
+                  className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-4 py-3.5 font-medium">{customer.name}</td>
+                  <td className="px-4 py-3 font-medium">{customer.name}</td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <CustomerTypeBadge type={customer.type} />
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {customer.email || "—"}
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {customer.phone || "—"}
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {new Date(customer.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <div className="flex gap-3">
                       <AddCustomerModal
                         editCustomer={customer}
                         onSuccess={() => load(true)}
                       >
-                        <button className="text-sm font-medium text-primary hover:underline">
+                        <button className="text-sm font-medium text-primary-ink hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                           Edit
                         </button>
                       </AddCustomerModal>

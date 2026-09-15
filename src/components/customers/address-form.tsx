@@ -15,7 +15,7 @@ interface Props {
   onCancel: () => void;
 }
 
-const inputClass = "h-10 w-full rounded-lg border px-3 text-sm";
+const inputClass = "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * Add/edit a customer address (CUS-05 / CUS-06). Posts to the nested addresses
@@ -88,7 +88,7 @@ export default function AddressForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-xl border border-border bg-muted/20 p-4"
+      className="space-y-3 rounded-lg border border-border bg-muted/20 p-4"
     >
       <select
         value={kind}
@@ -138,6 +138,7 @@ export default function AddressForm({
           type="checkbox"
           checked={isDefault}
           onChange={(e) => setIsDefault(e.target.checked)}
+          className="h-4 w-4 shrink-0 rounded border border-input accent-primary"
         />
         Set as default {kind.toLowerCase()} address
       </label>

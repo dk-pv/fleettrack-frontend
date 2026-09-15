@@ -71,39 +71,39 @@ export default function DelayTable({
               delays.map((delay) => (
                 <tr
                   key={delay.id}
-                  className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
+                  className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                 >
-                  <td className="px-4 py-3.5 font-medium">
+                  <td className="px-4 py-3 font-medium">
                     <Link
                       href={`/trips/${delay.tripId}`}
-                      className="text-primary hover:underline"
+                      className="font-mono text-primary-ink hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {delay.trip?.reference ?? delay.tripId}
                     </Link>
                   </td>
 
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3">
                     <DelayCategoryBadge category={delay.category} />
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {delay.reason || "—"}
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {delay.durationMinutes} min
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {formatDateTime(delay.reportedAt)}
                   </td>
 
-                  <td className="px-4 py-3.5 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {delay.source}
                   </td>
 
                   {onSelect && (
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3">
                       <button
                         onClick={() => onSelect(delay)}
                         className="text-sm font-medium text-primary hover:underline"

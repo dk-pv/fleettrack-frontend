@@ -25,7 +25,7 @@ function actorLabel(actor: TripActor) {
 
 export default function TripTimeline({ events }: Props) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-5">
       <h3 className="text-sm font-semibold">Audit log</h3>
 
       {events.length === 0 ? (

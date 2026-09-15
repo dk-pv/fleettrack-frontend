@@ -12,7 +12,7 @@ import { TableSkeletonRows } from "@/components/ui/skeletons/table-skeleton";
 const th =
   "px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const inputClass =
-  "h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  "h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function VehicleReportPage() {
   const { report, filter, setFilter, loading, error } = useVehicleReport();
@@ -117,7 +117,9 @@ export default function VehicleReportPage() {
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {card.label}
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{card.value}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {loading ? "…" : error ? "—" : card.value}
+            </p>
           </div>
         ))}
       </div>
@@ -175,25 +177,25 @@ export default function VehicleReportPage() {
                 report.rows.map((row) => (
                   <tr
                     key={row.vehicleId}
-                    className="border-b border-border transition-colors last:border-none hover:bg-muted/40"
+                    className="border-b border-border last:border-none transition-colors hover:bg-muted/40"
                   >
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-4 py-3 font-mono font-medium">
                       {row.vehicleNumber ?? row.vehicleId}
                     </td>
-                    <td className="px-4 py-3 text-right">{row.totalTrips}</td>
-                    <td className="px-4 py-3 text-right">{row.completed}</td>
-                    <td className="px-4 py-3 text-right">{row.active}</td>
-                    <td className="px-4 py-3 text-right">{row.cancelled}</td>
-                    <td className="px-4 py-3 text-right">{row.onTime}</td>
-                    <td className="px-4 py-3 text-right">{row.delayed}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.totalTrips}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.completed}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.active}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.cancelled}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.onTime}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{row.delayed}</td>
                     <td className="px-4 py-3 text-right font-medium">
                       {row.utilizationPct}%
                     </td>
-                    <td className="px-4 py-3 text-right">{row.onTimeRate}%</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums">{row.onTimeRate}%</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.totalDistanceKm}
                     </td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.avgDurationMins}
                     </td>
                   </tr>

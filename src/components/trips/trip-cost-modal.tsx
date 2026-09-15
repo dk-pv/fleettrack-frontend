@@ -26,7 +26,7 @@ interface Props {
 }
 
 const inputClass =
-  "h-9 w-28 rounded-lg border border-border bg-background px-2.5 text-right text-sm outline-none focus:border-primary";
+  "h-9 w-28 rounded-lg border border-input bg-background px-2.5 text-right text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * Cost entry form (TCM-01.3 estimated + TCM-02.2 actual). Seeds every component
@@ -94,7 +94,7 @@ export default function TripCostModal({ open, onClose, cost, onSave }: Props) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Trip costs</DialogTitle>
+          <DialogTitle>Trip costs</DialogTitle>
           <DialogDescription>
             Enter the estimated and actual cost for each component.
           </DialogDescription>

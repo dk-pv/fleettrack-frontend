@@ -58,12 +58,12 @@ export default function AuthInput({
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`h-11 w-full rounded-lg border bg-muted/40 px-3.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-50 ${
+          className={`h-11 w-full rounded-lg border bg-muted/40 px-3.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
             isPassword ? "pr-11" : ""
           } ${
             error
               ? "border-destructive focus:border-destructive"
-              : "border-border"
+              : "border-input"
           }`}
         />
 
@@ -72,7 +72,7 @@ export default function AuthInput({
             type="button"
             onClick={() => setShow((s) => !s)}
             aria-label={show ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {show ? (
               <EyeOff className="h-5 w-5" />

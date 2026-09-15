@@ -17,11 +17,15 @@ import { CustomerOption } from "@/types/customer";
  * cleared before the new data arrives, and a superseded response is ignored, so the
  * selector never shows another client's customers.
  */
-export function useCustomerOptions(clientId?: string) {
+const NO_CUSTOMERS: CustomerOption[] = [];
+
+/** `enabled` false: no request, and an idle empty result (the form is closed). */
+export function useCustomerOptions(clientId?: string, enabled = true) {
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) return;
     // Ignore a response that a newer clientId has already superseded.
     let ignore = false;
 
@@ -51,7 +55,9 @@ export function useCustomerOptions(clientId?: string) {
     return () => {
       ignore = true;
     };
-  }, [clientId]);
+  }, [clientId, enabled]);
 
-  return { customers, loading };
+  return enabled
+    ? { customers, loading }
+    : { customers: NO_CUSTOMERS, loading: false };
 }

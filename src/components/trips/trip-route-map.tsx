@@ -25,14 +25,35 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   fullscreenControl: false,
 };
 
-const COLORS: Record<RoutePointType, string> = {
-  pickup: "#16a34a",
-  stop: "#2563eb",
-  destination: "#ef4444",
+/* Marker and line colours. Google draws these itself (symbols and polylines take colour
+ * strings, not CSS variables), so they are literal values, each one a light-theme token:
+ * the basemap is light in both app themes. Each clears 3:1 against Google's darkest large
+ * fill (water): ink 10.70, neutral 3.51, signal 4.56, attention 3.08.
+ *
+ * Route points are nominal, so they are neutral and told apart by SHAPE, never by hue: a
+ * filled disc for pickup, a numbered disc per stop, a hollow ring for the destination. The
+ * vehicle and its travelled trail are the FleetTrack signal (magenta), and the vehicle is a
+ * diamond, the app's signal shape; off route, it turns attention (amber). */
+const INK = "#1C1A17"; // --foreground
+const NEUTRAL = "#6B665E"; // --status-neutral
+const SIGNAL = "#A3175E"; // --status-signal
+const ATTN = "#9A6400"; // --status-attn
+const CASING = "#FFFFFF"; // marker edge against the tiles
+
+const POINT_ICON: Record<
+  RoutePointType,
+  { fillColor: string; strokeColor: string; strokeWeight: number; scale: number }
+> = {
+  pickup: { fillColor: INK, strokeColor: CASING, strokeWeight: 2, scale: 9 },
+  stop: { fillColor: NEUTRAL, strokeColor: CASING, strokeWeight: 2, scale: 8 },
+  destination: { fillColor: CASING, strokeColor: INK, strokeWeight: 3, scale: 9 },
 };
 
+// A unit diamond centred on the position, so it anchors exactly where the circle did.
+const VEHICLE_PATH = "M 0 -1 L 1 0 L 0 1 L -1 0 Z";
+
 const WRAPPER_CLASS =
-  "relative h-[300px] w-full overflow-hidden rounded-2xl border border-border sm:h-[380px]";
+  "relative h-[300px] w-full overflow-hidden rounded-lg border border-border sm:h-[380px]";
 
 interface Props {
   points: RoutePoint[];
@@ -57,7 +78,7 @@ export default function TripRouteMap({
     libraries: MAP_LIBRARIES,
   });
 
-  const vehicleColor = deviating ? "#f59e0b" : "#7c3aed";
+  const vehicleColor = deviating ? ATTN : SIGNAL;
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -140,8 +161,9 @@ export default function TripRouteMap({
         <Polyline
           path={points.map((p) => p.coords)}
           options={{
-            strokeColor: "#2563eb",
-            strokeOpacity: 0.85,
+            strokeColor: NEUTRAL,
+            // Fully opaque: at the old 0.85 the neutral line fell under 3:1 over water.
+            strokeOpacity: 1,
             strokeWeight: 3,
           }}
         />
@@ -151,7 +173,7 @@ export default function TripRouteMap({
           <Polyline
             path={trail}
             options={{
-              strokeColor: "#7c3aed",
+              strokeColor: SIGNAL,
               strokeOpacity: 0.95,
               strokeWeight: 5,
             }}
@@ -167,7 +189,7 @@ export default function TripRouteMap({
               point.type === "stop" && point.sequence
                 ? {
                     text: String(point.sequence),
-                    color: "#ffffff",
+                    color: CASING,
                     fontSize: "11px",
                     fontWeight: "700",
                   }
@@ -175,11 +197,8 @@ export default function TripRouteMap({
             }
             icon={{
               path: google.maps.SymbolPath.CIRCLE,
-              scale: point.type === "stop" ? 8 : 9,
-              fillColor: COLORS[point.type],
               fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 2,
+              ...POINT_ICON[point.type],
             }}
           />
         ))}
@@ -194,46 +213,48 @@ export default function TripRouteMap({
             }
             zIndex={1000}
             icon={{
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 7,
+              path: VEHICLE_PATH,
+              scale: 8,
               fillColor: vehicleColor,
               fillOpacity: 1,
-              strokeColor: "#ffffff",
+              strokeColor: CASING,
               strokeWeight: 3,
             }}
           />
         )}
       </GoogleMap>
 
-      {/* Legend */}
-      <div className="absolute left-3 top-3 z-[5] flex flex-col gap-1 rounded-lg border border-border bg-card/90 px-3 py-2 text-[10px] font-medium shadow-sm backdrop-blur-md">
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ background: COLORS.pickup }}
-          />
+      {/* Legend — map chrome, the same fixed dark layer as the tracking map's overlays. The
+          swatches repeat each marker's SHAPE (filled, small, hollow, diamond), which is the
+          encoding; on the dark chrome the fills are drawn light. */}
+      <div className="absolute left-3 top-3 z-[5] flex flex-col gap-1.5 rounded-lg border border-chrome-line bg-chrome-bg px-3 py-2 text-[11px] font-medium text-chrome-fg">
+        <span className="flex items-center gap-2">
+          <span aria-hidden className="flex w-3 justify-center">
+            <span className="size-2.5 rounded-full bg-chrome-fg" />
+          </span>
           Pickup
         </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ background: COLORS.stop }}
-          />
+        <span className="flex items-center gap-2">
+          <span aria-hidden className="flex w-3 justify-center">
+            <span className="size-2 rounded-full bg-chrome-fg-dim" />
+          </span>
           Stop
         </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ background: COLORS.destination }}
-          />
+        <span className="flex items-center gap-2">
+          <span aria-hidden className="flex w-3 justify-center">
+            <span className="size-2.5 rounded-full border-2 border-chrome-fg" />
+          </span>
           Destination
         </span>
         {vehiclePosition && (
-          <span className="flex items-center gap-1.5">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: vehicleColor }}
-            />
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="flex w-3 justify-center">
+              <span
+                className={`size-[7px] rotate-45 ${
+                  deviating ? "bg-status-attn" : "bg-chrome-signal"
+                }`}
+              />
+            </span>
             {deviating ? "Vehicle (off route)" : "Vehicle"}
           </span>
         )}

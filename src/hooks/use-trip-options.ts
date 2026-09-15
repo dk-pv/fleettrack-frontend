@@ -15,12 +15,17 @@ import { TripDriver, TripVehicle } from "@/types/trip";
  * previous client's lists are cleared before the new data arrives, and a superseded
  * in-flight response is ignored, so the form never shows another client's resources.
  */
-export function useTripOptions(clientId?: string) {
+const NO_VEHICLES: TripVehicle[] = [];
+const NO_DRIVERS: TripDriver[] = [];
+
+/** `enabled` false: no request, and an idle empty result (the form is closed). */
+export function useTripOptions(clientId?: string, enabled = true) {
   const [vehicles, setVehicles] = useState<TripVehicle[]>([]);
   const [drivers, setDrivers] = useState<TripDriver[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) return;
     // Ignore a response that a newer clientId has already superseded.
     let ignore = false;
 
@@ -49,7 +54,9 @@ export function useTripOptions(clientId?: string) {
     return () => {
       ignore = true;
     };
-  }, [clientId]);
+  }, [clientId, enabled]);
 
-  return { vehicles, drivers, loading };
+  return enabled
+    ? { vehicles, drivers, loading }
+    : { vehicles: NO_VEHICLES, drivers: NO_DRIVERS, loading: false };
 }

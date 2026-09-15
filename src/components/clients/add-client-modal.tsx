@@ -40,7 +40,7 @@ export default function AddClientModal({
 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
+          <DialogTitle>
             {isEdit ? "Edit Client" : "Add New Client"}
           </DialogTitle>
 

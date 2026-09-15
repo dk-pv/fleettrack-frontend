@@ -21,7 +21,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-primary/10 p-3">
+          <div className="rounded-lg bg-primary/10 p-3">
             <Bell className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -44,7 +44,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
           <div className="space-y-4 p-6">
             <Skeleton className="h-16 w-full" />
