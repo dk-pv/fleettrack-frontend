@@ -3,6 +3,7 @@
 import { DelayCategory } from "@/types/delay";
 import { STATUS_CHIP, StatusCue } from "@/components/ui/status-chip";
 
+
 /**
  * Delay category is a NOMINAL label, not a severity — TRAFFIC is not more urgent than
  * WEATHER, and neither is an error. The previous map spent seven distinct hues here
@@ -20,7 +21,7 @@ export default function DelayCategoryBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${STATUS_CHIP.neutral}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ${STATUS_CHIP.neutral}`}
     >
       <StatusCue tone="neutral" />
       {category}
